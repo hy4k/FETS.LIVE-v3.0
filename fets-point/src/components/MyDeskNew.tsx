@@ -1,15 +1,17 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import { MessageSquare, FolderLock } from 'lucide-react'
+import { MessageSquare, FolderLock, Lightbulb } from 'lucide-react'
 import FetsConnectNew from './FetsConnectNew'
 import ResourceCentre from './ResourceCentre'
+import Brainstorm from './Brainstorm'
 
 export function MyDeskNew() {
-  const [activeTab, setActiveTab] = useState<'connect' | 'resources'>('connect')
+  const [activeTab, setActiveTab] = useState<'connect' | 'resources' | 'brainstorm'>('connect')
 
   const tabs = [
     { id: 'connect' as const, label: 'FETS Connect', icon: MessageSquare },
-    { id: 'resources' as const, label: 'Resource Centre', icon: FolderLock }
+    { id: 'resources' as const, label: 'Resource Centre', icon: FolderLock },
+    { id: 'brainstorm' as const, label: 'Brainstorm', icon: Lightbulb }
   ]
 
   return (
@@ -50,6 +52,7 @@ export function MyDeskNew() {
       <div>
         {activeTab === 'connect' && <FetsConnectNew />}
         {activeTab === 'resources' && <ResourceCentre />}
+        {activeTab === 'brainstorm' && <Brainstorm />}
       </div>
     </div>
   )

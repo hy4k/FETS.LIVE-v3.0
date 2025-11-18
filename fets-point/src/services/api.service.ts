@@ -875,3 +875,220 @@ export const vaultService = {
     }
   }
 }
+
+/**
+ * Brainstorm Service - Team collaboration and ideation
+ * Note: TypeScript types will be available after running the database migration
+ */
+export const brainstormService = {
+  // Sessions
+  async getSessions(branchLocation?: string) {
+    try {
+      let query = (supabase as any)
+        .from('brainstorm_sessions')
+        .select('*, created_by_profile:staff_profiles!created_by(*)')
+        .eq('status', 'active')
+
+      if (branchLocation && branchLocation !== 'global') {
+        query = query.or(`branch_location.eq.${branchLocation},branch_location.eq.global`)
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false })
+
+      if (error) throw new ApiError(error.message, error.code, error.details)
+      return data || []
+    } catch (error) {
+      if (error instanceof ApiError) throw error
+      throw new ApiError('Failed to fetch brainstorm sessions', 'FETCH_ERROR', error)
+    }
+  },
+
+  async createSession(session: {
+    title: string
+    description?: string
+    branch_location: string
+    created_by: string
+  }) {
+    try {
+      const { data, error } = await (supabase as any)
+        .from('brainstorm_sessions')
+        .insert(session as any)
+        .select()
+        .single()
+
+      if (error) throw new ApiError(error.message, error.code, error.details)
+      return data
+    } catch (error) {
+      if (error instanceof ApiError) throw error
+      throw new ApiError('Failed to create brainstorm session', 'CREATE_ERROR', error)
+    }
+  },
+
+  async updateSession(id: string, updates: { title?: string; description?: string; status?: string }) {
+    try {
+      const { data, error } = await (supabase as any)
+        .from('brainstorm_sessions')
+        .update({ ...updates, updated_at: new Date().toISOString() } as any)
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) throw new ApiError(error.message, error.code, error.details)
+      return data
+    } catch (error) {
+      if (error instanceof ApiError) throw error
+      throw new ApiError('Failed to update session', 'UPDATE_ERROR', error)
+    }
+  },
+
+  // Notes
+  async getNotes(sessionId: string) {
+    try {
+      const { data, error } = await (supabase as any)
+        .from('brainstorm_notes')
+        .select('*, user:staff_profiles!user_id(*)')
+        .eq('session_id', sessionId)
+        .order('created_at', { ascending: true })
+
+      if (error) throw new ApiError(error.message, error.code, error.details)
+      return data || []
+    } catch (error) {
+      if (error instanceof ApiError) throw error
+      throw new ApiError('Failed to fetch notes', 'FETCH_ERROR', error)
+    }
+  },
+
+  async createNote(note: {
+    session_id: string
+    user_id: string
+    content: string
+    color?: string
+    category?: string
+  }) {
+    try {
+      const { data, error } = await (supabase as any)
+        .from('brainstorm_notes')
+        .insert(note as any)
+        .select('*, user:staff_profiles!user_id(*)')
+        .single()
+
+      if (error) throw new ApiError(error.message, error.code, error.details)
+      return data
+    } catch (error) {
+      if (error instanceof ApiError) throw error
+      throw new ApiError('Failed to create note', 'CREATE_ERROR', error)
+    }
+  },
+
+  async updateNote(id: string, updates: { content?: string; color?: string; category?: string }) {
+    try {
+      const { data, error} = await (supabase as any)
+        .from('brainstorm_notes')
+        .update({ ...updates, updated_at: new Date().toISOString() } as any)
+        .eq('id', id)
+        .select('*, user:staff_profiles!user_id(*)')
+        .single()
+
+      if (error) throw new ApiError(error.message, error.code, error.details)
+      return data
+    } catch (error) {
+      if (error instanceof ApiError) throw error
+      throw new ApiError('Failed to update note', 'UPDATE_ERROR', error)
+    }
+  },
+
+  async deleteNote(id: string) {
+    try {
+      const { error } = await (supabase as any)
+        .from('brainstorm_notes')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw new ApiError(error.message, error.code, error.details)
+    } catch (error) {
+      if (error instanceof ApiError) throw error
+      throw new ApiError('Failed to delete note', 'DELETE_ERROR', error)
+    }
+  },
+
+  // Events
+  async getEvents(branchLocation?: string) {
+    try {
+      let query = (supabase as any)
+        .from('brainstorm_events')
+        .select('*, created_by_profile:staff_profiles!created_by(*)')
+
+      if (branchLocation && branchLocation !== 'global') {
+        query = query.or(`branch_location.eq.${branchLocation},branch_location.eq.global`)
+      }
+
+      const { data, error } = await query.order('event_date', { ascending: true })
+
+      if (error) throw new ApiError(error.message, error.code, error.details)
+      return data || []
+    } catch (error) {
+      if (error instanceof ApiError) throw error
+      throw new ApiError('Failed to fetch events', 'FETCH_ERROR', error)
+    }
+  },
+
+  async createEvent(event: {
+    session_id: string
+    title: string
+    description?: string
+    event_date: string
+    event_type?: string
+    created_by: string
+    branch_location: string
+  }) {
+    try {
+      const { data, error } = await (supabase as any)
+        .from('brainstorm_events')
+        .insert(event as any)
+        .select()
+        .single()
+
+      if (error) throw new ApiError(error.message, error.code, error.details)
+      return data
+    } catch (error) {
+      if (error instanceof ApiError) throw error
+      throw new ApiError('Failed to create event', 'CREATE_ERROR', error)
+    }
+  },
+
+  async updateEvent(id: string, updates: {
+    title?: string
+    description?: string
+    event_date?: string
+    event_type?: string
+  }) {
+    try {
+      const { data, error } = await (supabase as any)
+        .from('brainstorm_events')
+        .update({ ...updates, updated_at: new Date().toISOString() } as any)
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) throw new ApiError(error.message, error.code, error.details)
+      return data
+    } catch (error) {
+      if (error instanceof ApiError) throw error
+      throw new ApiError('Failed to update event', 'UPDATE_ERROR', error)
+    }
+  },
+
+  async deleteEvent(id: string) {
+    try {
+      const { error } = await (supabase as any)
+        .from('brainstorm_events')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw new ApiError(error.message, error.code, error.details)
+    } catch (error) {
+      if (error instanceof ApiError) throw error
+      throw new ApiError('Failed to delete event', 'DELETE_ERROR', error)
+    }
+  }
+}
