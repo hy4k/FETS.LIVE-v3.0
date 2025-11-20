@@ -105,7 +105,7 @@ export function Header({ isMobile = false, sidebarOpen = false, setSidebarOpen }
             {!isMobile && (
               <div className="flex items-center gap-2 bg-black/15 backdrop-blur-md rounded-2xl px-6 py-3 border border-black/20 shadow-xl">
                 <svg className="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
+                  <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" />
                 </svg>
                 <span className="text-sm font-bold text-black">
                   {activeBranch === 'calicut' ? 'Calicut' : activeBranch === 'cochin' ? 'Cochin' : 'Global'}
@@ -157,9 +157,6 @@ export function Header({ isMobile = false, sidebarOpen = false, setSidebarOpen }
         {/* Rounded bottom edge with subtle shadow */}
         <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-b from-transparent to-black/5 rounded-b-3xl"></div>
       </div>
-
-      {/* SPACER - Taller to accommodate larger header */}
-      <div className="h-32"></div>
 
       {/* Notification Panel */}
       {showNotificationPanel && (

@@ -60,10 +60,10 @@ const navigationGroups = {
   ]
 }
 
-export function Sidebar({ 
-  activeTab, 
-  setActiveTab, 
-  isMobile = false, 
+export function Sidebar({
+  activeTab,
+  setActiveTab,
+  isMobile = false,
   onClose,
   isCollapsed = false,
   setIsCollapsed
@@ -88,40 +88,28 @@ export function Sidebar({
         onClick={() => handleItemClick(item)}
         className={`reference-menu-item group ${isActive ? 'active' : ''}`}
         title={isCollapsed ? item.name : undefined}
-        style={{
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        }}
       >
-        <div className={`reference-menu-icon ${isActive ? 'scale-110' : 'group-hover:scale-110'} transition-transform duration-300`}>
+        <div className="reference-menu-icon">
           <Icon size={isCollapsed ? 24 : 22} strokeWidth={isActive ? 2.5 : 2} />
         </div>
         {!isCollapsed && (
           <>
-            <span className="reference-menu-text group-hover:translate-x-1 transition-transform duration-300" style={{
-              fontSize: '0.9375rem',
-              fontWeight: isActive ? '700' : '600',
-              fontFamily: "'Inter', system-ui, sans-serif"
-            }}>
+            <span className="reference-menu-text">
               {item.name}
             </span>
             {item.badge && (
-              <span className={`reference-menu-badge ${isActive ? 'active' : ''} group-hover:scale-110 transition-transform duration-300`}>
+              <span className={`reference-menu-badge ${isActive ? 'active' : ''}`}>
                 {item.badge}
               </span>
             )}
           </>
         )}
-        {/* Hover effect indicator */}
-        {!isActive && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0 bg-gradient-to-b from-amber-400 to-yellow-500 rounded-r-full group-hover:h-8 transition-all duration-300 opacity-0 group-hover:opacity-100"></div>
-        )}
       </button>
     )
   }
 
-  const sidebarClassName = `reference-glassmorphic-sidebar ${
-    isMobile ? 'w-96' : isCollapsed ? 'w-24' : 'w-96'
-  }`
+  const sidebarClassName = `reference-glassmorphic-sidebar ${isMobile ? 'w-96' : isCollapsed ? 'w-24' : 'w-96'
+    }`
 
   const sidebarContent = (
     <div className={sidebarClassName}>
@@ -155,7 +143,7 @@ export function Sidebar({
             </div>
           </div>
         )}
-        
+
         {/* Desktop Collapse Toggle */}
         {!isMobile && setIsCollapsed && (
           <div className="absolute top-6 right-6">
@@ -172,7 +160,7 @@ export function Sidebar({
             </button>
           </div>
         )}
-        
+
         {/* Mobile Close Button */}
         {isMobile && onClose && (
           <button
@@ -184,16 +172,16 @@ export function Sidebar({
           </button>
         )}
       </div>
-      
+
       {/* Navigation Area - Exactly matching reference */}
       <div className="reference-navigation-area">
         {Object.entries(navigationGroups).map(([groupName, items]) => {
           const sectionTitles: { [key: string]: string } = {
             operations: 'OPERATIONS',
-            compliance: 'COMPLIANCE', 
+            compliance: 'COMPLIANCE',
             admin: 'ADMIN'
           }
-          
+
           let itemsToRender = items;
           if (groupName === 'admin') {
             itemsToRender = items.filter(item => {
@@ -218,7 +206,7 @@ export function Sidebar({
           )
         })}
       </div>
-      
+
       {/* Footer - Matching reference */}
       <div className="reference-sidebar-footer">
         {!isCollapsed || isMobile ? (

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Radio, AlertCircle, Info, Megaphone, TrendingUp, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Radio, Megaphone, AlertTriangle, Info, Clock, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useBranch } from '../hooks/useBranch';
+import { formatDistanceToNow } from 'date-fns';
 
 interface NewsItem {
   id: string;
@@ -24,13 +25,13 @@ export function NewsTickerBar() {
 
     // Subscribe to real-time updates
     const channel = supabase
-      .channel('news_ticker_updates')
+      .channel('news_updates_ticker')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'news_items'
+          table: 'news_updates'
         },
         () => {
           fetchActiveNews();
@@ -46,14 +47,14 @@ export function NewsTickerBar() {
   const fetchActiveNews = async () => {
     try {
       const now = new Date().toISOString();
-      const branchName = typeof activeBranch === 'string' ? activeBranch : activeBranch?.name || 'calicut';
+      const branchName = activeBranch || 'calicut';
 
       const { data, error } = await supabase
-        .from('news_items')
+        .from('news_updates')
         .select('*')
         .eq('is_active', true)
         .or(`expires_at.is.null,expires_at.gt.${now}`)
-        .order('priority', { ascending: false })
+        .order('priority', { ascending: false }) // High priority first
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -63,27 +64,17 @@ export function NewsTickerBar() {
         item.branch_location === branchName || item.branch_location === 'global'
       );
 
-      setNewsItems(filteredNews);
+      setNewsItems(filteredNews as NewsItem[]);
     } catch (error) {
       console.error('Error fetching news:', error);
     }
   };
 
-  const getItemColors = (priority: string) => {
-    if (priority === 'high') {
-      return {
-        bg: 'from-red-500/20 to-orange-500/20',
-        border: 'border-red-400/40',
-        icon: 'text-red-300',
-        glow: 'shadow-red-500/20'
-      };
-    }
-    return {
-      bg: 'from-blue-500/20 to-cyan-500/20',
-      border: 'border-blue-400/40',
-      icon: 'text-blue-300',
-      glow: 'shadow-blue-500/20'
-    };
+  const isNew = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+    return diffInHours < 24;
   };
 
   if (newsItems.length === 0) {
@@ -91,86 +82,88 @@ export function NewsTickerBar() {
   }
 
   return (
-    <div className="w-full bg-gradient-to-r from-indigo-900/40 via-purple-900/40 to-indigo-900/40 backdrop-blur-xl border-b-2 border-white/10 shadow-2xl">
-      <div className="max-w-7xl mx-auto px-8 py-6">
-        <div className="flex items-center gap-4">
-          {/* Live Badge */}
-          <div className="flex-shrink-0">
-            <div className="relative">
-              <div className="flex items-center gap-3 bg-gradient-to-r from-red-500 to-pink-500 px-6 py-3 rounded-2xl shadow-xl shadow-red-500/30">
-                <Radio className="w-6 h-6 text-white animate-pulse" />
-                <span className="text-white font-black text-lg tracking-wide uppercase">Live News</span>
+    <div className="w-full mb-8">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-900/90 via-purple-900/90 to-indigo-900/90 backdrop-blur-xl border border-white/20 shadow-2xl">
+        {/* Glassy Shine Effect */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+
+        <div className="flex items-stretch">
+          {/* Live Badge Section */}
+          <div className="relative z-10 flex items-center px-6 py-4 bg-gradient-to-r from-red-600 to-pink-600 shadow-xl">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Radio className="w-5 h-5 text-white animate-pulse" />
+                <span className="absolute top-0 right-0 w-2 h-2 bg-white rounded-full animate-ping" />
               </div>
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-400 rounded-full animate-ping"></div>
+              <span className="text-white font-black text-sm tracking-widest uppercase hidden sm:block">
+                FETS LIVE
+              </span>
             </div>
+            {/* Angled Divider */}
+            <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-r from-pink-600 to-transparent translate-x-full" />
           </div>
 
-          {/* News Ticker Container */}
+          {/* Ticker Content */}
           <div
-            className="flex-1 overflow-hidden rounded-2xl bg-gradient-to-r from-white/10 via-white/5 to-white/10 backdrop-blur-sm border-2 border-white/20 shadow-lg relative"
+            className="flex-1 flex items-center overflow-hidden relative py-3"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
           >
             <motion.div
-              className="flex gap-8 py-4 px-6"
+              className="flex gap-12 px-4 whitespace-nowrap"
               animate={{
-                x: isPaused ? 0 : [0, -2000]
+                x: isPaused ? 0 : [0, -1000] // Adjust distance based on content length dynamically if possible, but fixed is safer for simple loop
               }}
               transition={{
                 x: {
                   repeat: Infinity,
                   repeatType: "loop",
-                  duration: 40,
+                  duration: Math.max(20, newsItems.length * 10), // Slower speed for readability
                   ease: "linear"
                 }
               }}
             >
-              {/* Duplicate items for seamless loop */}
-              {[...newsItems, ...newsItems, ...newsItems].map((item, index) => {
-                const colors = getItemColors(item.priority);
+              {/* Triple the items to ensure smooth infinite scrolling without gaps */}
+              {[...newsItems, ...newsItems, ...newsItems].map((item, index) => (
+                <div
+                  key={`${item.id}-${index}`}
+                  className="inline-flex items-center gap-3 group"
+                >
+                  {/* Priority Indicator */}
+                  {item.priority === 'high' ? (
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-red-500/20 border border-red-500/50 text-red-200 text-xs font-bold uppercase animate-pulse">
+                      <AlertTriangle size={12} />
+                      Urgent
+                    </span>
+                  ) : isNew(item.created_at) ? (
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-blue-500/20 border border-blue-500/50 text-blue-200 text-xs font-bold uppercase">
+                      <Clock size={12} />
+                      New
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-white/10 border border-white/20 text-white/70 text-xs font-bold uppercase">
+                      <Info size={12} />
+                      Info
+                    </span>
+                  )}
 
-                return (
-                  <div
-                    key={`${item.id}-${index}`}
-                    className={`flex-shrink-0 flex items-center gap-4 px-6 py-3 rounded-xl bg-gradient-to-r ${colors.bg} border ${colors.border} ${colors.glow} shadow-lg`}
-                  >
-                    <div className={`w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center ${colors.icon}`}>
-                      <Megaphone size={20} />
-                    </div>
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        {item.priority === 'high' && (
-                          <span className="px-2 py-0.5 bg-red-500/30 text-red-200 text-xs font-bold rounded-full uppercase tracking-wide mr-2">
-                            Urgent
-                          </span>
-                        )}
-                        <p className="text-white font-bold text-base leading-relaxed">
-                          {item.content}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                  {/* Content */}
+                  <span className="text-white/90 font-medium text-base group-hover:text-white transition-colors">
+                    {item.content}
+                  </span>
+
+                  {/* Separator */}
+                  <div className="w-1.5 h-1.5 rounded-full bg-white/20 mx-2" />
+                </div>
+              ))}
             </motion.div>
 
-            {/* Gradient fade edges */}
-            <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-white/10 to-transparent pointer-events-none"></div>
-            <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-white/10 to-transparent pointer-events-none"></div>
+            {/* Fade Gradients */}
+            <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-indigo-900/90 to-transparent z-10" />
+            <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-indigo-900/90 to-transparent z-10" />
           </div>
         </div>
       </div>
-
-      {/* Pause indicator */}
-      {isPaused && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="absolute top-2 right-4 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-white text-xs font-medium"
-        >
-          Paused
-        </motion.div>
-      )}
     </div>
   );
 }

@@ -1,506 +1,392 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Heart, MessageCircle, Send, Image as ImageIcon, Trash2, X, MessageSquare, HelpCircle, Award, BarChart3, Paperclip, Share2, MapPin } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { formatDistanceToNow } from 'date-fns';
+import React, { useState, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
-  useSocialPosts,
-  useCurrentUser,
-  useCreatePost,
-  useToggleLike,
-  useAddComment,
-  useDeletePost,
-  useUploadImage,
-} from '../hooks/useSocial';
-import { supabase } from '../lib/supabase';
-import { toast } from 'react-hot-toast';
-import { formatBranchName, getBranchColor } from '../utils/authUtils';
+  Send,
+  Image as ImageIcon,
+  X,
+  Heart,
+  MessageCircle,
+  Share2,
+  MoreHorizontal,
+  Rocket,
+  AlertCircle,
+  Coffee,
+  Trophy,
+  Smile
+} from 'lucide-react'
+import { useSocialPosts, useCreatePost, useToggleLike, useAddComment, useDeletePost, useUploadImage, useCurrentUser } from '../hooks/useSocial'
+// import { useCurrentUser } from '../hooks/useStaffManagement'
+import { formatDistanceToNow } from 'date-fns'
+import toast from 'react-hot-toast'
 
 const FetsConnectNew: React.FC = () => {
-  const { data: posts = [], isLoading } = useSocialPosts();
-  const { data: currentUser } = useCurrentUser();
-  const createPost = useCreatePost();
-  const toggleLike = useToggleLike();
-  const addComment = useAddComment();
-  const deletePost = useDeletePost();
-  const uploadImage = useUploadImage();
+  const { data: posts = [], isLoading } = useSocialPosts()
+  const { data: currentUser } = useCurrentUser()
+  const createPost = useCreatePost()
+  const toggleLike = useToggleLike()
+  const addComment = useAddComment()
+  const deletePost = useDeletePost()
+  const uploadImage = useUploadImage()
 
-  const [postContent, setPostContent] = useState('');
-  const [postType, setPostType] = useState<'discussion' | 'question' | 'kudos' | 'poll'>('discussion');
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [commentTexts, setCommentTexts] = useState<Record<string, string>>({});
-  const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [postContent, setPostContent] = useState('')
+  const [postType, setPostType] = useState<'ship_it' | 'blocker' | 'break' | 'kudos'>('ship_it')
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [commentTexts, setCommentTexts] = useState<Record<string, string>>({})
+  const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({})
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Get current profile for UI checks
-  const [currentProfileId, setCurrentProfileId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loadCurrentProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from('staff_profiles')
-          .select('id')
-          .eq('user_id', user.id)
-          .single();
-        if (profile) {
-          setCurrentProfileId(profile.id);
-        }
-      }
-    };
-    loadCurrentProfile();
-  }, []);
-
-  // Real-time subscription
-  useEffect(() => {
-    const channel = supabase
-      .channel('social-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'social_posts' }, () => {
-        // Refresh posts when changes occur
-        window.location.reload();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+  const postTypes = [
+    {
+      id: 'ship_it',
+      label: 'Ship It',
+      icon: Rocket,
+      color: 'bg-blue-50 text-blue-600',
+      ring: 'ring-blue-400',
+      placeholder: "What did you ship today? 🚀"
+    },
+    {
+      id: 'blocker',
+      label: 'Blocker',
+      icon: AlertCircle,
+      color: 'bg-red-50 text-red-600',
+      ring: 'ring-red-400',
+      placeholder: "What's blocking you? 🆘"
+    },
+    {
+      id: 'break',
+      label: 'Coffee Break',
+      icon: Coffee,
+      color: 'bg-amber-50 text-amber-600',
+      ring: 'ring-amber-400',
+      placeholder: "Time for a break? What's on your mind? ☕"
+    },
+    {
+      id: 'kudos',
+      label: 'Kudos',
+      icon: Trophy,
+      color: 'bg-yellow-50 text-yellow-600',
+      ring: 'ring-yellow-400',
+      placeholder: "Who deserves a shoutout? 🏆"
+    }
+  ] as const
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const file = e.target.files?.[0]
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('Image must be less than 5MB');
-        return;
+      setSelectedImage(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
       }
-      setSelectedImage(file);
-      setImagePreview(URL.createObjectURL(file));
+      reader.readAsDataURL(file)
     }
-  };
+  }
 
-  const handleCreatePost = async () => {
-    if (!postContent.trim() && !selectedImage) {
-      return;
-    }
-    
-    // Get current user ID
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error('Please log in to post');
-      return;
-    }
-
-    // Get user profile to use profile.id as user_id
-    const { data: profile } = await supabase
-      .from('staff_profiles')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile) {
-      toast.error('Profile not found. Please log in again.');
-      return;
-    }
-
-    let imageUrl: string | undefined;
-
-    if (selectedImage) {
-      console.log('📤 Starting image upload...');
-      toast.loading('Uploading image...', { id: 'upload' });
-      try {
-        imageUrl = await uploadImage.mutateAsync(selectedImage);
-        console.log('✅ Image uploaded:', imageUrl);
-        toast.success('Image uploaded!', { id: 'upload' });
-      } catch (error: any) {
-        console.error('❌ Upload failed:', error);
-        toast.error('Image upload failed. Posting text only.', { id: 'upload' });
-        imageUrl = undefined;
-      }
-    }
+  const handleSubmit = async () => {
+    if (!postContent.trim() && !selectedImage) return
 
     try {
-      const { error } = await supabase.from('posts').insert({
-        content: postContent || 'Post',
-        author_id: profile.id,
+      let imageUrl = ''
+      if (selectedImage) {
+        imageUrl = await uploadImage.mutateAsync(selectedImage)
+      }
+
+      if (!currentUser) {
+        toast.error('You must be logged in to post')
+        return
+      }
+
+      await createPost.mutateAsync({
+        content: postContent,
         post_type: postType,
-        branch_location: profile.branch_assigned
-      });
+        image_url: imageUrl,
+        branch_location: currentUser?.location || 'global',
+        user_id: currentUser.id
+      })
 
-      if (error) throw error;
-
-      toast.success('Posted!');
-      setPostContent('');
-      setPostType('discussion');
-      setSelectedImage(null);
-      setImagePreview(null);
-      window.location.reload();
-    } catch (error: any) {
-      console.error('Post creation error:', error);
-      toast.error(error.message || 'Failed to create post');
+      setPostContent('')
+      setSelectedImage(null)
+      setImagePreview(null)
+      toast.success('Posted successfully!')
+    } catch (error) {
+      console.error('Failed to create post:', error)
+      toast.error('Failed to create post')
     }
-  };
+  }
 
-  const handleToggleLike = async (postId: string) => {
-    // Get current user profile ID
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data: profile } = await supabase
-      .from('staff_profiles')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile) return;
-
-    const post = posts.find(p => p.id === postId);
-    const isLiked = post?.likes?.some(like => like.user_id === profile.id) || false;
-
-    toggleLike.mutate({
-      post_id: postId,
-      user_id: profile.id,
-      isLiked,
-    });
-  };
-
-  const handleAddComment = async (postId: string) => {
-    const content = commentTexts[postId]?.trim();
-    if (!content) return;
-
-    // Get current user profile ID
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data: profile } = await supabase
-      .from('staff_profiles')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile) return;
-
-    addComment.mutate({
-      post_id: postId,
-      user_id: profile.id,
-      content,
-    });
-
-    setCommentTexts(prev => ({ ...prev, [postId]: '' }));
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading FETS Connect...</p>
-        </div>
-      </div>
-    );
+  const getPostTypeStyles = (type: string) => {
+    switch (type) {
+      case 'ship_it': return { icon: Rocket, color: 'text-blue-600', bg: 'bg-blue-50', label: 'Shipped 🚀' }
+      case 'blocker': return { icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50', label: 'Needs Help 🆘' }
+      case 'break': return { icon: Coffee, color: 'text-amber-600', bg: 'bg-amber-50', label: 'Coffee Break ☕' }
+      case 'kudos': return { icon: Trophy, color: 'text-yellow-600', bg: 'bg-yellow-50', label: 'Kudos 🏆' }
+      // Legacy support
+      case 'discussion': return { icon: MessageCircle, color: 'text-gray-600', bg: 'bg-gray-50', label: 'Discussion' }
+      case 'question': return { icon: AlertCircle, color: 'text-orange-600', bg: 'bg-orange-50', label: 'Question' }
+      default: return { icon: MessageCircle, color: 'text-gray-600', bg: 'bg-gray-50', label: 'Post' }
+    }
   }
 
   return (
-    <div>
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Create Post Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100"
-        >
-          <div className="flex gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-semibold shadow-md">
-              {currentUser?.full_name?.charAt(0) || 'U'}
-            </div>
-            <div className="flex-1">
-              <textarea
-                value={postContent}
-                onChange={(e) => setPostContent(e.target.value)}
-                placeholder="Share thoughts, ideas, or updates"
-                className="w-full p-3 border border-gray-200 rounded-xl resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                rows={3}
-              />
-
-              {/* Post Type Selector */}
-              <div className="flex gap-2 mt-3">
-                <button
-                  onClick={() => setPostType('discussion')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                    postType === 'discussion'
-                      ? 'bg-orange-100 text-orange-700 border-2 border-orange-300'
-                      : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  <span>Discussion</span>
-                </button>
-                <button
-                  onClick={() => setPostType('question')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                    postType === 'question'
-                      ? 'bg-blue-100 text-blue-700 border-2 border-blue-300'
-                      : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  <HelpCircle className="w-4 h-4" />
-                  <span>Question</span>
-                </button>
-                <button
-                  onClick={() => setPostType('kudos')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                    postType === 'kudos'
-                      ? 'bg-pink-100 text-pink-700 border-2 border-pink-300'
-                      : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  <Award className="w-4 h-4" />
-                  <span>Kudos</span>
-                </button>
-                <button
-                  onClick={() => setPostType('poll')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                    postType === 'poll'
-                      ? 'bg-teal-100 text-teal-700 border-2 border-teal-300'
-                      : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  <BarChart3 className="w-4 h-4" />
-                  <span>Poll</span>
-                </button>
-              </div>
-
-              {imagePreview && (
-                <div className="mt-3 relative">
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    className="w-full h-64 object-cover rounded-xl"
-                  />
-                  <button
-                    onClick={() => {
-                      setSelectedImage(null);
-                      setImagePreview(null);
-                    }}
-                    className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between mt-3">
-                <div className="flex gap-2">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageSelect}
-                    className="hidden"
-                  />
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <ImageIcon className="w-5 h-5" />
-                    <span className="text-sm font-medium">Photo</span>
-                  </button>
-                  <button
-                    className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <Paperclip className="w-5 h-5" />
-                    <span className="text-sm font-medium">Attach</span>
-                  </button>
-                </div>
-
-                <button
-                  onClick={handleCreatePost}
-                  disabled={(!postContent.trim() && !selectedImage) || createPost.isPending}
-                  className="px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all"
-                >
-                  {createPost.isPending ? 'Posting...' : 'Post'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Posts Feed */}
-        <AnimatePresence>
-          {posts.map((post, index) => {
-            const isLiked = post.likes?.some(like => like.user_id === currentProfileId) || false;
-            const showComments = expandedComments[post.id] || false;
-
+    <div className="max-w-3xl mx-auto space-y-6">
+      {/* Create Post Card */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+        <div className="flex gap-4 mb-4 overflow-x-auto pb-2 scrollbar-hide">
+          {postTypes.map((type) => {
+            const Icon = type.icon
+            const isSelected = postType === type.id
             return (
-              <motion.div
-                key={post.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ delay: index * 0.05 }}
-                className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-xl transition-shadow"
+              <button
+                key={type.id}
+                onClick={() => setPostType(type.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${isSelected
+                  ? `${type.color} ring-2 ring-offset-1 ${type.ring}`
+                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                  }`}
               >
-                {/* Post Header */}
-                <div className="p-6 pb-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex gap-3">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-semibold shadow-md">
-                        {post.user?.full_name?.charAt(0) || 'U'}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-semibold text-gray-900">{post.user?.full_name || 'Unknown User'}</h3>
-                          {post.post_type && (
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                              post.post_type === 'question' ? 'bg-blue-100 text-blue-700' :
-                              post.post_type === 'kudos' ? 'bg-pink-100 text-pink-700' :
-                              post.post_type === 'poll' ? 'bg-teal-100 text-teal-700' :
-                              'bg-orange-100 text-orange-700'
-                            }`}>
-                              {post.post_type === 'question' ? '❓ Question' :
-                               post.post_type === 'kudos' ? '🏆 Kudos' :
-                               post.post_type === 'poll' ? '📊 Poll' :
-                               '💬 Discussion'}
-                            </span>
-                          )}
-                          {/* Branch Badge */}
-                          {post.user?.branch_assigned && (
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium text-white flex items-center gap-1 ${getBranchColor(post.user.branch_assigned)}`}>
-                              <MapPin className="w-3 h-3" />
-                              {formatBranchName(post.user.branch_assigned)}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-500">{post.user?.role || 'Staff'}</p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                        </p>
-                      </div>
-                    </div>
-
-                    {currentProfileId === post.user_id && (
-                      <button
-                        onClick={() => deletePost.mutate(post.id)}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-
-                  <p className="mt-4 text-gray-800 leading-relaxed whitespace-pre-wrap">{post.content}</p>
-
-                  {post.image_url && (
-                    <img
-                      src={post.image_url}
-                      alt="Post"
-                      className="mt-4 w-full rounded-xl object-cover max-h-96"
-                    />
-                  )}
-                </div>
-
-                {/* Post Stats */}
-                <div className="px-6 py-2 border-t border-gray-100 flex items-center gap-4 text-sm text-gray-500">
-                  <span>{post._count?.likes || 0} likes</span>
-                  <span>{post._count?.comments || 0} comments</span>
-                </div>
-
-                {/* Post Actions */}
-                <div className="px-6 py-3 border-t border-gray-100 flex gap-2">
-                  <button
-                    onClick={() => handleToggleLike(post.id)}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-all ${
-                      isLiked
-                        ? 'text-red-500 bg-red-50'
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-                    <span>{isLiked ? 'Liked' : 'Like'}</span>
-                  </button>
-
-                  <button
-                    onClick={() => setExpandedComments(prev => ({ ...prev, [post.id]: !prev[post.id] }))}
-                    className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-100 transition-colors"
-                  >
-                    <MessageCircle className="w-5 h-5" />
-                    <span>Comment</span>
-                  </button>
-
-                  <button
-                    onClick={async () => {
-                      const { data: { user } } = await supabase.auth.getUser();
-                      if (!user) return;
-                      const { data: profile } = await supabase.from('staff_profiles').select('id').eq('user_id', user.id).single();
-                      if (!profile) return;
-                      await supabase.from('post_shares').insert({ post_id: post.id, user_id: profile.id });
-                    }}
-                    className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-100 transition-colors"
-                  >
-                    <Share2 className="w-5 h-5" />
-                    <span>Share</span>
-                  </button>
-                </div>
-
-                {/* Comments Section */}
-                {showComments && (
-                  <div className="px-6 py-4 border-t border-gray-100 bg-gray-50">
-                    {/* Existing Comments */}
-                    <div className="space-y-3 mb-4">
-                      {post.comments?.map(comment => (
-                        <div key={comment.id} className="flex gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white text-sm font-semibold shadow">
-                            {comment.user?.full_name?.charAt(0) || 'U'}
-                          </div>
-                          <div className="flex-1 bg-white rounded-xl p-3 shadow-sm">
-                            <p className="font-semibold text-sm text-gray-900">{comment.user?.full_name}</p>
-                            <p className="text-gray-700 mt-1">{comment.content}</p>
-                            <p className="text-xs text-gray-400 mt-2">
-                              {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Add Comment */}
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={commentTexts[post.id] || ''}
-                        onChange={(e) => setCommentTexts(prev => ({ ...prev, [post.id]: e.target.value }))}
-                        onKeyPress={(e) => e.key === 'Enter' && handleAddComment(post.id)}
-                        placeholder="Write a comment..."
-                        className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      />
-                      <button
-                        onClick={() => handleAddComment(post.id)}
-                        disabled={!commentTexts[post.id]?.trim()}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <Send className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            );
+                <Icon size={16} />
+                {type.label}
+              </button>
+            )
           })}
-        </AnimatePresence>
+        </div>
 
-        {posts.length === 0 && (
-          <div className="text-center py-12">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <MessageCircle className="w-10 h-10 text-indigo-600" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No posts yet</h3>
-            <p className="text-gray-500">Be the first to share something!</p>
+        <div className="flex gap-4">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-yellow-600 flex items-center justify-center text-white font-bold shadow-sm flex-shrink-0">
+            {currentUser?.full_name?.charAt(0) || 'U'}
           </div>
+          <div className="flex-1">
+            <textarea
+              value={postContent}
+              onChange={(e) => setPostContent(e.target.value)}
+              placeholder={postTypes.find(t => t.id === postType)?.placeholder || `What's happening, ${currentUser?.full_name?.split(' ')[0] || 'there'}?`}
+              className="w-full border-none resize-none focus:ring-0 text-gray-700 placeholder-gray-400 text-lg min-h-[80px] p-0"
+            />
+
+            {imagePreview && (
+              <div className="relative mt-2 inline-block">
+                <img src={imagePreview} alt="Preview" className="h-32 w-auto rounded-lg object-cover border border-gray-200" />
+                <button
+                  onClick={() => {
+                    setSelectedImage(null)
+                    setImagePreview(null)
+                  }}
+                  className="absolute -top-2 -right-2 bg-white rounded-full p-1 shadow-md border border-gray-200 hover:bg-gray-50"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-50">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-full transition-colors"
+                >
+                  <ImageIcon size={20} />
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageSelect}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <button className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-full transition-colors">
+                  <Smile size={20} />
+                </button>
+              </div>
+              <button
+                onClick={handleSubmit}
+                disabled={(!postContent.trim() && !selectedImage) || createPost.isPending}
+                className="bg-amber-600 text-white px-6 py-2 rounded-full font-medium hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 shadow-sm"
+              >
+                {createPost.isPending ? 'Posting...' : (
+                  <>
+                    Send <Send size={16} />
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Posts Feed */}
+      <div className="space-y-6">
+        {isLoading ? (
+          <div className="text-center py-10">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-amber-600 mx-auto"></div>
+          </div>
+        ) : (
+          <AnimatePresence>
+            {posts.map((post) => {
+              const typeStyle = getPostTypeStyles(post.post_type)
+              const TypeIcon = typeStyle.icon
+              const isLiked = post.likes?.some(like => like.user_id === currentUser?.id)
+
+              return (
+                <motion.div
+                  key={post.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
+                >
+                  <div className="p-4 sm:p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-600 font-bold">
+                          {post.user?.full_name?.charAt(0) || '?'}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{post.user?.full_name || 'Unknown User'}</h3>
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <span>{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
+                            <span>•</span>
+                            <span className={`flex items-center gap-1 ${typeStyle.color} bg-opacity-10 px-2 py-0.5 rounded-full bg-gray-100`}>
+                              <TypeIcon size={12} />
+                              {typeStyle.label}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      {currentUser?.id === post.user_id && (
+                        <button
+                          onClick={() => deletePost.mutate(post.id)}
+                          className="text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          <MoreHorizontal size={20} />
+                        </button>
+                      )}
+                    </div>
+
+                    <p className="text-gray-800 whitespace-pre-wrap mb-4 text-base leading-relaxed">
+                      {post.content}
+                    </p>
+
+                    {post.image_url && (
+                      <div className="mb-4 rounded-xl overflow-hidden border border-gray-100">
+                        <img src={post.image_url} alt="Post attachment" className="w-full h-auto max-h-[500px] object-cover" />
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+                      <div className="flex gap-6">
+                        <button
+                          onClick={() => {
+                            if (!currentUser) {
+                              toast.error('Please log in to like posts')
+                              return
+                            }
+                            toggleLike.mutate({
+                              post_id: post.id,
+                              user_id: currentUser.id,
+                              isLiked: !!isLiked
+                            })
+                          }}
+                          className={`flex items-center gap-2 text-sm font-medium transition-colors ${isLiked ? 'text-pink-600' : 'text-gray-500 hover:text-pink-600'
+                            }`}
+                        >
+                          <Heart size={20} className={isLiked ? 'fill-current' : ''} />
+                          <span>{post.likes?.length || 0}</span>
+                        </button>
+                        <button
+                          onClick={() => setExpandedComments(prev => ({ ...prev, [post.id]: !prev[post.id] }))}
+                          className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-amber-600 transition-colors"
+                        >
+                          <MessageCircle size={20} />
+                          <span>{post.comments?.length || 0}</span>
+                        </button>
+                      </div>
+                      <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                        <Share2 size={20} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Comments Section */}
+                  <AnimatePresence>
+                    {expandedComments[post.id] && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="bg-gray-50 border-t border-gray-100 p-4 sm:p-6"
+                      >
+                        <div className="space-y-4 mb-4">
+                          {post.comments?.map((comment) => (
+                            <div key={comment.id} className="flex gap-3">
+                              <div className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-xs font-bold text-gray-500 flex-shrink-0">
+                                {comment.user?.full_name?.charAt(0)}
+                              </div>
+                              <div className="flex-1 bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-gray-100">
+                                <div className="flex justify-between items-baseline mb-1">
+                                  <span className="text-sm font-semibold text-gray-900">{comment.user?.full_name}</span>
+                                  <span className="text-xs text-gray-400">{formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}</span>
+                                </div>
+                                <p className="text-sm text-gray-700">{comment.content}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="flex gap-3">
+                          <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-xs font-bold text-amber-700 flex-shrink-0">
+                            {currentUser?.full_name?.charAt(0)}
+                          </div>
+                          <div className="flex-1 relative">
+                            <input
+                              type="text"
+                              value={commentTexts[post.id] || ''}
+                              onChange={(e) => setCommentTexts(prev => ({ ...prev, [post.id]: e.target.value }))}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                  e.preventDefault()
+                                  if (commentTexts[post.id]?.trim() && currentUser) {
+                                    addComment.mutate({
+                                      post_id: post.id,
+                                      user_id: currentUser.id,
+                                      content: commentTexts[post.id]
+                                    })
+                                    setCommentTexts(prev => ({ ...prev, [post.id]: '' }))
+                                  }
+                                }
+                              }}
+                              placeholder="Write a comment..."
+                              className="w-full rounded-full border-gray-200 pl-4 pr-12 py-2 text-sm focus:border-amber-500 focus:ring-amber-500"
+                            />
+                            <button
+                              onClick={() => {
+                                if (commentTexts[post.id]?.trim() && currentUser) {
+                                  addComment.mutate({
+                                    post_id: post.id,
+                                    user_id: currentUser.id,
+                                    content: commentTexts[post.id]
+                                  })
+                                  setCommentTexts(prev => ({ ...prev, [post.id]: '' }))
+                                }
+                              }}
+                              disabled={!commentTexts[post.id]?.trim()}
+                              className="absolute right-1 top-1 p-1.5 text-amber-600 hover:bg-amber-50 rounded-full disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
+                            >
+                              <Send size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              )
+            })}
+          </AnimatePresence>
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default FetsConnectNew;
+export default FetsConnectNew

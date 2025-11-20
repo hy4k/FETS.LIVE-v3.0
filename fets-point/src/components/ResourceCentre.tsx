@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Search, Filter, Plus, AlertTriangle, Phone, Copy, ExternalLink,
+  Search, Filter, Plus, AlertTriangle, Phone, Copy, ExternalLink, FolderLock,
   Pin, Share2, BookOpen, FileText, Zap, Clock, Tag, Star,
   X, ChevronRight, Download, Eye, Edit, Trash2, Bookmark,
   Shield, Wifi, Database, Settings, Users, Activity, Layers,
@@ -100,14 +100,6 @@ export default function ResourceCentre() {
     description: ''
   })
 
-  // Stats
-  const [stats, setStats] = useState({
-    total_resources: 0,
-    pinned_count: 0,
-    emergency_count: 0,
-    recent_updates: 0
-  })
-
   const loadCategories = useCallback(async () => {
     try {
       const { data, error } = await supabase
@@ -135,7 +127,6 @@ export default function ResourceCentre() {
 
       if (profileError) {
         console.error('Profile error:', profileError)
-        toast.error('Failed to load user profile')
       }
       setUserRole(userProfile?.role || null)
 
@@ -156,27 +147,14 @@ export default function ResourceCentre() {
 
       const { data, error } = await query
       if (error) {
-        console.error('Error loading items:', error)
         throw new Error(`Failed to load resources: ${error.message}`)
       }
 
       setItems(data || [])
-
-      // Calculate stats
-      const weekAgo = new Date()
-      weekAgo.setDate(weekAgo.getDate() - 7)
-
-      setStats({
-        total_resources: data?.length || 0,
-        pinned_count: pins.length,
-        emergency_count: data?.filter(i => i.type === 'emergency').length || 0,
-        recent_updates: data?.filter(i => new Date(i.updated_at) > weekAgo).length || 0
-      })
     } catch (error: any) {
       console.error('Error loading items:', error)
       toast.error(error?.message || 'Failed to load resources')
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, selectedCategory, searchQuery])
 
   const loadPins = useCallback(async () => {
@@ -189,13 +167,11 @@ export default function ResourceCentre() {
         .eq('user_id', profile.id)
 
       if (error) {
-        console.error('Error loading pins:', error)
         throw new Error(`Failed to load pins: ${error.message}`)
       }
       setPins(data || [])
     } catch (error: any) {
       console.error('Error loading pins:', error)
-      toast.error(error?.message || 'Failed to load pinned items')
     }
   }, [profile])
 
@@ -214,7 +190,6 @@ export default function ResourceCentre() {
 
   useEffect(() => {
     loadAllData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategory, searchQuery])
 
   const pinnedItems = useMemo(() => {
@@ -259,10 +234,6 @@ export default function ResourceCentre() {
     setShowDetailModal(true)
   }
 
-  const getCategoryById = (categoryId: string) => {
-    return categories.find(c => c.id === categoryId)
-  }
-
   const createResource = async () => {
     if (!profile?.id) {
       toast.error('You must be logged in to create a resource')
@@ -281,7 +252,7 @@ export default function ResourceCentre() {
 
     setSubmitting(true)
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('vault')
         .insert({
           title: newResource.title,
@@ -453,256 +424,190 @@ export default function ResourceCentre() {
     setShowEditModal(true)
   }
 
-  const handleEditCategory = (category: VaultCategory) => {
-    setCategoryForm({
-      id: category.id,
-      name: category.name,
-      icon: category.icon,
-      color: category.color,
-      description: category.description || ''
-    })
-    setShowCategoryModal(true)
-  }
+  const isAdmin = userRole === 'admin' || userRole === 'super_admin'
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl animate-pulse">
-            <BookOpen className="w-10 h-10 text-white" />
-          </div>
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-700 font-semibold text-lg">Loading Resource Centre...</p>
-        </div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
       </div>
     )
   }
 
-  const isAdmin = userRole === 'admin' || userRole === 'super_admin'
-
   return (
-    <div>
-      {/* Search and Controls */}
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 mb-6">
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex-1 min-w-[200px] relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+    <div className="max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Resource Centre</h1>
+          <p className="text-gray-500 mt-1">Central repository for training, SOPs, and credentials.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
               placeholder="Search resources..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+              className="pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 w-full md:w-64 transition-all shadow-sm"
             />
           </div>
           {isAdmin && (
-            <>
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-xl font-semibold transition-all"
-              >
-                <Plus className="w-4 h-4" />
-                Add Resource
-              </button>
-              <button
-                onClick={() => setShowCategoryModal(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-white border-2 border-indigo-200 text-indigo-600 rounded-xl hover:bg-indigo-50 transition-all font-medium"
-              >
-                <Settings className="w-4 h-4" />
-                Manage Categories
-              </button>
-            </>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+              title="Add New Resource"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
           )}
         </div>
       </div>
 
-      {/* Main Content */}
-      <div>
-        {/* Stats Dashboard */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-2xl p-5 shadow-md border border-gray-200">
-            <div className="flex items-center gap-3 mb-2">
-              <Database className="w-5 h-5 text-indigo-600" />
-              <p className="text-sm font-semibold text-gray-600">Total Resources</p>
-            </div>
-            <p className="text-3xl font-bold text-gray-900">{stats.total_resources}</p>
-          </div>
-
-          <div className="bg-white rounded-2xl p-5 shadow-md border border-gray-200">
-            <div className="flex items-center gap-3 mb-2">
-              <Pin className="w-5 h-5 text-purple-600" />
-              <p className="text-sm font-semibold text-gray-600">Pinned</p>
-            </div>
-            <p className="text-3xl font-bold text-gray-900">{stats.pinned_count}</p>
-          </div>
-
-          <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-2xl p-5 shadow-md border-2 border-red-300">
-            <div className="flex items-center gap-3 mb-2">
-              <AlertTriangle className="w-5 h-5 text-red-600" />
-              <p className="text-sm font-bold text-red-700">Emergency</p>
-            </div>
-            <p className="text-3xl font-bold text-red-900">{stats.emergency_count}</p>
-          </div>
-
-          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-5 shadow-md border-2 border-green-300">
-            <div className="flex items-center gap-3 mb-2">
-              <TrendingUp className="w-5 h-5 text-green-600" />
-              <p className="text-sm font-bold text-green-700">Recent Updates</p>
-            </div>
-            <p className="text-3xl font-bold text-green-900">{stats.recent_updates}</p>
-          </div>
-        </div>
-
-        {/* Categories */}
-        <div className="mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Categories</h2>
-          <div className="flex items-center gap-3 overflow-x-auto pb-2">
-            <button
-              onClick={() => setSelectedCategory(null)}
-              className={`px-6 py-3 rounded-xl font-semibold transition-all whitespace-nowrap ${
-                selectedCategory === null
-                  ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg'
-                  : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-indigo-300'
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Sidebar Categories */}
+        <div className="w-full lg:w-64 flex-shrink-0 space-y-1">
+          <button
+            onClick={() => setSelectedCategory(null)}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${selectedCategory === null
+              ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-gray-200'
+              : 'text-gray-600 hover:bg-gray-100'
               }`}
-            >
-              All Resources
-            </button>
-            {categories.map(category => (
-              <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
-                className={`px-6 py-3 rounded-xl font-semibold transition-all whitespace-nowrap ${
-                  selectedCategory === category.id
-                    ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg'
-                    : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-indigo-300'
+          >
+            <Layers className="w-4 h-4" />
+            All Resources
+          </button>
+          {categories.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${selectedCategory === cat.id
+                ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-gray-200'
+                : 'text-gray-600 hover:bg-gray-100'
                 }`}
-              >
-                {category.name}
-              </button>
-            ))}
-          </div>
+            >
+              <FolderLock className="w-4 h-4" />
+              {cat.name}
+            </button>
+          ))}
+
+          {isAdmin && (
+            <button
+              onClick={() => setShowCategoryModal(true)}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-400 hover:text-gray-600 hover:bg-gray-50 mt-4 border-t border-gray-100 transition-colors"
+            >
+              <Settings className="w-4 h-4" />
+              Manage Categories
+            </button>
+          )}
         </div>
 
-        {/* Pinned Items */}
-        {pinnedItems.length > 0 && (
-          <div className="mb-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Pin className="w-5 h-5 text-indigo-600" />
-              Quick Access
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {pinnedItems.map(item => {
-                const typeConfig = TYPE_CONFIG[item.type as keyof typeof TYPE_CONFIG] || TYPE_CONFIG.document
-                const TypeIcon = typeConfig.icon
-                const priorityConfig = PRIORITY_CONFIG[item.priority as keyof typeof PRIORITY_CONFIG] || PRIORITY_CONFIG.normal
-
-                return (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-white rounded-xl shadow-md border-2 border-indigo-200 p-4 hover:shadow-xl transition-all cursor-pointer"
-                    onClick={() => viewDetails(item)}
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className={`w-12 h-12 ${typeConfig.color} rounded-xl flex items-center justify-center shadow-lg`}>
-                        <TypeIcon className="w-6 h-6 text-white" />
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          togglePin(item.id)
-                        }}
-                        className="p-2 rounded-lg hover:bg-yellow-50 transition-colors"
-                      >
-                        <Pin className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                      </button>
-                    </div>
-                    <h3 className="font-bold text-gray-900 mb-2 line-clamp-2">{item.title}</h3>
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{item.description}</p>
-                    <div className="flex items-center gap-2">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${priorityConfig.color} border`}>
-                        {priorityConfig.label}
-                      </span>
-                    </div>
-                  </motion.div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* All Resources */}
-        <div>
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
-            {selectedCategory ? categories.find(c => c.id === selectedCategory)?.name : 'All Resources'}
-          </h2>
-          {items.length === 0 ? (
-            <div className="bg-white rounded-2xl p-16 text-center shadow-md border border-gray-200">
-              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <BookOpen className="w-10 h-10 text-gray-400" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">No resources found</h3>
-              <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                {searchQuery || selectedCategory
-                  ? 'Try adjusting your filters to see more results.'
-                  : isAdmin ? 'Click the "Add Resource" button to create your first resource.' : 'No resources available yet.'}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <AnimatePresence mode="popLayout">
-                {items.map(item => {
+        {/* Main Content */}
+        <div className="flex-1 min-w-0">
+          {/* Quick Access Section */}
+          {pinnedItems.length > 0 && !searchQuery && !selectedCategory && (
+            <div className="mb-8">
+              <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Pin className="w-3 h-3" /> Quick Access
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                {pinnedItems.map(item => {
                   const typeConfig = TYPE_CONFIG[item.type as keyof typeof TYPE_CONFIG] || TYPE_CONFIG.document
                   const TypeIcon = typeConfig.icon
-                  const priorityConfig = PRIORITY_CONFIG[item.priority as keyof typeof PRIORITY_CONFIG] || PRIORITY_CONFIG.normal
-                  const isPinned = pins.some(p => p.item_id === item.id)
+                  const colorClass = typeConfig.color.split('-')[1] // e.g., 'purple' from 'bg-purple-500'
 
                   return (
-                    <motion.div
+                    <div
                       key={item.id}
-                      layout
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      className="bg-white rounded-xl shadow-md border border-gray-200 p-4 hover:shadow-xl transition-all cursor-pointer group"
                       onClick={() => viewDetails(item)}
+                      className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all cursor-pointer group relative"
                     >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className={`w-12 h-12 ${typeConfig.color} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
-                          <TypeIcon className="w-6 h-6 text-white" />
+                      <div className="flex items-start justify-between mb-2">
+                        <div className={`p-2 rounded-lg ${typeConfig.color} bg-opacity-10 text-${colorClass}-600`}>
+                          <TypeIcon size={18} />
                         </div>
-                        <div className="flex items-center gap-2">
-                          {item.is_confidential && (
-                            <Shield className="w-4 h-4 text-red-500" />
-                          )}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              togglePin(item.id)
-                            }}
-                            className="p-2 rounded-lg hover:bg-yellow-50 transition-colors"
-                          >
-                            <Pin className={`w-4 h-4 ${isPinned ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400'}`} />
-                          </button>
-                        </div>
+                        <Pin className="w-4 h-4 text-amber-400 fill-amber-400" />
                       </div>
-                      <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">{item.title}</h3>
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{item.description}</p>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${priorityConfig.color} border`}>
-                          {priorityConfig.label}
-                        </span>
-                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
-                          {typeConfig.label}
-                        </span>
-                      </div>
-                    </motion.div>
+                      <h3 className="font-semibold text-gray-900 truncate pr-6">{item.title}</h3>
+                      <p className="text-xs text-gray-500 mt-1 line-clamp-1">{item.description}</p>
+                    </div>
                   )
                 })}
-              </AnimatePresence>
+              </div>
             </div>
           )}
+
+          {/* Resources List */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-900">
+                {selectedCategory ? categories.find(c => c.id === selectedCategory)?.name : 'Library'}
+              </h2>
+              <span className="text-sm text-gray-500">{items.length} items</span>
+            </div>
+
+            {items.length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-xl border border-gray-200 border-dashed">
+                <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Search className="w-5 h-5 text-gray-400" />
+                </div>
+                <p className="text-gray-900 font-medium">No resources found</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  {searchQuery ? 'Try adjusting your search terms' : 'Select a different category or add a new resource'}
+                </p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="divide-y divide-gray-100">
+                  {items.map(item => {
+                    const typeConfig = TYPE_CONFIG[item.type as keyof typeof TYPE_CONFIG] || TYPE_CONFIG.document
+                    const TypeIcon = typeConfig.icon
+                    const colorClass = typeConfig.color.split('-')[1]
+                    const isPinned = pins.some(p => p.item_id === item.id)
+
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => viewDetails(item)}
+                        className="p-4 hover:bg-gray-50 transition-colors cursor-pointer flex items-center gap-4 group"
+                      >
+                        <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${typeConfig.color} bg-opacity-10`}>
+                          <TypeIcon size={20} className={`text-${colorClass}-600`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-medium text-gray-900 truncate">{item.title}</h3>
+                            {item.is_confidential && (
+                              <div className="flex-shrink-0" title="Confidential">
+                                <Shield className="w-3 h-3 text-red-500" />
+                              </div>
+                            )}
+                            {item.priority === 'high' && (
+                              <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold uppercase rounded">
+                                High
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-500 truncate">{item.description}</p>
+                        </div>
+                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); togglePin(item.id); }}
+                            className={`p-2 rounded-full hover:bg-gray-200 transition-colors ${isPinned ? 'text-amber-500' : 'text-gray-400'}`}
+                            title={isPinned ? "Unpin" : "Pin to Quick Access"}
+                          >
+                            <Pin className={`w-4 h-4 ${isPinned ? 'fill-amber-500' : ''}`} />
+                          </button>
+                          <ChevronRight className="w-4 h-4 text-gray-300" />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -766,6 +671,17 @@ export default function ResourceCentre() {
           typeConfig={TYPE_CONFIG[selectedItem.type as keyof typeof TYPE_CONFIG] || TYPE_CONFIG.document}
           priorityConfig={PRIORITY_CONFIG[selectedItem.priority as keyof typeof PRIORITY_CONFIG] || PRIORITY_CONFIG.normal}
           isAdmin={isAdmin}
+        />
+      )}
+      {/* Category Modal */}
+      {showCategoryModal && (
+        <CategoryFormModal
+          category={categoryForm}
+          setCategory={setCategoryForm}
+          onSave={saveCategory}
+          onClose={() => setShowCategoryModal(false)}
+          submitting={submitting}
+          onDelete={categoryForm.id ? () => deleteCategory(categoryForm.id) : undefined}
         />
       )}
     </div>
@@ -1057,6 +973,80 @@ function ResourceDetailModal({ item, onClose, onEdit, onPin, isPinned, copyToCli
           >
             Close
           </button>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
+// Category Form Modal Component
+function CategoryFormModal({ category, setCategory, onSave, onClose, submitting, onDelete }: any) {
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+      >
+        <div className="p-6 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+          <h2 className="text-xl font-bold text-gray-900">{category.id ? 'Edit Category' : 'New Category'}</h2>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-200 transition-colors">
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Name *</label>
+            <input
+              type="text"
+              value={category.name}
+              onChange={(e) => setCategory({ ...category, name: e.target.value })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all"
+              placeholder="e.g. Training, SOPs"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+            <textarea
+              value={category.description}
+              onChange={(e) => setCategory({ ...category, description: e.target.value })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 resize-none transition-all"
+              rows={3}
+              placeholder="Optional description"
+            />
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-gray-200 flex items-center justify-between">
+          <div>
+            {onDelete && (
+              <button
+                onClick={onDelete}
+                className="text-red-600 hover:text-red-700 font-medium text-sm flex items-center gap-1"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onSave}
+              disabled={submitting}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-medium disabled:opacity-50 flex items-center gap-2"
+            >
+              {submitting ? 'Saving...' : 'Save Category'}
+            </button>
+          </div>
         </div>
       </motion.div>
     </div>

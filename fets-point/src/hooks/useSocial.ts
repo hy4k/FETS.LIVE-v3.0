@@ -54,7 +54,7 @@ export const useSocialPosts = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
       // Add count
       return (data || []).map(post => ({
         ...post,
@@ -93,17 +93,23 @@ export const useCreatePost = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ content, image_url, user_id }: { content: string; image_url?: string; user_id: string }) => {
+    mutationFn: async ({ content, image_url, user_id, post_type, branch_location }: { content: string; image_url?: string; user_id: string; post_type?: string; branch_location?: string }) => {
       // Insert without returning to avoid RLS issues
       const { error } = await supabase
         .from('social_posts')
-        .insert([{ content, image_url, user_id }]);
+        .insert([{
+          content,
+          image_url,
+          user_id,
+          post_type,
+          branch_location
+        }]);
 
       if (error) throw error;
-      
+
       // Fetch the post after insertion
       await new Promise(resolve => setTimeout(resolve, 100));
-      return { content, image_url, user_id };
+      return { content, image_url, user_id, post_type, branch_location };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['social-posts'] });
@@ -123,11 +129,11 @@ export const useToggleLike = () => {
     mutationFn: async ({ post_id, user_id, isLiked }: { post_id: string; user_id: string; isLiked: boolean }) => {
       if (isLiked) {
         // Unlike - use RPC to bypass RLS
-        const { error } = await supabase.rpc('unlike_post', { 
-          p_post_id: post_id, 
-          p_user_id: user_id 
+        const { error } = await supabase.rpc('unlike_post', {
+          p_post_id: post_id,
+          p_user_id: user_id
         });
-        
+
         // Fallback to direct delete if RPC doesn't exist
         if (error && error.message?.includes('function')) {
           const { error: deleteError } = await supabase
@@ -141,11 +147,11 @@ export const useToggleLike = () => {
         }
       } else {
         // Like - use RPC to bypass RLS
-        const { error } = await supabase.rpc('like_post', { 
-          p_post_id: post_id, 
-          p_user_id: user_id 
+        const { error } = await supabase.rpc('like_post', {
+          p_post_id: post_id,
+          p_user_id: user_id
         });
-        
+
         // Fallback to direct insert if RPC doesn't exist
         if (error && error.message?.includes('function')) {
           const { error: insertError } = await supabase
@@ -174,12 +180,12 @@ export const useAddComment = () => {
   return useMutation({
     mutationFn: async ({ post_id, user_id, content }: { post_id: string; user_id: string; content: string }) => {
       // Use RPC to bypass RLS issues
-      const { error } = await supabase.rpc('add_comment', { 
-        p_post_id: post_id, 
+      const { error } = await supabase.rpc('add_comment', {
+        p_post_id: post_id,
         p_user_id: user_id,
         p_content: content
       });
-      
+
       // Fallback to direct insert if RPC doesn't exist
       if (error && error.message?.includes('function')) {
         const { error: insertError } = await supabase
@@ -189,7 +195,7 @@ export const useAddComment = () => {
       } else if (error) {
         throw error;
       }
-      
+
       return { post_id, user_id, content };
     },
     onSuccess: () => {
@@ -238,7 +244,7 @@ export const useUploadImage = () => {
 
       // Primary bucket to use
       const primaryBucket = 'post-images';
-      
+
       // Try primary bucket first
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from(primaryBucket)
@@ -249,10 +255,10 @@ export const useUploadImage = () => {
 
       if (uploadError) {
         console.error('❌ Upload failed:', uploadError);
-        
+
         // Try fallback buckets
         const fallbackBuckets = ['attachments', 'public', 'avatars', 'images'];
-        
+
         for (const bucketName of fallbackBuckets) {
           console.log(`🔄 Trying fallback bucket: ${bucketName}`);
           const { error: fallbackError } = await supabase.storage
@@ -267,12 +273,12 @@ export const useUploadImage = () => {
             const { data } = supabase.storage
               .from(bucketName)
               .getPublicUrl(filePath);
-            
+
             toast.success('Image uploaded! 📸');
             return data.publicUrl;
           }
         }
-        
+
         // All buckets failed
         console.error('❌ All storage buckets failed');
         toast.error('Image upload failed. Creating bucket... Please run CREATE-STORAGE-BUCKET.bat');
