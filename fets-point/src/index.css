@@ -177,7 +177,7 @@ body {
 /* Apply new gradient background */
 body,
 .main-content-area {
-  background: var(--bg-gradient) !important;
+  background: var(--bg-gradient);
   color: var(--color-text-primary);
 }
 

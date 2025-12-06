@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { Calendar, Plus, ChevronLeft, ChevronRight, Edit, Trash2, X, Check, Clock, Users, Eye, MapPin, Building } from 'lucide-react'
+import { Calendar, Plus, ChevronLeft, ChevronRight, Edit, Trash2, X, Check, Clock, Users, Eye, MapPin, Building, Filter } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth'
 import { useBranch } from '../hooks/useBranch'
 import { useBranchFilter } from '../hooks/useBranchFilter'
@@ -261,15 +262,15 @@ export function FetsCalendarPremium() {
 
   if (loading) {
     return (
-      <div className="page-wrapper--fets-calendar flex items-center justify-center min-h-screen">
-        <div className="unified-card p-10 flex flex-col items-center space-y-6 border-t-4 border-t-rose-500">
+      <div className="flex items-center justify-center min-h-screen bg-[#e0e5ec]">
+        <div className="neomorphic-card p-8 flex flex-col items-center space-y-6">
           <div className="relative">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-rose-200"></div>
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-rose-500 border-t-transparent absolute inset-0"></div>
           </div>
           <div className="text-center">
             <p className="text-gray-800 font-semibold text-lg mb-1">Loading Calendar</p>
-            <p className="text-gray-500 text-sm">Fetching latest sessions…</p>
+            <p className="text-gray-500 text-sm">Fetching latest sessions...</p>
           </div>
         </div>
       </div>
@@ -277,62 +278,79 @@ export function FetsCalendarPremium() {
   }
 
   return (
-    <div className="page-wrapper--fets-calendar min-h-screen">
-      {/* Premium Header Section */}
-      <div className="relative border-b border-rose-100" style={{ background: '#ff6680' }}>
-        <div className="relative px-4 md:px-8 py-8 md:py-12 max-w-7xl mx-auto">
-          <div className="flex flex-col lg:flex-row items-center justify-between space-y-8 lg:space-y-0">
+    <div className="min-h-screen -mt-32 pt-48 bg-[#e0e5ec]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
 
-            {/* Brand Section */}
-            <div className="flex items-center space-x-4">
-              <img
-                src="/fets-calendar-header.jpg"
-                alt="FETS Calendar"
-                className="w-auto object-contain"
-                style={{ height: '10.375rem' }}
-              />
-              <span className="text-sm text-rose-100">Session planning and overview</span>
-            </div>
+      {/* Functional Notification Banner */}
+      <div className="h-6 -mx-8 -mt-12 mb-8"></div>
 
-            {/* Navigation Controls */}
-            <div className="flex flex-col space-y-4">
-              {/* Month Navigation */}
-              <div className="flex items-center bg-white/20 backdrop-blur rounded-xl p-1 border border-white/30 shadow-lg">
-                <button
-                  onClick={() => navigateMonth('prev')}
-                  className="p-3 hover:bg-white/30 rounded-lg transition-all duration-200 text-white"
-                  title="Previous month"
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </button>
-                <div className="px-6 py-2 text-white font-semibold text-base min-w-[180px] text-center">
-                  {monthYear}
-                </div>
-                <button
-                  onClick={() => navigateMonth('next')}
-                  className="p-3 hover:bg-white/30 rounded-lg transition-all duration-200 text-white"
-                  title="Next month"
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </button>
-              </div>
+      <div className="max-w-[1800px] mx-auto px-6">
+        {/* Executive Header - Neumorphic */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-8 mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4"
+        >
+          <div>
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gold-gradient mb-2 uppercase">
+              FETS Calendar
+            </h1>
+            <p className="text-lg text-gray-600 font-medium">
+              {activeBranch?.name ? `${activeBranch.name} · ` : ''}Session Planning & Overview
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-gray-500 font-semibold uppercase tracking-wider text-sm">
+              {new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
+          </div>
+        </motion.div>
 
-              {/* Add Session Button */}
+        {/* Control Toolbar - Neumorphic */}
+        <div className="neomorphic-card p-4 mb-8 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center space-x-4">
+            {/* Month Navigation */}
+            <div className="flex items-center space-x-3">
               <button
-                onClick={() => openModal()}
-                className="group relative px-6 py-3 bg-white text-rose-700 font-semibold rounded-xl flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"
+                onClick={() => navigateMonth('prev')}
+                className="neomorphic-btn-icon"
+                title="Previous month"
               >
-                <Plus className="h-5 w-5 mr-2" />
-                <span className="text-sm tracking-wide">Add Session</span>
+                <ChevronLeft className="h-5 w-5 text-gray-600" />
+              </button>
+              <div className="text-xl font-bold text-gray-700 min-w-[200px] text-center">
+                {monthYear}
+              </div>
+              <button
+                onClick={() => navigateMonth('next')}
+                className="neomorphic-btn-icon"
+                title="Next month"
+              >
+                <ChevronRight className="h-5 w-5 text-gray-600" />
               </button>
             </div>
+
+            <button
+              onClick={() => setCurrentDate(new Date())}
+              className="neomorphic-btn px-4 py-2 text-sm font-semibold text-gray-600"
+            >
+              Today
+            </button>
+          </div>
+
+          <div className="flex items-center space-x-4">
+            {/* Add Session Button */}
+            <button
+              onClick={() => openModal()}
+              className="neomorphic-btn px-4 py-2 text-rose-700 flex items-center space-x-2 font-bold hover:text-rose-800 transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add Session</span>
+            </button>
           </div>
         </div>
-      </div>
 
-      {/* Premium Calendar Grid */}
-      <div className="px-8 py-8 max-w-7xl mx-auto">
-        <div className="unified-card rounded-2xl overflow-hidden border-t-4 border-t-rose-500">
+        {/* Main Grid Conatiner - Neumorphic */}
+        <div className="neomorphic-card p-6 min-h-[600px] border-t-4 border-t-rose-500">
           {/* Day Headers */}
           <div className="grid grid-cols-7 bg-gradient-to-r from-rose-50 to-pink-50 border-b border-rose-100">
             {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day, index) => (
@@ -361,24 +379,22 @@ export function FetsCalendarPremium() {
                 <div
                   key={index}
                   onClick={() => openDetailsModal(date)}
-                  className={`h-36 p-4 cursor-pointer transition-all duration-200 group ${
-                    isCurrentDay
+                  className={`h-36 p-4 cursor-pointer transition-all duration-200 group ${isCurrentDay
                       ? 'bg-gradient-to-br from-rose-50 to-pink-50 ring-2 ring-rose-400 ring-inset'
                       : hasEvents
-                      ? 'bg-white hover:bg-rose-50/50'
-                      : 'bg-gray-50'
-                  }`}
+                        ? 'bg-white hover:bg-rose-50/50'
+                        : 'bg-gray-50'
+                    }`}
                 >
                   <div className="h-full flex flex-col">
                     {/* Date Number */}
                     <div className="flex items-center justify-between mb-3">
-                      <div className={`text-lg font-bold transition-colors ${
-                        isCurrentDay
+                      <div className={`text-lg font-bold transition-colors ${isCurrentDay
                           ? 'text-rose-700'
                           : date.getMonth() === currentDate.getMonth()
                             ? 'text-gray-900'
                             : 'text-gray-400'
-                      }`}>
+                        }`}>
                         {date.getDate()}
                       </div>
                       {isCurrentDay && <div className="w-2 h-2 bg-rose-700 rounded-full"></div>}
@@ -491,11 +507,10 @@ export function FetsCalendarPremium() {
                             </div>
                             <div className="text-center bg-white rounded-xl px-5 py-3 border border-rose-200">
                               <div className="text-gray-600 text-sm font-medium mb-1">Remaining Seats</div>
-                              <div className={`text-2xl font-bold ${
-                                remainingSeats > 20 ? 'text-green-600' :
-                                remainingSeats > 10 ? 'text-yellow-600' :
-                                'text-red-600'
-                              }`}>
+                              <div className={`text-2xl font-bold ${remainingSeats > 20 ? 'text-green-600' :
+                                  remainingSeats > 10 ? 'text-yellow-600' :
+                                    'text-red-600'
+                                }`}>
                                 {remainingSeats}
                               </div>
                             </div>

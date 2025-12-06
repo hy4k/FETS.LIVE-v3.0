@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Users, Plus, Search, Filter, Eye, Edit, UserCheck, UserX, Clock, Phone, Mail, X, Calendar, Upload, Trash2, MoreVertical } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useBranch } from '../hooks/useBranch'
@@ -43,24 +44,24 @@ interface EditCandidateData {
   clientName: string
 }
 
-function ModernStatsCard({ 
-  title, 
-  value, 
-  subtitle, 
-  icon: Icon, 
-  status = 'primary', 
-  onClick, 
-  clickable = false 
+function ModernStatsCard({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  status = 'primary',
+  onClick,
+  clickable = false
 }: ModernStatsCardProps) {
   const statusClass = {
     positive: 'status-positive',
-    warning: 'status-warning', 
+    warning: 'status-warning',
     neutral: 'status-neutral',
     primary: 'status-warning' // Default to primary gradient
   }[status]
 
   return (
-    <div 
+    <div
       className={`stats-card ${clickable ? 'cursor-pointer' : ''}`}
       onClick={clickable ? onClick : undefined}
     >
@@ -176,7 +177,7 @@ export function CandidateTracker() {
       user_id: user?.id,
       client_name: newCandidate.clientName || null
     }
-    
+
     // Add branch location if not in global view
     if (!isGlobalView) {
       candidateData.branch_location = activeBranch
@@ -213,7 +214,7 @@ export function CandidateTracker() {
         toast.error('Failed to update candidate: ' + error.message)
         return
       }
-      
+
       console.log('Candidate updated successfully!')
       refetch()
       setShowEditCandidateModal(false)
@@ -242,7 +243,7 @@ export function CandidateTracker() {
         toast.error('Failed to delete candidate: ' + error.message)
         return
       }
-      
+
       console.log('Candidate deleted successfully!')
       refetch()
       toast.success('Candidate deleted successfully!')
@@ -316,7 +317,7 @@ export function CandidateTracker() {
 
       const text = await uploadFile.text()
       const lines = text.split('\n').filter(line => line.trim())
-      
+
       if (lines.length < 2) {
         throw new Error('File must contain at least a header row and one data row')
       }
@@ -391,7 +392,7 @@ export function CandidateTracker() {
 
       setUploadResults({ success: successCount, errors })
       setUploadStatus(errors.length === dataLines.length ? 'error' : 'success')
-      
+
       if (successCount > 0) {
         refetch()
       }
@@ -502,682 +503,724 @@ export function CandidateTracker() {
   }
 
   return (
-    <div className="dashboard-modern flex-1 p-4 sm:p-6 overflow-auto">
-      {/* Modern Header Section */}
-      <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-3xl p-6 mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-white" style={{ fontFamily: "'Playfair Display', serif" }}>Candidate Tracker</h1>
-            <p className="text-white/90 mt-1">Track and manage candidate registrations</p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="text-right">
-              <p className="text-4xl font-bold text-white" style={{ fontFamily: "'Playfair Display', serif" }}>{candidates.length}</p>
-              <p className="text-sm text-white/90">Total Candidates</p>
+    <>
+      <div className="min-h-screen -mt-32 pt-48 bg-[#e0e5ec]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+        {/* Functional Notification Banner */}
+        <div className="h-6 -mx-8 -mt-12 mb-8"></div>
+
+        <div className="max-w-[1800px] mx-auto px-6">
+          {/* Executive Header - Neumorphic */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-8 mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4"
+          >
+            <div>
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white mb-2 uppercase text-gold-gradient">
+                Candidate Tracker
+              </h1>
+              <p className="text-lg text-gray-600 font-medium">
+                {activeBranch ? `${activeBranch.charAt(0).toUpperCase() + activeBranch.slice(1)} · ` : ''}Manage and monitor examination candidates
+              </p>
             </div>
             <div className="text-right">
-              <p className="text-4xl font-bold text-white" style={{ fontFamily: "'Playfair Display', serif" }}>{todaysCandidates.length}</p>
-              <p className="text-sm text-white/90">Today's Registrations</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Modern Search and Filters */}
-      <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200 shadow-lg p-6 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <input
-                type="text"
-                placeholder="Search candidates..."
-                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
-          <div>
-            <input
-              type="date"
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900"
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
-              placeholder="Filter by exam date"
-            />
-          </div>
-        </div>
-        <div className="mt-4">
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
-            <span className="text-sm font-medium text-gray-600">Clients:</span>
-            {['all','PROMETRIC','ETS','PEARSON VUE','PSI','OTHERS'].map(c => {
-              const label = c.toUpperCase()
-              const active = filterClient.toUpperCase() === label
-              return (
-                <button key={c} onClick={() => setFilterClient(c)} className={`px-3 py-1.5 rounded-full border text-xs font-semibold whitespace-nowrap ${active ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}>
-                  {label === 'ALL' ? 'ALL CLIENTS' : label}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Modern Candidates List */}
-      <div className="dashboard-section">
-        <div className="flex items-center justify-between mb-3 gap-2">
-          <div className="flex items-center gap-2">
-            <button onClick={() => setShowNewCandidateModal(true)} className="btn-primary-modern flex items-center">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Candidate
-            </button>
-            <button onClick={() => setShowBulkUploadModal(true)} className="btn-secondary-modern flex items-center">
-              <Upload className="h-4 w-4 mr-2" />
-              Bulk Add
-            </button>
-          </div>
-          <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">
-            <button onClick={() => setViewMode('grid')} className={`px-3 py-1.5 text-sm ${viewMode==='grid'?'bg-gray-100 text-gray-900':'bg-white text-gray-600'}`}>Grid</button>
-            <button onClick={() => setViewMode('list')} className={`px-3 py-1.5 text-sm ${viewMode==='list'?'bg-gray-100 text-gray-900':'bg-white text-gray-600'}`}>List</button>
-            <button onClick={() => setViewMode('export')} className={`px-3 py-1.5 text-sm ${viewMode==='export'?'bg-gray-100 text-gray-900':'bg-white text-gray-600'}`}>Export</button>
-          </div>
-        </div>
-
-        {viewMode === 'list' && (
-        <div className="space-y-4">
-          {filteredCandidates.map((candidate) => (
-            <div key={candidate.id} className="bg-white rounded-2xl shadow-lg p-6 transition-all hover:shadow-xl">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center space-x-4">
-                  <div>
-                    <h3 className="text-2xl font-bold text-gray-900" style={{ fontFamily: "'Playfair Display', serif" }}>{candidate.fullName}</h3>
-                    <p className="text-gray-500">{candidate.confirmationNumber}</p>
-                  </div>
+              <div className="flex gap-8 mb-2 justify-end">
+                <div className="text-right">
+                  <p className="text-3xl font-bold text-gray-700">{candidates.length}</p>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Total Candidates</p>
                 </div>
+                <div className="text-right">
+                  <p className="text-3xl font-bold text-yellow-600">{todaysCandidates.length}</p>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Today's Registrations</p>
+                </div>
+              </div>
+              <p className="text-gray-500 font-semibold uppercase tracking-wider text-sm">
+                {new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Modern Search and Filters */}
+          <div className="neomorphic-card p-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2">
                 <div className="relative">
-                  <button onClick={() => setOpenMenu(openMenu === candidate.id ? null : candidate.id)} className="p-2 rounded-full hover:bg-gray-100">
-                    <MoreVertical className="h-5 w-5" />
-                  </button>
-                  {openMenu === candidate.id && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
-                      <div className="py-1">
-                        <button onClick={() => openEditModal(candidate)} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Edit</button>
-                        <button onClick={() => handleDeleteCandidate(candidate.id, candidate.fullName)} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Delete</button>
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <input
+                    type="text"
+                    placeholder="Search candidates..."
+                    placeholder="Search candidates..."
+                    className="w-full pl-10 pr-4 py-3 border-none rounded-xl bg-[#e0e5ec] shadow-[inset_3px_3px_6px_#bec3c9,inset_-3px_-3px_6px_#ffffff] focus:outline-none focus:ring-2 focus:ring-yellow-400 text-gray-700 placeholder-gray-500"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div>
+                <input
+                  type="date"
+                  className="w-full px-4 py-3 border-none rounded-xl bg-[#e0e5ec] shadow-[inset_3px_3px_6px_#bec3c9,inset_-3px_-3px_6px_#ffffff] focus:outline-none focus:ring-2 focus:ring-yellow-400 text-gray-700"
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                  placeholder="Filter by exam date"
+                />
+              </div>
+            </div>
+            <div className="mt-4">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                <span className="text-sm font-medium text-gray-600">Clients:</span>
+                {['all', 'PROMETRIC', 'ETS', 'PEARSON VUE', 'PSI', 'OTHERS'].map(c => {
+                  const label = c.toUpperCase()
+                  const active = filterClient.toUpperCase() === label
+                  return (
+                    <button key={c} onClick={() => setFilterClient(c)} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${active ? 'bg-yellow-400 text-black shadow-[3px_3px_6px_#c8aa33,-3px_-3px_6px_#ffeb66]' : 'bg-[#e0e5ec] text-gray-600 shadow-[5px_5px_10px_#bec3c9,-5px_-5px_10px_#ffffff] hover:text-yellow-600'}`}>
+                      {label === 'ALL' ? 'ALL CLIENTS' : label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Modern Candidates List */}
+          <div className="dashboard-section">
+            <div className="flex items-center justify-between mb-3 gap-2">
+              <div className="flex items-center gap-2">
+                <button onClick={() => setShowNewCandidateModal(true)} className="btn-primary-modern flex items-center">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Candidate
+                </button>
+                <button onClick={() => setShowBulkUploadModal(true)} className="btn-secondary-modern flex items-center">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Bulk Add
+                </button>
+              </div>
+              <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">
+                <button onClick={() => setViewMode('grid')} className={`px-4 py-2 text-sm font-medium ${viewMode === 'grid' ? 'bg-[#e0e5ec] text-yellow-600 shadow-[inset_3px_3px_6px_#bec3c9,inset_-3px_-3px_6px_#ffffff]' : 'text-gray-500 hover:text-gray-700'}`}>Grid</button>
+                <button onClick={() => setViewMode('list')} className={`px-4 py-2 text-sm font-medium ${viewMode === 'list' ? 'bg-[#e0e5ec] text-yellow-600 shadow-[inset_3px_3px_6px_#bec3c9,inset_-3px_-3px_6px_#ffffff]' : 'text-gray-500 hover:text-gray-700'}`}>List</button>
+                <button onClick={() => setViewMode('export')} className={`px-4 py-2 text-sm font-medium ${viewMode === 'export' ? 'bg-[#e0e5ec] text-yellow-600 shadow-[inset_3px_3px_6px_#bec3c9,inset_-3px_-3px_6px_#ffffff]' : 'text-gray-500 hover:text-gray-700'}`}>Export</button>
+              </div>
+            </div>
+
+            {viewMode === 'list' && (
+              <div className="space-y-4">
+                {filteredCandidates.map((candidate) => (
+                  <div key={candidate.id} className="neomorphic-card p-6 transition-all hover:translate-y-[-4px]">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div>
+                          <h3 className="text-2xl font-bold text-gray-900" style={{ fontFamily: "'Playfair Display', serif" }}>{candidate.fullName}</h3>
+                          <p className="text-gray-500">{candidate.confirmationNumber}</p>
+                        </div>
+                      </div>
+                      <div className="relative">
+                        <button onClick={() => setOpenMenu(openMenu === candidate.id ? null : candidate.id)} className="p-2 rounded-full hover:bg-gray-100">
+                          <MoreVertical className="h-5 w-5" />
+                        </button>
+                        {openMenu === candidate.id && (
+                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+                            <div className="py-1">
+                              <button onClick={() => openEditModal(candidate)} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Edit</button>
+                              <button onClick={() => handleDeleteCandidate(candidate.id, candidate.fullName)} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Delete</button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  )}
-                </div>
-              </div>
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
-                <div>
-                  <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">Address</p>
-                  <p className="text-gray-900 font-medium flex items-center mt-1"><Mail className="h-4 w-4 mr-2 text-gray-400" />{candidate.address}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">Phone</p>
-                  <p className="text-gray-900 font-medium flex items-center mt-1"><Phone className="h-4 w-4 mr-2 text-gray-400" />{candidate.phone}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">Exam</p>
-                  <p className="text-gray-900 font-medium mt-1">{candidate.examName || 'Not specified'}</p>
-                </div>
-              </div>
-              {candidate.notes && (
-                <div className="mt-4">
-                  <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">Notes</p>
-                  <p className="text-gray-900 font-medium mt-1">{candidate.notes}</p>
-                </div>
-              )}
-              {candidate.checkInTime && (
-                <div className="mt-4">
-                  <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">Check-in Time</p>
-                  <p className="text-gray-900 font-medium mt-1">{new Date(candidate.checkInTime).toLocaleString()}</p>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-        )}
-
-        {viewMode === 'grid' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filteredCandidates.map((candidate) => {
-              const client = (candidate.clientName || deriveClientFromExamName(candidate.examName)).toUpperCase()
-              const style = CLIENT_STYLE[client] || CLIENT_STYLE['OTHERS']
-              return (
-                <div key={candidate.id} className="modern-card p-6">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{candidate.fullName}</h3>
-                      <p className="text-gray-500 text-sm">{candidate.confirmationNumber}</p>
+                    <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                      <div>
+                        <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">Address</p>
+                        <p className="text-gray-900 font-medium flex items-center mt-1"><Mail className="h-4 w-4 mr-2 text-gray-400" />{candidate.address}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">Phone</p>
+                        <p className="text-gray-900 font-medium flex items-center mt-1"><Phone className="h-4 w-4 mr-2 text-gray-400" />{candidate.phone}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">Exam</p>
+                        <p className="text-gray-900 font-medium mt-1">{candidate.examName || 'Not specified'}</p>
+                      </div>
                     </div>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded border text-xs font-semibold" style={{ background: style.tint, borderColor: style.border, color: style.text }}>{client}</span>
-                    <div className="relative">
-                      <button onClick={() => setOpenMenu(openMenu === candidate.id ? null : candidate.id)} className="p-1 rounded-full hover:bg-gray-200">
-                        <MoreVertical className="h-4 w-4" />
-                      </button>
-                      {openMenu === candidate.id && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
-                          <div className="py-1">
-                            <button onClick={() => openEditModal(candidate)} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Edit</button>
-                            <button onClick={() => handleDeleteCandidate(candidate.id, candidate.fullName)} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Delete</button>
-                          </div>
+                    {candidate.notes && (
+                      <div className="mt-4">
+                        <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">Notes</p>
+                        <p className="text-gray-900 font-medium mt-1">{candidate.notes}</p>
+                      </div>
+                    )}
+                    {candidate.checkInTime && (
+                      <div className="mt-4">
+                        <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">Check-in Time</p>
+                        <p className="text-gray-900 font-medium mt-1">{new Date(candidate.checkInTime).toLocaleString()}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {viewMode === 'grid' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {filteredCandidates.map((candidate) => {
+                  const client = (candidate.clientName || deriveClientFromExamName(candidate.examName)).toUpperCase()
+                  const style = CLIENT_STYLE[client] || CLIENT_STYLE['OTHERS']
+                  return (
+                    <div key={candidate.id} className="neomorphic-card p-6 transition-all hover:translate-y-[-4px]">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">{candidate.fullName}</h3>
+                          <p className="text-gray-500 text-sm">{candidate.confirmationNumber}</p>
+                        </div>
+                        {(() => {
+                          const clientName = client.toUpperCase();
+                          let logoSrc = null;
+                          if (clientName.includes('PROMETRIC')) logoSrc = '/client-logos/prometric.png';
+                          else if (clientName.includes('ETS')) logoSrc = '/client-logos/ets.png';
+                          else if (clientName.includes('PEARSON') || clientName.includes('VUE')) logoSrc = '/client-logos/pearson.png';
+                          else if (clientName.includes('PSI')) logoSrc = '/client-logos/psi.png';
+
+                          return logoSrc ? (
+                            <div className="neomorphic-badge" style={{ padding: '8px 12px', height: '55px', minWidth: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <img src={logoSrc} alt={client} className="h-full w-full object-contain mix-blend-multiply" />
+                            </div>
+                          ) : (
+                            <span className="neomorphic-badge" style={{ color: style.border }}>{client}</span>
+                          );
+                        })()}
+                        <div className="relative">
+                          <button onClick={() => setOpenMenu(openMenu === candidate.id ? null : candidate.id)} className="p-1 rounded-full hover:bg-gray-200">
+                            <MoreVertical className="h-4 w-4" />
+                          </button>
+                          {openMenu === candidate.id && (
+                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+                              <div className="py-1">
+                                <button onClick={() => openEditModal(candidate)} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Edit</button>
+                                <button onClick={() => handleDeleteCandidate(candidate.id, candidate.fullName)} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Delete</button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 text-sm mb-3">
+                        <div className="flex items-center space-x-2"><Mail className="h-4 w-4 text-gray-400" /><span className="text-gray-700 truncate">{candidate.address}</span></div>
+                        {candidate.phone && (<div className="flex items-center space-x-2"><Phone className="h-4 w-4 text-gray-400" /><span className="text-gray-700">{candidate.phone}</span></div>)}
+                        <div>
+                          <p className="text-gray-500 text-xs uppercase">Exam</p>
+                          <p className="text-gray-900 font-medium">{candidate.examName || 'Not specified'}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-xs uppercase">Date</p>
+                          <p className="text-gray-900 font-medium">{candidate.examDate ? new Date(candidate.examDate).toLocaleDateString() : 'Not scheduled'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {viewMode === 'export' && (
+              <div>
+                <div className="flex justify-end mb-4">
+                  <button onClick={exportToCsv} className="btn-primary-modern">Export CSV</button>
+                </div>
+                <div className="modern-card p-0 overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-gray-50 text-gray-600">
+                      <tr>
+                        <th className="text-left px-4 py-2">#</th>
+                        <th className="text-left px-4 py-2">Name</th>
+                        <th className="text-left px-4 py-2">Phone</th>
+                        <th className="text-left px-4 py-2">Client</th>
+                        <th className="text-left px-4 py-2">Exam</th>
+                        <th className="text-left px-4 py-2">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredCandidates.map((candidate, index) => {
+                        const client = (candidate.clientName || deriveClientFromExamName(candidate.examName)).toUpperCase()
+                        return (
+                          <tr key={candidate.id} className="border-t border-gray-100">
+                            <td className="px-4 py-2 text-gray-900">{index + 1}</td>
+                            <td className="px-4 py-2 text-gray-900">{candidate.fullName}</td>
+                            <td className="px-4 py-2 text-gray-700">{candidate.phone}</td>
+                            <td className="px-4 py-2 text-gray-700">{client}</td>
+                            <td className="px-4 py-2 text-gray-700">{candidate.examName || '-'}</td>
+                            <td className="px-4 py-2 text-gray-700">{candidate.examDate ? new Date(candidate.examDate).toLocaleDateString() : '-'}</td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Modern New Candidate Modal */}
+      {
+        showNewCandidateModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="modern-card p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Register New Candidate</h2>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
+                      placeholder="Enter candidate's full name"
+                      value={newCandidate.fullName}
+                      onChange={(e) => setNewCandidate({ ...newCandidate, fullName: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
+                      value={newCandidate.address}
+                      onChange={(e) => setNewCandidate({ ...newCandidate, address: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                    <input
+                      type="tel"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
+                      placeholder="+1-555-0123"
+                      value={newCandidate.phone}
+                      onChange={(e) => setNewCandidate({ ...newCandidate, phone: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Exam Name</label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
+                      placeholder="AWS Solutions Architect, TOEFL, etc."
+                      value={newCandidate.examName}
+                      onChange={(e) => setNewCandidate({ ...newCandidate, examName: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Client</label>
+                  <select
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900"
+                    value={newCandidate.clientName}
+                    onChange={(e) => setNewCandidate({ ...newCandidate, clientName: e.target.value })}
+                  >
+                    <option value="">Select a client</option>
+                    {clients?.map(client => (
+                      <option key={client.id} value={client.name}>{client.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Exam Date & Time</label>
+                  <input
+                    type="date"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900"
+                    value={newCandidate.examDate}
+                    onChange={(e) => setNewCandidate({ ...newCandidate, examDate: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                  <textarea
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500 h-24 resize-none"
+                    placeholder="Special accommodations, dietary requirements, etc."
+                    value={newCandidate.notes}
+                    onChange={(e) => setNewCandidate({ ...newCandidate, notes: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end space-x-4 mt-6">
+                <button
+                  onClick={() => setShowNewCandidateModal(false)}
+                  className="btn-tertiary-modern"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateCandidate}
+                  className="btn-primary-modern"
+                  disabled={!newCandidate.fullName.trim()}
+                >
+                  Register Candidate
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* Modern Edit Candidate Modal */}
+      {
+        showEditCandidateModal && selectedCandidate && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="modern-card p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Edit Candidate: {selectedCandidate.fullName}</h2>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
+                      placeholder="Enter candidate's full name"
+                      value={editCandidate.fullName}
+                      onChange={(e) => setEditCandidate({ ...editCandidate, fullName: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
+                      value={editCandidate.address}
+                      onChange={(e) => setEditCandidate({ ...editCandidate, address: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                    <input
+                      type="tel"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
+                      placeholder="+1-555-0123"
+                      value={editCandidate.phone}
+                      onChange={(e) => setEditCandidate({ ...editCandidate, phone: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Exam Name</label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
+                      placeholder="AWS Solutions Architect, TOEFL, etc."
+                      value={editCandidate.examName}
+                      onChange={(e) => setEditCandidate({ ...editCandidate, examName: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Client</label>
+                  <select
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900"
+                    value={editCandidate.clientName}
+                    onChange={(e) => setEditCandidate({ ...editCandidate, clientName: e.target.value })}
+                  >
+                    <option value="">Select a client</option>
+                    {clients?.map(client => (
+                      <option key={client.id} value={client.name}>{client.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Exam Date & Time</label>
+                  <input
+                    type="datetime-local"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900"
+                    value={editCandidate.examDate}
+                    onChange={(e) => setEditCandidate({ ...editCandidate, examDate: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                  <textarea
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500 h-24 resize-none"
+                    placeholder="Special accommodations, dietary requirements, etc."
+                    value={editCandidate.notes}
+                    onChange={(e) => setEditCandidate({ ...editCandidate, notes: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end space-x-4 mt-6">
+                <button
+                  onClick={() => setShowEditCandidateModal(false)}
+                  className="btn-tertiary-modern"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleEditCandidate}
+                  className="btn-primary-modern"
+                  disabled={!editCandidate.fullName.trim()}
+                >
+                  Update Candidate
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* Modern Candidate Details Modal */}
+      {
+        showDetailsModal && selectedCandidate && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="modern-card p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Candidate Details</h2>
+                <button
+                  onClick={() => setShowDetailsModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                <div className="flex items-center space-x-4">
+                  <div className="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl" style={{
+                    background: 'var(--primary-gradient)'
+                  }}>
+                    {selectedCandidate.fullName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-semibold text-gray-900">{selectedCandidate.fullName}</h3>
+                    <p className="text-gray-600">{selectedCandidate.confirmationNumber}</p>
+                    <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium mt-2 ${getStatusColor(selectedCandidate.status)}`}>
+                      {selectedCandidate.status.replace('_', ' ').toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h4>
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Mail className="h-4 w-4 text-gray-400" />
+                        <span className="text-gray-600">{selectedCandidate.address}</span>
+                      </div>
+                      {selectedCandidate.phone && (
+                        <div className="flex items-center space-x-2">
+                          <Phone className="h-4 w-4 text-gray-400" />
+                          <span className="text-gray-600">{selectedCandidate.phone}</span>
                         </div>
                       )}
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3 text-sm mb-3">
-                    <div className="flex items-center space-x-2"><Mail className="h-4 w-4 text-gray-400" /><span className="text-gray-700 truncate">{candidate.address}</span></div>
-                    {candidate.phone && (<div className="flex items-center space-x-2"><Phone className="h-4 w-4 text-gray-400" /><span className="text-gray-700">{candidate.phone}</span></div>)}
-                    <div>
-                      <p className="text-gray-500 text-xs uppercase">Exam</p>
-                      <p className="text-gray-900 font-medium">{candidate.examName || 'Not specified'}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 text-xs uppercase">Date</p>
-                      <p className="text-gray-900 font-medium">{candidate.examDate ? new Date(candidate.examDate).toLocaleDateString() : 'Not scheduled'}</p>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
 
-        {viewMode === 'export' && (
-          <div>
-            <div className="flex justify-end mb-4">
-              <button onClick={exportToCsv} className="btn-primary-modern">Export CSV</button>
-            </div>
-            <div className="modern-card p-0 overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="bg-gray-50 text-gray-600">
-                  <tr>
-                    <th className="text-left px-4 py-2">#</th>
-                    <th className="text-left px-4 py-2">Name</th>
-                    <th className="text-left px-4 py-2">Phone</th>
-                    <th className="text-left px-4 py-2">Client</th>
-                    <th className="text-left px-4 py-2">Exam</th>
-                    <th className="text-left px-4 py-2">Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredCandidates.map((candidate, index) => {
-                    const client = (candidate.clientName || deriveClientFromExamName(candidate.examName)).toUpperCase()
-                    return (
-                      <tr key={candidate.id} className="border-t border-gray-100">
-                        <td className="px-4 py-2 text-gray-900">{index + 1}</td>
-                        <td className="px-4 py-2 text-gray-900">{candidate.fullName}</td>
-                        <td className="px-4 py-2 text-gray-700">{candidate.phone}</td>
-                        <td className="px-4 py-2 text-gray-700">{client}</td>
-                        <td className="px-4 py-2 text-gray-700">{candidate.examName || '-'}</td>
-                        <td className="px-4 py-2 text-gray-700">{candidate.examDate ? new Date(candidate.examDate).toLocaleDateString() : '-'}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Modern New Candidate Modal */}
-      {showNewCandidateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="modern-card p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Register New Candidate</h2>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
-                    placeholder="Enter candidate's full name"
-                    value={newCandidate.fullName}
-                    onChange={(e) => setNewCandidate({ ...newCandidate, fullName: e.target.value })}
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
-                    value={newCandidate.address}
-                    onChange={(e) => setNewCandidate({ ...newCandidate, address: e.target.value })}
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                  <input
-                    type="tel"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
-                    placeholder="+1-555-0123"
-                    value={newCandidate.phone}
-                    onChange={(e) => setNewCandidate({ ...newCandidate, phone: e.target.value })}
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Exam Name</label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
-                    placeholder="AWS Solutions Architect, TOEFL, etc."
-                    value={newCandidate.examName}
-                    onChange={(e) => setNewCandidate({ ...newCandidate, examName: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Client</label>
-                <select
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900"
-                  value={newCandidate.clientName}
-                  onChange={(e) => setNewCandidate({ ...newCandidate, clientName: e.target.value })}
-                >
-                  <option value="">Select a client</option>
-                  {clients?.map(client => (
-                    <option key={client.id} value={client.name}>{client.name}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Exam Date & Time</label>
-                <input
-                  type="date"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900"
-                  value={newCandidate.examDate}
-                  onChange={(e) => setNewCandidate({ ...newCandidate, examDate: e.target.value })}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-                <textarea
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500 h-24 resize-none"
-                  placeholder="Special accommodations, dietary requirements, etc."
-                  value={newCandidate.notes}
-                  onChange={(e) => setNewCandidate({ ...newCandidate, notes: e.target.value })}
-                />
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-end space-x-4 mt-6">
-              <button
-                onClick={() => setShowNewCandidateModal(false)}
-                className="btn-tertiary-modern"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateCandidate}
-                className="btn-primary-modern"
-                disabled={!newCandidate.fullName.trim()}
-              >
-                Register Candidate
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modern Edit Candidate Modal */}
-      {showEditCandidateModal && selectedCandidate && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="modern-card p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Edit Candidate: {selectedCandidate.fullName}</h2>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
-                    placeholder="Enter candidate's full name"
-                    value={editCandidate.fullName}
-                    onChange={(e) => setEditCandidate({ ...editCandidate, fullName: e.target.value })}
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
-                    value={editCandidate.address}
-                    onChange={(e) => setEditCandidate({ ...editCandidate, address: e.target.value })}
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                  <input
-                    type="tel"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
-                    placeholder="+1-555-0123"
-                    value={editCandidate.phone}
-                    onChange={(e) => setEditCandidate({ ...editCandidate, phone: e.target.value })}
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Exam Name</label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
-                    placeholder="AWS Solutions Architect, TOEFL, etc."
-                    value={editCandidate.examName}
-                    onChange={(e) => setEditCandidate({ ...editCandidate, examName: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Client</label>
-                <select
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900"
-                  value={editCandidate.clientName}
-                  onChange={(e) => setEditCandidate({ ...editCandidate, clientName: e.target.value })}
-                >
-                  <option value="">Select a client</option>
-                  {clients?.map(client => (
-                    <option key={client.id} value={client.name}>{client.name}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Exam Date & Time</label>
-                <input
-                  type="datetime-local"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900"
-                  value={editCandidate.examDate}
-                  onChange={(e) => setEditCandidate({ ...editCandidate, examDate: e.target.value })}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-                <textarea
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500 h-24 resize-none"
-                  placeholder="Special accommodations, dietary requirements, etc."
-                  value={editCandidate.notes}
-                  onChange={(e) => setEditCandidate({ ...editCandidate, notes: e.target.value })}
-                />
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-end space-x-4 mt-6">
-              <button
-                onClick={() => setShowEditCandidateModal(false)}
-                className="btn-tertiary-modern"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleEditCandidate}
-                className="btn-primary-modern"
-                disabled={!editCandidate.fullName.trim()}
-              >
-                Update Candidate
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modern Candidate Details Modal */}
-      {showDetailsModal && selectedCandidate && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="modern-card p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Candidate Details</h2>
-              <button
-                onClick={() => setShowDetailsModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-            
-            <div className="space-y-6">
-              <div className="flex items-center space-x-4">
-                <div className="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl" style={{
-                  background: 'var(--primary-gradient)'
-                }}>
-                  {selectedCandidate.fullName.split(' ').map(n => n[0]).join('').toUpperCase()}
-                </div>
-                <div>
-                  <h3 className="text-2xl font-semibold text-gray-900">{selectedCandidate.fullName}</h3>
-                  <p className="text-gray-600">{selectedCandidate.confirmationNumber}</p>
-                  <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium mt-2 ${getStatusColor(selectedCandidate.status)}`}>
-                    {selectedCandidate.status.replace('_', ' ').toUpperCase()}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h4>
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <Mail className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-600">{selectedCandidate.address}</span>
-                    </div>
-                    {selectedCandidate.phone && (
-                      <div className="flex items-center space-x-2">
-                        <Phone className="h-4 w-4 text-gray-400" />
-                        <span className="text-gray-600">{selectedCandidate.phone}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Exam Information</h4>
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Exam Name</p>
-                      <p className="text-gray-900 font-medium">{selectedCandidate.examName || 'Not specified'}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Scheduled Date</p>
-                      <p className="text-gray-900 font-medium">
-                        {selectedCandidate.examDate ? selectedCandidate.examDate.toLocaleString() : 'Not scheduled'}
-                      </p>
-                    </div>
-                    {selectedCandidate.checkInTime && (
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">Exam Information</h4>
+                    <div className="space-y-3">
                       <div>
-                        <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Check-in Time</p>
-                        <p className="text-gray-900 font-medium">{selectedCandidate.checkInTime.toLocaleString()}</p>
+                        <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Exam Name</p>
+                        <p className="text-gray-900 font-medium">{selectedCandidate.examName || 'Not specified'}</p>
                       </div>
-                    )}
+                      <div>
+                        <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Scheduled Date</p>
+                        <p className="text-gray-900 font-medium">
+                          {selectedCandidate.examDate ? selectedCandidate.examDate.toLocaleString() : 'Not scheduled'}
+                        </p>
+                      </div>
+                      {selectedCandidate.checkInTime && (
+                        <div>
+                          <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Check-in Time</p>
+                          <p className="text-gray-900 font-medium">{selectedCandidate.checkInTime.toLocaleString()}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              {selectedCandidate.notes && (
+
+                {selectedCandidate.notes && (
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-2">Notes</h4>
+                    <div className="p-4 bg-gray-50 rounded-lg border-l-4 border-yellow-400">
+                      <p className="text-gray-700">{selectedCandidate.notes}</p>
+                    </div>
+                  </div>
+                )}
+
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-2">Notes</h4>
-                  <div className="p-4 bg-gray-50 rounded-lg border-l-4 border-yellow-400">
-                    <p className="text-gray-700">{selectedCandidate.notes}</p>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-2">Registration Details</h4>
+                  <div className="text-sm text-gray-600">
+                    <p>Registered: {selectedCandidate.createdAt.toLocaleString()}</p>
                   </div>
                 </div>
-              )}
-              
-              <div>
-                <h4 className="text-lg font-semibold text-gray-900 mb-2">Registration Details</h4>
-                <div className="text-sm text-gray-600">
-                  <p>Registered: {selectedCandidate.createdAt.toLocaleString()}</p>
-                </div>
               </div>
-            </div>
-            
-            <div className="flex items-center justify-end space-x-4 mt-6">
-              <button
-                onClick={() => setShowDetailsModal(false)}
-                className="btn-tertiary-modern"
-              >
-                Close
-              </button>
-              <button 
-                onClick={() => {
-                  setShowDetailsModal(false)
-                  openEditModal(selectedCandidate)
-                }}
-                className="btn-primary-modern"
-              >
-                Edit Candidate
-              </button>
+
+              <div className="flex items-center justify-end space-x-4 mt-6">
+                <button
+                  onClick={() => setShowDetailsModal(false)}
+                  className="btn-tertiary-modern"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDetailsModal(false)
+                    openEditModal(selectedCandidate)
+                  }}
+                  className="btn-primary-modern"
+                >
+                  Edit Candidate
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Modern Bulk Upload Modal */}
-      {showBulkUploadModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="modern-card p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Bulk Upload Candidates</h2>
-              <button
-                onClick={() => resetBulkUpload()}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              {/* Instructions */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-blue-900 mb-2">Upload Instructions</h3>
-                <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• Upload a CSV file with candidate information</li>
-                  <li>• Required columns: <strong>full_name</strong></li>
-                  <li>• Optional columns: address, phone, exam_name, exam_date, notes</li>
-                  <li>• First row should contain column headers</li>
-                  <li>• Date format: YYYY-MM-DD or MM/DD/YYYY</li>
-                </ul>
+      {
+        showBulkUploadModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="modern-card p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Bulk Upload Candidates</h2>
+                <button
+                  onClick={() => resetBulkUpload()}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="h-6 w-6" />
+                </button>
               </div>
 
-              {/* File Upload */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Select CSV File</label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-gray-400 transition-colors">
-                  <div className="text-center">
-                    <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <input
-                      type="file"
-                      accept=".csv,.xlsx,.xls"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                      id="bulk-upload-input"
-                    />
-                    <label
-                      htmlFor="bulk-upload-input"
-                      className="cursor-pointer text-blue-600 hover:text-blue-700 font-medium"
-                    >
-                      Click to select file
-                    </label>
-                    <p className="text-gray-500 text-sm mt-1">CSV, XLS, or XLSX files only</p>
-                  </div>
-                  
-                  {uploadFile && (
-                    <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                      <p className="text-sm text-gray-700">
-                        <strong>Selected:</strong> {uploadFile.name} ({Math.round(uploadFile.size / 1024)}KB)
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Upload Progress */}
-              {uploadStatus === 'uploading' && (
-                <div>
-                  <div className="flex justify-between text-sm text-gray-600 mb-2">
-                    <span>Processing candidates...</span>
-                    <span>{uploadProgress}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div 
-                      className="h-3 rounded-full transition-all duration-300"
-                      style={{ 
-                        width: `${uploadProgress}%`,
-                        background: 'var(--primary-gradient)'
-                      }}
-                    ></div>
-                  </div>
-                </div>
-              )}
-
-              {/* Upload Results */}
-              {uploadStatus === 'success' && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-green-900 mb-2">Upload Completed!</h3>
-                  <p className="text-green-800">
-                    Successfully imported {uploadResults.success} candidates.
-                  </p>
-                  {uploadResults.errors.length > 0 && (
-                    <details className="mt-3">
-                      <summary className="cursor-pointer text-yellow-700 font-medium">View {uploadResults.errors.length} errors</summary>
-                      <ul className="mt-2 text-sm text-yellow-800 space-y-1 pl-4">
-                        {uploadResults.errors.map((error, index) => (
-                          <li key={index}>• {error}</li>
-                        ))}
-                      </ul>
-                    </details>
-                  )}
-                </div>
-              )}
-
-              {uploadStatus === 'error' && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-red-900 mb-2">Upload Failed</h3>
-                  <ul className="text-red-800 space-y-1">
-                    {uploadResults.errors.map((error, index) => (
-                      <li key={index}>• {error}</li>
-                    ))}
+              <div className="space-y-6">
+                {/* Instructions */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-blue-900 mb-2">Upload Instructions</h3>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• Upload a CSV file with candidate information</li>
+                    <li>• Required columns: <strong>full_name</strong></li>
+                    <li>• Optional columns: address, phone, exam_name, exam_date, notes</li>
+                    <li>• First row should contain column headers</li>
+                    <li>• Date format: YYYY-MM-DD or MM/DD/YYYY</li>
                   </ul>
                 </div>
-              )}
-            </div>
 
-            <div className="flex items-center justify-end space-x-4 mt-6">
-              <button
-                onClick={() => resetBulkUpload()}
-                className="btn-tertiary-modern"
-              >
-                {uploadStatus === 'success' ? 'Done' : 'Cancel'}
-              </button>
-              {uploadFile && uploadStatus !== 'uploading' && uploadStatus !== 'success' && (
+                {/* File Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Select CSV File</label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-gray-400 transition-colors">
+                    <div className="text-center">
+                      <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <input
+                        type="file"
+                        accept=".csv,.xlsx,.xls"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        id="bulk-upload-input"
+                      />
+                      <label
+                        htmlFor="bulk-upload-input"
+                        className="cursor-pointer text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        Click to select file
+                      </label>
+                      <p className="text-gray-500 text-sm mt-1">CSV, XLS, or XLSX files only</p>
+                    </div>
+
+                    {uploadFile && (
+                      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                        <p className="text-sm text-gray-700">
+                          <strong>Selected:</strong> {uploadFile.name} ({Math.round(uploadFile.size / 1024)}KB)
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Upload Progress */}
+                {uploadStatus === 'uploading' && (
+                  <div>
+                    <div className="flex justify-between text-sm text-gray-600 mb-2">
+                      <span>Processing candidates...</span>
+                      <span>{uploadProgress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div
+                        className="h-3 rounded-full transition-all duration-300"
+                        style={{
+                          width: `${uploadProgress}%`,
+                          background: 'var(--primary-gradient)'
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Upload Results */}
+                {uploadStatus === 'success' && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h3 className="text-lg font-semibold text-green-900 mb-2">Upload Completed!</h3>
+                    <p className="text-green-800">
+                      Successfully imported {uploadResults.success} candidates.
+                    </p>
+                    {uploadResults.errors.length > 0 && (
+                      <details className="mt-3">
+                        <summary className="cursor-pointer text-yellow-700 font-medium">View {uploadResults.errors.length} errors</summary>
+                        <ul className="mt-2 text-sm text-yellow-800 space-y-1 pl-4">
+                          {uploadResults.errors.map((error, index) => (
+                            <li key={index}>• {error}</li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
+                  </div>
+                )}
+
+                {uploadStatus === 'error' && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <h3 className="text-lg font-semibold text-red-900 mb-2">Upload Failed</h3>
+                    <ul className="text-red-800 space-y-1">
+                      {uploadResults.errors.map((error, index) => (
+                        <li key={index}>• {error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end space-x-4 mt-6">
                 <button
-                  onClick={processBulkUpload}
-                  className="btn-primary-modern"
-                  disabled={!uploadFile}
+                  onClick={() => resetBulkUpload()}
+                  className="btn-tertiary-modern"
                 >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload Candidates
+                  {uploadStatus === 'success' ? 'Done' : 'Cancel'}
                 </button>
-              )}
+                {uploadFile && uploadStatus !== 'uploading' && uploadStatus !== 'success' && (
+                  <button
+                    onClick={processBulkUpload}
+                    className="btn-primary-modern"
+                    disabled={!uploadFile}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Candidates
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </>
   )
 }

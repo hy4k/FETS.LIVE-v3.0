@@ -43,7 +43,7 @@ interface NavigationItem {
 }
 
 // NAVIGATION STRUCTURE - PREMIUM ICONS FOR VISUAL RECOGNITION
-const navigationGroups = {
+const navigationGroups: { [key: string]: NavigationItem[] } = {
   operations: [
     { id: 'command-center', name: 'Command Centre', icon: LayoutDashboard, badge: 'Home' },
     { id: 'candidate-tracker', name: 'Candidate Tracker', icon: UserSearch },
@@ -114,32 +114,30 @@ export function Sidebar({
   const sidebarContent = (
     <div className={sidebarClassName}>
       {/* Brand Area - Premium Bold Design */}
+      {/* Brand Area - Premium Bold Design */}
       <div className="reference-brand-area">
         {!isCollapsed || isMobile ? (
           <>
-            <div className="reference-brand-logo group mb-4">
-              <div className="relative">
-                {/* Glow effect background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-400 to-yellow-500 blur-2xl opacity-30 group-hover:opacity-50 transition-opacity duration-500"></div>
+            <div className="reference-brand-logo group">
+              <div className="relative w-full overflow-hidden" style={{ borderTopRightRadius: '24px' }}>
                 <img
-                  src="/fets-live-golden-logo.jpg"
+                  src="/fets-header-premium.png"
                   alt="FETS.LIVE"
-                  className="h-40 w-full object-cover relative z-10 drop-shadow-2xl group-hover:scale-105 transition-transform duration-300"
-                  style={{ filter: 'drop-shadow(0 8px 24px rgba(245, 158, 11, 0.4))' }}
+                  className="w-full object-cover relative z-10 transition-transform duration-500 group-hover:scale-105"
+                  style={{ height: '140px' }}
                 />
+                {/* Subtle sheen effect overlay */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
               </div>
             </div>
           </>
         ) : (
-          <div className="text-center group">
+          <div className="text-center group py-6">
+            {/* Collapsed state - simplified icon if available, or scaled down part of banner */}
             <div className="relative inline-block">
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-400 to-yellow-500 blur-xl opacity-30 group-hover:opacity-50 transition-opacity duration-500"></div>
-              <img
-                src="/fets-live-golden-logo.jpg"
-                alt="FETS.LIVE"
-                className="h-16 w-auto object-contain mx-auto relative z-10 drop-shadow-2xl group-hover:scale-110 transition-transform duration-300"
-                style={{ filter: 'drop-shadow(0 6px 16px rgba(245, 158, 11, 0.4))' }}
-              />
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-600 flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300">
+                <span className="text-white font-bold text-xl font-['Rajdhani']">F</span>
+              </div>
             </div>
           </div>
         )}

@@ -455,189 +455,128 @@ export default function CommandCentrePremium() {
 
   return (
     <>
-      <div className="min-h-screen -mt-32 pt-48" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-        {/* White/Off-white gap between header and command centre section */}
-        <div className="h-6 bg-white/85 -mx-8 -mt-12 mb-8"></div>
+      <div className="min-h-screen -mt-32 pt-48 bg-[#e0e5ec]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+        {/* Functional Notification Banner */}
+        <div className="h-6 -mx-8 -mt-12 mb-8"></div>
 
-        <div className="max-w-7xl mx-auto px-8">
-          {/* Premium Header Section - With spacing from yellow banner */}
-          <div className="mt-8 mb-12">
-            <div className="flex items-center gap-4 mb-3">
-              <h1 className="text-5xl md:text-6xl font-black tracking-tight" style={{ fontFamily: "'Inter', 'Poppins', system-ui, sans-serif", color: '#ffffff' }}>
+        <div className="max-w-[1800px] mx-auto px-6">
+          {/* Executive Header - Neumorphic */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-8 mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4"
+          >
+            <div>
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gold-gradient mb-2 uppercase">
                 Command Centre
               </h1>
+              <p className="text-lg text-gray-600 font-medium">
+                {activeBranch?.name ? `${activeBranch.name} · ` : ''}Welcome back, {profile?.full_name || 'User'}
+              </p>
             </div>
-            <p className="text-xl text-white/90 font-medium">
-              {activeBranch?.name ? `${activeBranch.name} - ` : ''}Welcome back, {profile?.full_name || 'User'}
-            </p>
-            <p className="text-white/60 text-base mt-2 font-medium">
-              {new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            </p>
-          </div>
+            <div className="text-right">
+              <p className="text-gray-500 font-semibold uppercase tracking-wider text-sm">
+                {new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              </p>
+            </div>
+          </motion.div>
 
           {/* News Ticker Bar - Just above Hero Section */}
           <NewsTickerBar />
 
-          {/* Hero Run Checklist Section - Bold Premium Color Blocking */}
+          {/* Hero Run Checklist Section - Neumorphic */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="mb-12"
+            className="mb-8"
           >
-            <div className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-white/10">
-              {/* Vibrant Gradient Background with depth */}
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+            <div className="neomorphic-card p-6 md:p-8">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="indicator-dot active"></div>
+                <h2 className="text-2xl font-bold text-gray-700 uppercase tracking-wide flex items-center gap-3">
+                  <Target className="text-yellow-600 w-6 h-6" />
+                  Daily Checklists
+                </h2>
+              </div>
+              <p className="text-gray-500 text-sm font-medium mb-6 ml-6">
+                Complete your essential tasks to keep operations running smoothly
+              </p>
 
-              {/* Content */}
-              <div className="relative p-10 md:p-14">
-                <div className="mb-10">
-                  <div className="flex items-center gap-4 mb-5">
-                    <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-xl border border-white/30">
-                      <Target className="text-white" size={28} />
+              {/* Checklist Buttons Grid - Neumorphic */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Pre-Exam Checklist */}
+                <motion.button
+                  onClick={handleOpenPreExam}
+                  whileHover={{ translateY: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="neomorphic-btn flex-col items-start p-6 h-auto group hover:text-yellow-600"
+                >
+                  <div className="flex items-center justify-between w-full mb-4">
+                    <div className="w-12 h-12 rounded-full bg-[#e0e5ec] shadow-[inset_4px_4px_8px_#bec3c9,inset_-4px_-4px_8px_#ffffff] flex items-center justify-center">
+                      <ClipboardList className="text-gray-600 w-6 h-6 group-hover:text-yellow-600" />
                     </div>
-                    <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight" style={{ fontFamily: "'Inter', 'Poppins', system-ui, sans-serif" }}>
-                      Daily Checklists
-                    </h2>
+                    <span className="text-xs font-bold text-gray-400 uppercase bg-gray-200/50 px-2 py-1 rounded">Pre-Exam</span>
                   </div>
-                  <p className="text-white/90 text-lg font-medium ml-[72px]">
-                    Complete your essential tasks to keep operations running smoothly
-                  </p>
-                </div>
+                  <h3 className="text-lg font-bold text-gray-700 mb-2 group-hover:text-yellow-600">Pre-Exam Checklist</h3>
+                  <p className="text-xs text-gray-500 text-left leading-relaxed">Verify all systems before session starts</p>
+                </motion.button>
 
-                {/* Checklist Buttons Grid - Premium Card Design */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Pre-Exam Checklist */}
-                  <motion.button
-                    onClick={handleOpenPreExam}
-                    whileHover={{ scale: 1.05, y: -4 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="group relative overflow-hidden rounded-2xl p-7 bg-white/15 backdrop-blur-md border-2 border-white/40 hover:border-white/70 hover:shadow-2xl transition-all duration-300"
-                  >
-                    {/* Animated gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 opacity-0 group-hover:opacity-30 transition-all duration-500" />
+                {/* Post-Exam Checklist */}
+                <motion.button
+                  onClick={handleOpenPostExam}
+                  whileHover={{ translateY: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="neomorphic-btn flex-col items-start p-6 h-auto group hover:text-yellow-600"
+                >
+                  <div className="flex items-center justify-between w-full mb-4">
+                    <div className="w-12 h-12 rounded-full bg-[#e0e5ec] shadow-[inset_4px_4px_8px_#bec3c9,inset_-4px_-4px_8px_#ffffff] flex items-center justify-center">
+                      <ClipboardCheck className="text-gray-600 w-6 h-6 group-hover:text-yellow-600" />
+                    </div>
+                    <span className="text-xs font-bold text-gray-400 uppercase bg-gray-200/50 px-2 py-1 rounded">Post-Exam</span>
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-700 mb-2 group-hover:text-yellow-600">Post-Exam Checklist</h3>
+                  <p className="text-xs text-gray-500 text-left leading-relaxed">Verify completion and cleanup procedures</p>
+                </motion.button>
 
-                    {/* Shimmer effect */}
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                {/* Custom Checklist */}
+                <motion.button
+                  onClick={() => setShowCustomSelector(true)}
+                  whileHover={{ translateY: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="neomorphic-btn flex-col items-start p-6 h-auto group hover:text-yellow-600"
+                >
+                  <div className="flex items-center justify-between w-full mb-4">
+                    <div className="w-12 h-12 rounded-full bg-[#e0e5ec] shadow-[inset_4px_4px_8px_#bec3c9,inset_-4px_-4px_8px_#ffffff] flex items-center justify-center">
+                      <Sparkles className="text-gray-600 w-6 h-6 group-hover:text-yellow-600" />
                     </div>
-
-                    <div className="relative text-left">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform duration-300">
-                          <ClipboardList className="text-white w-7 h-7" />
-                        </div>
-                        <div className="px-3 py-1 rounded-full bg-blue-500/30 border border-blue-300/50">
-                          <div className="text-xs font-bold text-blue-100">Pre-Exam</div>
-                        </div>
-                      </div>
-                      <h3 className="text-xl font-black text-white mb-2" style={{ fontFamily: "'Inter', 'Poppins', system-ui, sans-serif" }}>
-                        Pre-Exam Checklist
-                      </h3>
-                      <p className="text-sm text-white/80 font-medium leading-relaxed">
-                        Verify all systems before session starts
-                      </p>
-                    </div>
-                    <div className="mt-5 flex items-center gap-2 text-white font-bold group-hover:translate-x-2 transition-transform duration-300">
-                      <span>Start</span>
-                      <ChevronRight size={18} className="group-hover:animate-pulse" />
-                    </div>
-                  </motion.button>
-
-                  {/* Post-Exam Checklist */}
-                  <motion.button
-                    onClick={handleOpenPostExam}
-                    whileHover={{ scale: 1.05, y: -4 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="group relative overflow-hidden rounded-2xl p-7 bg-white/15 backdrop-blur-md border-2 border-white/40 hover:border-white/70 hover:shadow-2xl transition-all duration-300"
-                  >
-                    {/* Animated gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-green-400 via-emerald-500 to-green-600 opacity-0 group-hover:opacity-30 transition-all duration-500" />
-
-                    {/* Shimmer effect */}
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                    </div>
-
-                    <div className="relative text-left">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform duration-300">
-                          <ClipboardCheck className="text-white w-7 h-7" />
-                        </div>
-                        <div className="px-3 py-1 rounded-full bg-green-500/30 border border-green-300/50">
-                          <div className="text-xs font-bold text-green-100">Post-Exam</div>
-                        </div>
-                      </div>
-                      <h3 className="text-xl font-black text-white mb-2" style={{ fontFamily: "'Inter', 'Poppins', system-ui, sans-serif" }}>
-                        Post-Exam Checklist
-                      </h3>
-                      <p className="text-sm text-white/80 font-medium leading-relaxed">
-                        Verify completion and cleanup procedures
-                      </p>
-                    </div>
-                    <div className="mt-5 flex items-center gap-2 text-white font-bold group-hover:translate-x-2 transition-transform duration-300">
-                      <span>Start</span>
-                      <ChevronRight size={18} className="group-hover:animate-pulse" />
-                    </div>
-                  </motion.button>
-
-                  {/* Custom Checklist */}
-                  <motion.button
-                    onClick={() => setShowCustomSelector(true)}
-                    whileHover={{ scale: 1.05, y: -4 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="group relative overflow-hidden rounded-2xl p-7 bg-white/15 backdrop-blur-md border-2 border-white/40 hover:border-white/70 hover:shadow-2xl transition-all duration-300"
-                  >
-                    {/* Animated gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-400 via-violet-500 to-fuchsia-600 opacity-0 group-hover:opacity-30 transition-all duration-500" />
-
-                    {/* Shimmer effect */}
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                    </div>
-
-                    <div className="relative text-left">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-400 to-fuchsia-600 flex items-center justify-center shadow-xl group-hover:scale-110 group-hover:rotate-12 transition-all duration-300">
-                          <Sparkles className="text-white w-7 h-7" />
-                        </div>
-                        <div className="px-3 py-1 rounded-full bg-purple-500/30 border border-purple-300/50">
-                          <div className="text-xs font-bold text-purple-100">Custom</div>
-                        </div>
-                      </div>
-                      <h3 className="text-xl font-black text-white mb-2" style={{ fontFamily: "'Inter', 'Poppins', system-ui, sans-serif" }}>
-                        Custom Checklist
-                      </h3>
-                      <p className="text-sm text-white/80 font-medium leading-relaxed">
-                        Fill out your custom task templates
-                      </p>
-                    </div>
-                    <div className="mt-5 flex items-center gap-2 text-white font-bold group-hover:translate-x-2 transition-transform duration-300">
-                      <span>Start</span>
-                      <ChevronRight size={18} className="group-hover:animate-pulse" />
-                    </div>
-                  </motion.button>
-                </div>
+                    <span className="text-xs font-bold text-gray-400 uppercase bg-gray-200/50 px-2 py-1 rounded">Custom</span>
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-700 mb-2 group-hover:text-yellow-600">Custom Checklist</h3>
+                  <p className="text-xs text-gray-500 text-left leading-relaxed">Fill out your custom task templates</p>
+                </motion.button>
               </div>
             </div>
           </motion.div>
 
-          {/* Enhanced KPI Cards with Animated Widgets */}
+          {/* Enhanced KPI Cards with Animated Widgets - Neumorphic */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             {/* Total Candidates - Progress Circle */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="frosted-card p-6 flex items-center justify-center"
+              className="neomorphic-card p-6 flex items-center justify-center relative overflow-hidden"
             >
+              <div className="absolute top-0 right-0 p-2 opacity-5">
+                <Users size={60} />
+              </div>
               <ProgressCircle
                 percentage={Math.min(((stats?.totalCandidates || 0) / 1000) * 100, 100)}
                 label="Total Candidates"
                 value={Math.floor(stats?.totalCandidates || 0)}
                 icon={Users}
-                color="#3b82f6"
+                color="#f59e0b"
               />
             </motion.div>
 
@@ -646,14 +585,17 @@ export default function CommandCentrePremium() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="frosted-card p-6 flex items-center justify-center"
+              className="neomorphic-card p-6 flex items-center justify-center relative overflow-hidden"
             >
+              <div className="absolute top-0 right-0 p-2 opacity-5">
+                <Calendar size={60} />
+              </div>
               <ProgressCircle
                 percentage={Math.min(((stats?.todayCandidates || 0) / 100) * 100, 100)}
                 label="Today's Sessions"
                 value={stats?.todayCandidates || 0}
                 icon={Calendar}
-                color="#10b981"
+                color="#d97706"
               />
             </motion.div>
 
@@ -662,14 +604,17 @@ export default function CommandCentrePremium() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="frosted-card p-6 flex items-center justify-center"
+              className="neomorphic-card p-6 flex items-center justify-center relative overflow-hidden"
             >
+              <div className="absolute top-0 right-0 p-2 opacity-5">
+                <Activity size={60} />
+              </div>
               <ProgressCircle
                 percentage={Math.min(((stats?.openEvents || 0) / 50) * 100, 100)}
                 label="Active Events"
                 value={stats?.openEvents || 0}
                 icon={Activity}
-                color="#f59e0b"
+                color="#b45309"
               />
             </motion.div>
 
@@ -678,32 +623,35 @@ export default function CommandCentrePremium() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="frosted-card p-6 flex items-center justify-center"
+              className="neomorphic-card p-6 flex items-center justify-center relative overflow-hidden"
             >
+              <div className="absolute top-0 right-0 p-2 opacity-5">
+                <CheckCircle size={60} />
+              </div>
               <ProgressCircle
                 percentage={Math.min(((stats?.pendingChecklists || 0) / 50) * 100, 100)}
                 label="Pending Tasks"
                 value={stats?.pendingChecklists || 0}
                 icon={CheckCircle}
-                color="#ef4444"
+                color="#78350f"
               />
             </motion.div>
           </div>
 
           {/* 7 Days Calendar Widget */}
-          <div className="mb-12">
+          <div className="mb-12 neomorphic-card p-6">
             <SevenDayCalendarWidget onNavigate={() => { }} />
           </div>
 
           {/* 7 Days Roster Display Widget */}
-          <div className="mb-12">
+          <div className="mb-12 neomorphic-card p-6">
             <SevenDayRosterDisplay />
           </div>
 
           {/* Copyright Footer */}
           <div className="mt-12 text-center">
-            <div className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-xl">
-              <p className="text-white/80 text-xs font-medium">
+            <div className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl neomorphic-card">
+              <p className="text-gray-500 text-xs font-medium">
                 © 2025-2026 Forun Testing and Educational Service
               </p>
             </div>

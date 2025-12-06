@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Users, Calendar, Activity, CheckCircle, UserCheck, Clock,
+import {
+  Users, Calendar, Activity, CheckCircle, UserCheck, Clock,
   AlertTriangle, Bell, TrendingUp, FileText, Shield, Building2,
-  Plus, Play, Edit, X, Save, CheckCircle2, Trash2, ClipboardList, ClipboardCheck, Sparkles, ListChecks, User, AlertCircle } from 'lucide-react'
+  Plus, Play, Edit, X, Save, CheckCircle2, Trash2, ClipboardList, ClipboardCheck, Sparkles, ListChecks, User, AlertCircle
+} from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useBranch } from '../hooks/useBranch'
 import { toast } from 'react-hot-toast'
@@ -104,7 +106,7 @@ const PRIORITY_CONFIG = {
 export default function CommandCentre({ onNavigate }: { onNavigate?: (tab: string) => void }) {
   const { profile } = useAuth()
   const { activeBranch } = useBranch()
-  
+
   // --- React Query Hooks ---
   const { data: dashboardData, isLoading: isLoadingStats } = useDashboardStats()
   const { data: candidateTrend = [], isLoading: isLoadingTrend } = useCandidateTrend()
@@ -505,43 +507,29 @@ export default function CommandCentre({ onNavigate }: { onNavigate?: (tab: strin
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f7fa] relative overflow-hidden">
-      {/* Premium Background Effects */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100/20 via-[#f5f7fa] to-[#f5f7fa]"></div>
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-200/10 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-200/10 rounded-full blur-3xl"></div>
+    <div className="min-h-screen bg-[#e0e5ec] relative overflow-hidden" style={{ fontFamily: "'Montserrat', sans-serif" }}>
 
       {/* Functional Notification Banner */}
       <NotificationBanner onNavigate={onNavigate} />
 
-      {/* Main Content - Seamlessly Integrated */}
-      <div className="relative z-10 max-w-[1800px] mx-auto p-3 md:p-6">
-        {/* Executive Summary Header */}
+      {/* Main Content - Tighter Layout */}
+      <div className="relative z-10 max-w-[1800px] mx-auto p-4">
+        {/* Executive Summary Header - Neumorphic Style */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/80 backdrop-blur-xl rounded-2xl md:rounded-3xl p-4 md:p-8 border border-gray-200 shadow-lg mb-4 md:mb-6"
+          className="neomorphic-card mb-4 flex items-center justify-between"
         >
-          <div className="flex items-center justify-between flex-wrap gap-3 md:gap-4">
-            <div>
-              <h1 className="text-2xl md:text-4xl font-black text-[#374151] mb-1 md:mb-2 tracking-tight" style={{ fontFamily: "'Playfair Display', serif" }}>Command Centre</h1>
-              <p className="text-gray-600 text-sm md:text-lg font-medium" style={{ fontFamily: "'Poppins', sans-serif" }}>Executive Operations Dashboard{activeBranch !== 'global' && <span className="hidden md:inline"> · {activeBranch.charAt(0).toUpperCase() + activeBranch.slice(1)}</span>}</p>
-            </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-700 mb-1 tracking-tight text-gold-gradient">COMMAND CENTRE</h1>
+            <p className="text-gray-500 text-sm font-medium">Executive Operations Dashboard{activeBranch !== 'global' && <span className="hidden md:inline"> · {activeBranch.toUpperCase()}</span>}</p>
           </div>
-          <div className="text-right mt-3 md:mt-4">
-            <div className="text-xs md:text-sm text-gray-600" style={{ fontFamily: "'Poppins', sans-serif" }}>
-              {new Date().toLocaleDateString('en-US', {
-                weekday: 'short',
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-              })}
+          <div className="text-right">
+            <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider">
+              {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
             </div>
-            <div className="text-lg md:text-2xl font-bold text-[#1f2937] mt-0.5 md:mt-1" style={{ fontFamily: "'Playfair Display', serif" }}>
-              {new Date().toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
+            <div className="text-xl font-bold text-gray-700">
+              {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
             </div>
           </div>
         </motion.div>
@@ -555,32 +543,30 @@ export default function CommandCentre({ onNavigate }: { onNavigate?: (tab: strin
         {/* 7 Days Roster Schedule Display */}
         <SevenDayRosterDisplay />
 
-        {/* Main Dashboard Grid - New 4-Box Layout with Glassmorphism */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mt-6">
+        {/* Main Dashboard Grid - New Neumorphic Style */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
           {/* Box 1: Total Candidates */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="glassmorphism-box group cursor-pointer"
+            className="neomorphic-card group cursor-pointer relative overflow-hidden"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-3xl"></div>
+            <div className="absolute top-0 right-0 p-2 opacity-10">
+              <Users size={80} />
+            </div>
             <div className="relative z-10">
-              <div className="flex items-center justify-between mb-3 md:mb-4">
-                <div className="icon-3d-mobile md:icon-3d bg-gradient-to-br from-blue-500 to-blue-600">
-                  <Users className="w-5 h-5 md:w-7 md:h-7 text-white" />
-                </div>
-                <div className="px-2 md:px-3 py-1 bg-blue-500/20 backdrop-blur-sm rounded-full">
-                  <span className="text-[10px] md:text-xs font-bold text-blue-700">All Time</span>
-                </div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="indicator-dot active"></div>
+                <Users className="w-5 h-5 text-gray-500" />
               </div>
-              <h3 className="text-xs md:text-sm font-semibold text-gray-600 mb-1 md:mb-2 uppercase tracking-wider">Total Candidates</h3>
-              <p className="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-1 md:mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>
+              <h3 className="text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">Total Candidates</h3>
+              <p className="text-3xl font-bold text-gray-700 mb-1">
                 {dashboardData?.totalCandidates || 0}
               </p>
-              <div className="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs text-gray-600">
-                <TrendingUp className="w-3 h-3 md:w-4 md:h-4 text-green-500" />
-                <span className="font-medium">Registered candidates</span>
+              <div className="flex items-center gap-1 text-[10px] text-gray-500 font-medium uppercase">
+                <TrendingUp className="w-3 h-3 text-gold-gradient" />
+                <span>All Time</span>
               </div>
             </div>
           </motion.div>
@@ -590,25 +576,23 @@ export default function CommandCentre({ onNavigate }: { onNavigate?: (tab: strin
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="glassmorphism-box group cursor-pointer"
+            className="neomorphic-card group cursor-pointer relative overflow-hidden"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-3xl"></div>
+            <div className="absolute top-0 right-0 p-2 opacity-10">
+              <UserCheck size={80} />
+            </div>
             <div className="relative z-10">
-              <div className="flex items-center justify-between mb-3 md:mb-4">
-                <div className="icon-3d-mobile md:icon-3d bg-gradient-to-br from-green-500 to-green-600">
-                  <UserCheck className="w-5 h-5 md:w-7 md:h-7 text-white" />
-                </div>
-                <div className="px-2 md:px-3 py-1 bg-green-500/20 backdrop-blur-sm rounded-full">
-                  <span className="text-[10px] md:text-xs font-bold text-green-700">Today</span>
-                </div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="indicator-dot active"></div>
+                <UserCheck className="w-5 h-5 text-gray-500" />
               </div>
-              <h3 className="text-xs md:text-sm font-semibold text-gray-600 mb-1 md:mb-2 uppercase tracking-wider">Today's Candidates</h3>
-              <p className="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-emerald-600 mb-1 md:mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>
+              <h3 className="text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">Today's Candidates</h3>
+              <p className="text-3xl font-bold text-gold-gradient mb-1">
                 {dashboardData?.todayCandidates || 0}
               </p>
-              <div className="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs text-gray-600">
-                <Clock className="w-3 h-3 md:w-4 md:h-4 text-blue-500" />
-                <span className="font-medium">New registrations</span>
+              <div className="flex items-center gap-1 text-[10px] text-gray-500 font-medium uppercase">
+                <Clock className="w-3 h-3" />
+                <span>New Registrations</span>
               </div>
             </div>
           </motion.div>
@@ -618,39 +602,32 @@ export default function CommandCentre({ onNavigate }: { onNavigate?: (tab: strin
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="glassmorphism-box group cursor-pointer"
+            className="neomorphic-card group cursor-pointer relative overflow-hidden"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-amber-500/10 rounded-3xl"></div>
+            <div className="absolute top-0 right-0 p-2 opacity-10">
+              <Calendar size={80} />
+            </div>
             <div className="relative z-10">
-              <div className="flex items-center justify-between mb-3 md:mb-4">
-                <div className="icon-3d-mobile md:icon-3d bg-gradient-to-br from-orange-500 to-orange-600">
-                  <Calendar className="w-5 h-5 md:w-7 md:h-7 text-white" />
-                </div>
-                <div className="px-2 md:px-3 py-1 bg-orange-500/20 backdrop-blur-sm rounded-full">
-                  <span className="text-[10px] md:text-xs font-bold text-orange-700">Live</span>
-                </div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="indicator-dot active"></div>
+                <Calendar className="w-5 h-5 text-gray-500" />
               </div>
-              <h3 className="text-xs md:text-sm font-semibold text-gray-600 mb-1 md:mb-2 uppercase tracking-wider">Today's Exams</h3>
+              <h3 className="text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">Today's Exams</h3>
+
               {dashboardData?.todaysExams && dashboardData.todaysExams.length > 0 ? (
-                <div className="space-y-1.5 md:space-y-2">
+                <div className="space-y-1">
                   {dashboardData.todaysExams.slice(0, 2).map((exam, idx) => (
-                    <div key={idx} className="bg-white/50 backdrop-blur-sm rounded-lg md:rounded-xl p-2 md:p-3 border border-orange-200/50">
-                      <p className="text-xs md:text-sm font-bold text-gray-800 truncate">{exam.client_name}</p>
-                      <div className="flex items-center gap-1 md:gap-2 mt-0.5 md:mt-1">
-                        <Users className="w-3 h-3 md:w-3.5 md:h-3.5 text-orange-600" />
-                        <span className="text-[10px] md:text-xs font-semibold text-orange-700">{exam.candidate_count} students</span>
-                      </div>
+                    <div key={idx} className="flex justify-between items-center text-sm">
+                      <span className="font-bold text-gray-700 truncate">{exam.client_name}</span>
+                      <span className="text-xs font-medium text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded">{exam.candidate_count}</span>
                     </div>
                   ))}
                   {dashboardData.todaysExams.length > 2 && (
-                    <p className="text-[10px] md:text-xs text-gray-600 text-center font-medium">+{dashboardData.todaysExams.length - 2} more</p>
+                    <p className="text-[10px] text-gray-400 font-medium">+{dashboardData.todaysExams.length - 2} more</p>
                   )}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-2 md:py-4">
-                  <Calendar className="w-8 h-8 md:w-12 md:h-12 text-gray-300 mb-1 md:mb-2" />
-                  <p className="text-xs md:text-sm text-gray-500 font-medium">No exams scheduled</p>
-                </div>
+                <div className="text-gray-400 text-sm font-medium">No exams scheduled</div>
               )}
             </div>
           </motion.div>
@@ -660,43 +637,31 @@ export default function CommandCentre({ onNavigate }: { onNavigate?: (tab: strin
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="glassmorphism-box group cursor-pointer"
+            className="neomorphic-card group cursor-pointer relative overflow-hidden"
             onClick={() => onNavigate?.('incident-manager')}
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-pink-500/10 rounded-3xl"></div>
+            <div className="absolute top-0 right-0 p-2 opacity-10">
+              <AlertTriangle size={80} />
+            </div>
             <div className="relative z-10">
-              <div className="flex items-center justify-between mb-3 md:mb-4">
-                <div className="icon-3d-mobile md:icon-3d bg-gradient-to-br from-red-500 to-red-600">
-                  <AlertTriangle className="w-5 h-5 md:w-7 md:h-7 text-white" />
-                </div>
-                {dashboardData?.pendingIncidents && dashboardData.pendingIncidents > 0 && (
-                  <div className="px-2 md:px-3 py-1 bg-red-500/20 backdrop-blur-sm rounded-full animate-pulse">
-                    <span className="text-[10px] md:text-xs font-bold text-red-700">Action Required</span>
-                  </div>
-                )}
+              <div className="flex items-center justify-between mb-2">
+                <div className={`indicator-dot ${dashboardData?.pendingIncidents && dashboardData.pendingIncidents > 0 ? 'active' : ''}`}></div>
+                <AlertTriangle className="w-5 h-5 text-gray-500" />
               </div>
-              <h3 className="text-xs md:text-sm font-semibold text-gray-600 mb-1 md:mb-2 uppercase tracking-wider">Pending Incidents</h3>
-              <p className="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-pink-600 mb-1 md:mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>
+              <h3 className="text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">Pending Incidents</h3>
+              <p className="text-3xl font-bold text-gray-700 mb-1">
                 {dashboardData?.pendingIncidents || 0}
               </p>
-              <div className="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs text-gray-600">
-                <Bell className="w-3 h-3 md:w-4 md:h-4 text-red-500" />
-                <span className="font-medium">Needs attention</span>
+              <div className="flex items-center gap-1 text-[10px] text-gray-500 font-medium uppercase">
+                <Bell className="w-3 h-3" />
+                <span>Needs Attention</span>
               </div>
-              {dashboardData?.pendingIncidents && dashboardData.pendingIncidents > 0 && (
-                <div className="mt-2 md:mt-4 p-2 md:p-3 bg-red-50/80 backdrop-blur-sm rounded-lg md:rounded-xl border border-red-200/50">
-                  <p className="text-[10px] md:text-xs font-bold text-red-700 flex items-center gap-1 md:gap-2">
-                    <AlertCircle className="w-3 h-3 md:w-3.5 md:h-3.5" />
-                    Click to view and resolve
-                  </p>
-                </div>
-              )}
             </div>
           </motion.div>
         </div>
 
         {/* Additional Content Below */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
           {/* Main Column */}
           <div className="lg:col-span-2 space-y-6">
           </div>
@@ -704,54 +669,56 @@ export default function CommandCentre({ onNavigate }: { onNavigate?: (tab: strin
           {/* Right Column */}
           <div className="space-y-6">
             {/* Run Checklist */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200 shadow-lg p-6">
-              <h2 className="text-xl font-black text-[#374151] flex items-center gap-3" style={{ fontFamily: "'Playfair Display', serif" }}>
+            <div className="neomorphic-card">
+              <h2 className="text-lg font-bold text-gray-700 flex items-center gap-2 mb-4 uppercase tracking-wide">
+                <ListChecks className="w-5 h-5 text-yellow-600" />
                 Run Checklist
               </h2>
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <button
                   onClick={handleOpenPreExam}
-                  className="btn-command-centre btn-pre-exam"
+                  className="neomorphic-btn hover:text-yellow-600 text-sm"
                 >
-                  <ClipboardList className="w-5 h-5" />
-                  <span>Pre-Exam Checklist</span>
+                  <ClipboardList className="w-4 h-4" />
+                  <span>Pre-Exam</span>
                 </button>
                 <button
                   onClick={handleOpenPostExam}
-                  className="btn-command-centre btn-post-exam"
+                  className="neomorphic-btn hover:text-yellow-600 text-sm"
                 >
-                  <ClipboardCheck className="w-5 h-5" />
-                  <span>Post-Exam Checklist</span>
+                  <ClipboardCheck className="w-4 h-4" />
+                  <span>Post-Exam</span>
                 </button>
                 <button
                   onClick={() => setShowCustomChecklistModal(true)}
-                  className="btn-command-centre btn-custom-checklist"
+                  className="neomorphic-btn hover:text-yellow-600 text-sm"
                 >
-                  <Sparkles className="w-5 h-5" />
-                  <span>Custom Checklist</span>
+                  <Sparkles className="w-4 h-4" />
+                  <span>Custom</span>
                 </button>
                 <button
-                  className="btn-command-centre btn-new-candidate"
+                  className="neomorphic-btn hover:text-yellow-600 text-sm"
                 >
-                  <Users className="w-5 h-5" />
-                  <span>New Candidate</span>
+                  <Users className="w-4 h-4" />
+                  <span>Candidate</span>
                 </button>
               </div>
             </div>
 
             {/* Activity Feed */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200 shadow-lg p-6">
-              <h2 className="text-xl font-black text-[#374151] flex items-center gap-3" style={{ fontFamily: "'Playfair Display', serif" }}>
+            <div className="neomorphic-card">
+              <h2 className="text-lg font-bold text-gray-700 flex items-center gap-2 mb-4 uppercase tracking-wide">
+                <Activity className="w-5 h-5 text-yellow-600" />
                 Activity Feed
               </h2>
-              <div className="mt-4 space-y-4">
-                <div>
-                  <p className="text-sm text-gray-600">New Posts</p>
-                  <p className="text-2xl font-bold text-[#1f2937]" style={{ fontFamily: "'Playfair Display', serif" }}>{dashboardData?.newPosts}</p>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-2 rounded-lg bg-gray-50/50">
+                  <span className="text-sm text-gray-600 font-medium">New Posts</span>
+                  <span className="text-lg font-bold text-gray-800">{dashboardData?.newPosts}</span>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600">New Messages</p>
-                  <p className="text-2xl font-bold text-[#1f2937]" style={{ fontFamily: "'Playfair Display', serif" }}>{dashboardData?.newMessages}</p>
+                <div className="flex justify-between items-center p-2 rounded-lg bg-gray-50/50">
+                  <span className="text-sm text-gray-600 font-medium">New Messages</span>
+                  <span className="text-lg font-bold text-gray-800">{dashboardData?.newMessages}</span>
                 </div>
               </div>
             </div>
@@ -812,11 +779,10 @@ export default function CommandCentre({ onNavigate }: { onNavigate?: (tab: strin
                   {selectedTemplateItems.map((item, index) => (
                     <div
                       key={item.id}
-                      className={`p-4 rounded-xl border-2 transition-all ${
-                        fillData.items[item.id.toString()]
+                      className={`p-4 rounded-xl border-2 transition-all ${fillData.items[item.id.toString()]
                           ? 'bg-green-50 border-green-300'
                           : 'bg-white border-gray-200 hover:border-gray-300'
-                      }`}
+                        }`}
                     >
                       <label className="flex items-start gap-4 cursor-pointer">
                         <input

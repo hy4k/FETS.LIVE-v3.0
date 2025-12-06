@@ -1,6 +1,8 @@
 /* ==========================================================================
    MARVELOUS PREMIUM SIDEBAR - GLASSMORPHISM & GOLDEN THEME
    ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap');
 
 /* 
    The Sidebar Container 
@@ -43,16 +45,22 @@
    Clean, spacious, with a subtle glow.
 */
 .reference-brand-area {
-  padding: 40px 24px 32px 24px !important;
+  padding: 0 !important;
+  /* Zero padding for seamless banner look */
   display: flex;
   flex-direction: column;
   align-items: center;
   position: relative;
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.4), transparent) !important;
+  background: transparent !important;
+  margin-bottom: 20px !important;
+  /* Push navigation down slightly */
+  border-bottom: 1px solid rgba(255, 193, 7, 0.3);
+  /* Subtle separator */
 }
 
 .reference-brand-logo {
   position: relative;
+  width: 100%;
   transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -97,56 +105,69 @@
    Menu Items 
    The core interactive elements.
 */
+/* Menu Items - Unselected State */
 .reference-menu-item {
   display: flex !important;
   align-items: center !important;
   width: 100% !important;
-  padding: 12px 16px !important;
-  margin-bottom: 8px !important;
-  border-radius: 16px !important;
-  border: 1px solid transparent !important;
-  background: transparent !important;
-  color: #52525b !important;
-  /* Zinc 600 */
-  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
-  position: relative;
-  overflow: hidden;
-}
+  min-height: 48px !important;
+  height: auto !important;
 
-/* Hover State */
-.reference-menu-item:not(.active):hover {
-  background: rgba(255, 255, 255, 0.6) !important;
-  color: #18181b !important;
-  /* Zinc 900 */
-  transform: translateX(4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03) !important;
-}
+  /* Thinner border as requested */
+  padding: 12px 20px !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(255, 193, 7, 0.6) !important;
 
-/* Active State - The "Marvelous" part */
-.reference-menu-item.active {
-  background: linear-gradient(135deg, #fff 0%, #fffbf0 100%) !important;
-  /* Very subtle warm white */
-  color: #b45309 !important;
-  /* Amber 700 */
-  border: 1px solid rgba(245, 158, 11, 0.2) !important;
-  /* Subtle amber border */
+  /* Much subtler shadow so the Active state pops */
   box-shadow:
-    0 8px 20px rgba(245, 158, 11, 0.15),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.8) !important;
+    0 2px 4px rgba(0, 0, 0, 0.03),
+    0 1px 0 rgba(198, 136, 0, 0.2) !important;
+
+  margin-bottom: 12px !important;
+
+  background: rgba(255, 255, 255, 0.1) !important;
+  /* Slight glass feel */
+  color: #b4860b !important;
+  /* Darker Gold for better readability */
+
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative;
+  overflow: visible !important;
 }
 
-/* Active Indicator (Left Bar) */
-.reference-menu-item.active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 15%;
-  bottom: 15%;
-  width: 4px;
-  background: linear-gradient(to bottom, #fbbf24, #d97706);
-  /* Amber gradient */
-  border-radius: 0 4px 4px 0;
-  box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+/* Hover State for Unselected */
+.reference-menu-item:not(.active):hover {
+  border-color: #ffc107 !important;
+  background: rgba(255, 193, 7, 0.1) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05) !important;
+  color: #d4a017 !important;
+}
+
+/* Active State - Stands out with solid color and depth */
+.reference-menu-item.active {
+  background: #ffcc00 !important;
+  color: #1a1a1a !important;
+  /* Strong dark contrast */
+  border: 1px solid #ffcc00 !important;
+  padding: 12px 20px !important;
+  /* Match layout padding */
+  border-radius: 12px !important;
+
+  /* Strong shadow to create 'Selected' attention */
+  box-shadow:
+    0 4px 12px rgba(255, 204, 0, 0.4),
+    0 0 0 1px rgba(255, 160, 0, 0.5) !important;
+
+  transform: scale(1.02) !important;
+  /* Slight pop */
+  z-index: 10;
+}
+
+/* Pressed State */
+.reference-menu-item:active {
+  transform: scale(0.98) !important;
 }
 
 /* Icons */
@@ -154,59 +175,61 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 24px;
+  height: 24px;
   margin-right: 12px;
-  border-radius: 10px;
   transition: all 0.3s ease;
   color: inherit;
+  opacity: 0.9;
 }
 
 .reference-menu-item.active .reference-menu-icon {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  color: #b45309;
-  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.2);
-}
-
-.reference-menu-item:not(.active):hover .reference-menu-icon {
-  background: rgba(255, 255, 255, 0.8);
-  transform: scale(1.1);
+  opacity: 1;
 }
 
 /* Text */
 .reference-menu-text {
+  /* Site standard font - Non-bold but unique */
+  font-family: 'Rajdhani', sans-serif !important;
   font-weight: 600 !important;
-  font-size: 0.95rem !important;
-  letter-spacing: 0.01em;
+  /* Medium weight */
+  font-size: 16px !important;
+  letter-spacing: 0.05em !important;
+  color: inherit !important;
+  text-transform: uppercase !important;
+
+  /* Clean text, removed text-shadow for better legibility */
+  text-shadow: none !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Active Text Override */
+.reference-menu-item.active .reference-menu-text {
+  font-weight: 700 !important;
+  /* Bolder for active */
+  letter-spacing: 0.08em !important;
+  color: #1a1a1a !important;
 }
 
 /* Badges */
 .reference-menu-badge {
   margin-left: auto !important;
-  padding: 4px 10px !important;
-  border-radius: 20px !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
   font-size: 0.7rem !important;
   font-weight: 700 !important;
   letter-spacing: 0.05em;
-  background: rgba(244, 244, 245, 0.8) !important;
-  /* Zinc 100 */
-  color: #71717a !important;
-  /* Zinc 500 */
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  background: rgba(180, 134, 11, 0.1) !important;
+  color: #b4860b !important;
+  border: 1px solid rgba(180, 134, 11, 0.2);
 }
 
 .reference-menu-item.active .reference-menu-badge {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
-  color: white !important;
-  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
-  border: none;
+  background: rgba(0, 0, 0, 0.1) !important;
+  color: #1a1a1a !important;
+  border-color: rgba(0, 0, 0, 0.1);
 }
 
-/* 
-   Footer 
-   Pinned to bottom.
-*/
 .reference-sidebar-footer {
   padding: 24px !important;
   background: linear-gradient(to top, rgba(255, 255, 255, 0.5), transparent) !important;
