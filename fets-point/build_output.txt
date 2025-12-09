@@ -1,0 +1,251 @@
+
+> fets-point@1.0.0 build E:\FETS LIVE ANTIGRAVITY\FETS.LIVE-2025\fets-point
+> tsc -b tsconfig.app.json && vite build
+
+src/components/Chat/Chat.tsx(29,11): error TS2322: Type 'UseMutateAsyncFunction<{ success: boolean; }, Error, void, unknown>' is not assignable to type 'MouseEventHandler<HTMLButtonElement>'.
+  Types of parameters 'variables' and 'event' are incompatible.
+    Type 'MouseEvent<HTMLButtonElement, MouseEvent>' is not assignable to type 'void'.
+src/components/Chat/Conversation.tsx(31,84): error TS2488: Type 'unknown' must have a '[Symbol.iterator]()' method that returns an iterator.
+src/components/Chat/Conversation.tsx(42,59): error TS2353: Object literal may only specify known properties, and 'authorId' does not exist in type '{ conversationId: string; senderId: string; content: string; }'.
+src/components/Chat/ConversationList.tsx(37,22): error TS2551: Property 'last_message' does not exist on type '{ created_at: string; created_by: string; id: string; is_group: boolean; last_message_at: string; last_message_preview: string; name: string; updated_at: string; members: { conversation_id: string; ... 6 more ...; user: { ...; }; }[]; }'. Did you mean 'last_message_at'?
+src/components/ChecklistManagement.tsx(148,25): error TS2345: Argument of type '{ priority: "low" | "medium" | "high"; created_at: string; description: string; estimated_time_minutes: number; id: string; notes: string; responsible_role: string; sort_order: number; template_id: string; title: string; question_type: string; dropdown_options: Json; is_required: boolean; }[]' is not assignable to parameter of type 'SetStateAction<ChecklistTemplateItem[]>'.
+  Type '{ priority: "low" | "medium" | "high"; created_at: string; description: string; estimated_time_minutes: number; id: string; notes: string; responsible_role: string; sort_order: number; template_id: string; title: string; question_type: string; dropdown_options: Json; is_required: boolean; }[]' is not assignable to type 'ChecklistTemplateItem[]'.
+    Type '{ priority: "low" | "medium" | "high"; created_at: string; description: string | null; estimated_time_minutes: number | null; id: string; notes: string | null; responsible_role: string | null; ... 5 more ...; is_required: boolean | null; }' is not assignable to type 'ChecklistTemplateItem'.
+      Types of property 'question_type' are incompatible.
+        Type 'string' is not assignable to type '"number" | "date" | "text" | "time" | "checkbox" | "dropdown"'.
+src/components/ChecklistManagement.tsx(171,26): error TS2345: Argument of type '{ priority: "low" | "medium" | "high"; created_at: string; description: string; estimated_time_minutes: number; id: string; notes: string; responsible_role: string; sort_order: number; template_id: string; title: string; question_type: string; dropdown_options: Json; is_required: boolean; }[]' is not assignable to parameter of type 'SetStateAction<ChecklistTemplateItem[]>'.
+  Type '{ priority: "low" | "medium" | "high"; created_at: string; description: string; estimated_time_minutes: number; id: string; notes: string; responsible_role: string; sort_order: number; template_id: string; title: string; question_type: string; dropdown_options: Json; is_required: boolean; }[]' is not assignable to type 'ChecklistTemplateItem[]'.
+    Type '{ priority: "low" | "medium" | "high"; created_at: string; description: string | null; estimated_time_minutes: number | null; id: string; notes: string | null; responsible_role: string | null; ... 5 more ...; is_required: boolean | null; }' is not assignable to type 'ChecklistTemplateItem'.
+      Types of property 'question_type' are incompatible.
+        Type 'string' is not assignable to type '"number" | "date" | "text" | "time" | "checkbox" | "dropdown"'.
+src/components/CommandCentrePremium.tsx(8,10): error TS2305: Module '"./ChecklistFillModal"' has no exported member 'ChecklistFillModal'.
+src/components/CommandCentrePremium.tsx(9,10): error TS2305: Module '"./CreateCustomChecklistModal"' has no exported member 'CreateCustomChecklistModal'.
+src/components/CommandCentrePremium.tsx(103,56): error TS2554: Expected 0 arguments, but got 1.
+src/components/CommandCentrePremium.tsx(103,70): error TS2339: Property 'id' does not exist on type 'BranchType'.
+  Property 'id' does not exist on type '"global"'.
+src/components/CommandCentrePremium.tsx(141,17): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(relation: "staff_profiles" | "checklist_instances" | "checklist_template_items" | "checklist_templates" | "conversations" | "desktop_public_posts" | "events" | "messages" | "posts" | ... 37 more ... | "wall_likes"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"calendar_sessions"' is not assignable to parameter of type '"staff_profiles" | "checklist_instances" | "checklist_template_items" | "checklist_templates" | "conversations" | "desktop_public_posts" | "events" | "messages" | "posts" | ... 37 more ... | "wall_likes"'.
+  Overload 2 of 2, '(relation: never): PostgrestQueryBuilder<{ PostgrestVersion: "13.0.4"; }, { Tables: { branch_status: { Row: { branch_name: string; candidates_today: number; created_at: string; id: string; incidents_open: number; ... 7 more ...; workstations_total: number; }; Insert: { ...; }; Update: { ...; }; Relationships: []; }; ... 45 more ...; wall_posts: { ...; }; }; ... 6 more ...; CompositeTypes: {}; }, never, never, never>', gave the following error.
+    Argument of type 'string' is not assignable to parameter of type 'never'.
+src/components/CommandCentrePremium.tsx(167,38): error TS2339: Property 'name' does not exist on type 'BranchType'.
+  Property 'name' does not exist on type '"global"'.
+src/components/CommandCentrePremium.tsx(174,21): error TS2339: Property 'id' does not exist on type 'BranchType'.
+  Property 'id' does not exist on type '"global"'.
+src/components/CommandCentrePremium.tsx(255,7): error TS2322: Type '{ created_at: string; description: string; estimated_time_minutes: number; id: string; notes: string; priority: string; responsible_role: string; sort_order: number; template_id: string; title: string; question_type: string; dropdown_options: Json; is_required: boolean; }[]' is not assignable to type 'ChecklistTemplateItem[]'.
+  Type '{ created_at: string; description: string; estimated_time_minutes: number; id: string; notes: string; priority: string; responsible_role: string; sort_order: number; template_id: string; title: string; question_type: string; dropdown_options: Json; is_required: boolean; }' is not assignable to type 'ChecklistTemplateItem'.
+    Types of property 'priority' are incompatible.
+      Type 'string' is not assignable to type '"high" | "medium" | "low"'.
+src/components/CommandCentrePremium.tsx(257,7): error TS2322: Type '{ created_at: string; description: string; estimated_time_minutes: number; id: string; notes: string; priority: string; responsible_role: string; sort_order: number; template_id: string; title: string; question_type: string; dropdown_options: Json; is_required: boolean; }[]' is not assignable to type 'ChecklistTemplateItem[]'.
+  Type '{ created_at: string; description: string; estimated_time_minutes: number; id: string; notes: string; priority: string; responsible_role: string; sort_order: number; template_id: string; title: string; question_type: string; dropdown_options: Json; is_required: boolean; }' is not assignable to type 'ChecklistTemplateItem'.
+    Types of property 'priority' are incompatible.
+      Type 'string' is not assignable to type '"high" | "medium" | "low"'.
+src/components/CommandCentrePremium.tsx(300,30): error TS2339: Property 'name' does not exist on type 'never'.
+src/components/CommandCentrePremium.tsx(439,30): error TS2345: Argument of type '{ created_at: string; description: string; estimated_time_minutes: number; id: string; notes: string; priority: string; responsible_role: string; sort_order: number; template_id: string; title: string; question_type: string; dropdown_options: Json; is_required: boolean; }[]' is not assignable to parameter of type 'SetStateAction<ChecklistTemplateItem[]>'.
+  Type '{ created_at: string; description: string; estimated_time_minutes: number; id: string; notes: string; priority: string; responsible_role: string; sort_order: number; template_id: string; title: string; question_type: string; dropdown_options: Json; is_required: boolean; }[]' is not assignable to type 'ChecklistTemplateItem[]'.
+    Type '{ created_at: string; description: string; estimated_time_minutes: number; id: string; notes: string; priority: string; responsible_role: string; sort_order: number; template_id: string; title: string; question_type: string; dropdown_options: Json; is_required: boolean; }' is not assignable to type 'ChecklistTemplateItem'.
+      Types of property 'priority' are incompatible.
+        Type 'string' is not assignable to type '"high" | "medium" | "low"'.
+src/components/CommandCentrePremium.tsx(746,36): error TS2367: This comparison appears to be unintentional because the types 'boolean' and 'string' have no overlap.
+src/components/CommandCentrePremium.tsx(779,11): error TS2322: Type '(template: ChecklistTemplate) => Promise<void>' is not assignable to type '(template: ChecklistTemplate) => void'.
+  Types of parameters 'template' and 'template' are incompatible.
+    Type 'ChecklistTemplate' is missing the following properties from type 'ChecklistTemplate': is_active, created_by, updated_at
+src/components/CommandCentrePremium.tsx(878,33): error TS2322: Type 'string | boolean' is not assignable to type 'string | number | readonly string[]'.
+  Type 'boolean' is not assignable to type 'string | number | readonly string[]'.
+src/components/CommandCentrePremium.tsx(879,62): error TS2345: Argument of type '(prev: { exam_date: string; items: { [key: string]: boolean; }; }) => { items: { [x: string]: string | boolean; }; exam_date: string; }' is not assignable to parameter of type 'SetStateAction<{ exam_date: string; items: { [key: string]: boolean; }; }>'.
+  Type '(prev: { exam_date: string; items: { [key: string]: boolean; }; }) => { items: { [x: string]: string | boolean; }; exam_date: string; }' is not assignable to type '(prevState: { exam_date: string; items: { [key: string]: boolean; }; }) => { exam_date: string; items: { [key: string]: boolean; }; }'.
+    Call signature return types '{ items: { [x: string]: string | boolean; }; exam_date: string; }' and '{ exam_date: string; items: { [key: string]: boolean; }; }' are incompatible.
+      The types of 'items' are incompatible between these types.
+        Type '{ [x: string]: string | boolean; }' is not assignable to type '{ [key: string]: boolean; }'.
+          'string' index signatures are incompatible.
+            Type 'string | boolean' is not assignable to type 'boolean'.
+              Type 'string' is not assignable to type 'boolean'.
+src/components/CommandCentrePremium.tsx(891,33): error TS2322: Type 'string | boolean' is not assignable to type 'string | number | readonly string[]'.
+  Type 'boolean' is not assignable to type 'string | number | readonly string[]'.
+src/components/CommandCentrePremium.tsx(892,62): error TS2345: Argument of type '(prev: { exam_date: string; items: { [key: string]: boolean; }; }) => { items: { [x: string]: string | boolean; }; exam_date: string; }' is not assignable to parameter of type 'SetStateAction<{ exam_date: string; items: { [key: string]: boolean; }; }>'.
+  Type '(prev: { exam_date: string; items: { [key: string]: boolean; }; }) => { items: { [x: string]: string | boolean; }; exam_date: string; }' is not assignable to type '(prevState: { exam_date: string; items: { [key: string]: boolean; }; }) => { exam_date: string; items: { [key: string]: boolean; }; }'.
+    Call signature return types '{ items: { [x: string]: string | boolean; }; exam_date: string; }' and '{ exam_date: string; items: { [key: string]: boolean; }; }' are incompatible.
+      The types of 'items' are incompatible between these types.
+        Type '{ [x: string]: string | boolean; }' is not assignable to type '{ [key: string]: boolean; }'.
+          'string' index signatures are incompatible.
+            Type 'string | boolean' is not assignable to type 'boolean'.
+              Type 'string' is not assignable to type 'boolean'.
+src/components/CommandCentrePremium.tsx(903,33): error TS2322: Type 'string | boolean' is not assignable to type 'string | number | readonly string[]'.
+  Type 'boolean' is not assignable to type 'string | number | readonly string[]'.
+src/components/CommandCentrePremium.tsx(904,62): error TS2345: Argument of type '(prev: { exam_date: string; items: { [key: string]: boolean; }; }) => { items: { [x: string]: string | boolean; }; exam_date: string; }' is not assignable to parameter of type 'SetStateAction<{ exam_date: string; items: { [key: string]: boolean; }; }>'.
+  Type '(prev: { exam_date: string; items: { [key: string]: boolean; }; }) => { items: { [x: string]: string | boolean; }; exam_date: string; }' is not assignable to type '(prevState: { exam_date: string; items: { [key: string]: boolean; }; }) => { exam_date: string; items: { [key: string]: boolean; }; }'.
+    Call signature return types '{ items: { [x: string]: string | boolean; }; exam_date: string; }' and '{ exam_date: string; items: { [key: string]: boolean; }; }' are incompatible.
+      The types of 'items' are incompatible between these types.
+        Type '{ [x: string]: string | boolean; }' is not assignable to type '{ [key: string]: boolean; }'.
+          'string' index signatures are incompatible.
+            Type 'string | boolean' is not assignable to type 'boolean'.
+              Type 'string' is not assignable to type 'boolean'.
+src/components/CommandCentrePremium.tsx(920,33): error TS2322: Type 'string | boolean' is not assignable to type 'string | number | readonly string[]'.
+  Type 'boolean' is not assignable to type 'string | number | readonly string[]'.
+src/components/CommandCentrePremium.tsx(921,62): error TS2345: Argument of type '(prev: { exam_date: string; items: { [key: string]: boolean; }; }) => { items: { [x: string]: string | boolean; }; exam_date: string; }' is not assignable to parameter of type 'SetStateAction<{ exam_date: string; items: { [key: string]: boolean; }; }>'.
+  Type '(prev: { exam_date: string; items: { [key: string]: boolean; }; }) => { items: { [x: string]: string | boolean; }; exam_date: string; }' is not assignable to type '(prevState: { exam_date: string; items: { [key: string]: boolean; }; }) => { exam_date: string; items: { [key: string]: boolean; }; }'.
+    Call signature return types '{ items: { [x: string]: string | boolean; }; exam_date: string; }' and '{ exam_date: string; items: { [key: string]: boolean; }; }' are incompatible.
+      The types of 'items' are incompatible between these types.
+        Type '{ [x: string]: string | boolean; }' is not assignable to type '{ [key: string]: boolean; }'.
+          'string' index signatures are incompatible.
+            Type 'string | boolean' is not assignable to type 'boolean'.
+              Type 'string' is not assignable to type 'boolean'.
+src/components/CommandCentrePremium.tsx(932,33): error TS2322: Type 'string | boolean' is not assignable to type 'string | number | readonly string[]'.
+  Type 'boolean' is not assignable to type 'string | number | readonly string[]'.
+src/components/CommandCentrePremium.tsx(933,62): error TS2345: Argument of type '(prev: { exam_date: string; items: { [key: string]: boolean; }; }) => { items: { [x: string]: string | boolean; }; exam_date: string; }' is not assignable to parameter of type 'SetStateAction<{ exam_date: string; items: { [key: string]: boolean; }; }>'.
+  Type '(prev: { exam_date: string; items: { [key: string]: boolean; }; }) => { items: { [x: string]: string | boolean; }; exam_date: string; }' is not assignable to type '(prevState: { exam_date: string; items: { [key: string]: boolean; }; }) => { exam_date: string; items: { [key: string]: boolean; }; }'.
+    Call signature return types '{ items: { [x: string]: string | boolean; }; exam_date: string; }' and '{ exam_date: string; items: { [key: string]: boolean; }; }' are incompatible.
+      The types of 'items' are incompatible between these types.
+        Type '{ [x: string]: string | boolean; }' is not assignable to type '{ [key: string]: boolean; }'.
+          'string' index signatures are incompatible.
+            Type 'string | boolean' is not assignable to type 'boolean'.
+              Type 'string' is not assignable to type 'boolean'.
+src/components/CommandCentrePremium.tsx(943,33): error TS2322: Type 'string | boolean' is not assignable to type 'string | number | readonly string[]'.
+  Type 'boolean' is not assignable to type 'string | number | readonly string[]'.
+src/components/CommandCentrePremium.tsx(944,62): error TS2345: Argument of type '(prev: { exam_date: string; items: { [key: string]: boolean; }; }) => { items: { [x: string]: string | boolean; }; exam_date: string; }' is not assignable to parameter of type 'SetStateAction<{ exam_date: string; items: { [key: string]: boolean; }; }>'.
+  Type '(prev: { exam_date: string; items: { [key: string]: boolean; }; }) => { items: { [x: string]: string | boolean; }; exam_date: string; }' is not assignable to type '(prevState: { exam_date: string; items: { [key: string]: boolean; }; }) => { exam_date: string; items: { [key: string]: boolean; }; }'.
+    Call signature return types '{ items: { [x: string]: string | boolean; }; exam_date: string; }' and '{ exam_date: string; items: { [key: string]: boolean; }; }' are incompatible.
+      The types of 'items' are incompatible between these types.
+        Type '{ [x: string]: string | boolean; }' is not assignable to type '{ [key: string]: boolean; }'.
+          'string' index signatures are incompatible.
+            Type 'string | boolean' is not assignable to type 'boolean'.
+              Type 'string' is not assignable to type 'boolean'.
+src/components/CommandCentrePremium.tsx(959,77): error TS2345: Argument of type 'string' is not assignable to parameter of type 'true'.
+src/components/CommandCentrePremium.tsx(1003,34): error TS2367: This comparison appears to be unintentional because the types 'boolean' and 'string' have no overlap.
+src/components/EnhancedQuickAddModal.tsx(101,15): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(relation: "staff_profiles" | "checklist_instances" | "checklist_template_items" | "checklist_templates" | "conversations" | "desktop_public_posts" | "events" | "messages" | "posts" | ... 37 more ... | "wall_likes"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"schedules"' is not assignable to parameter of type '"staff_profiles" | "checklist_instances" | "checklist_template_items" | "checklist_templates" | "conversations" | "desktop_public_posts" | "events" | "messages" | "posts" | ... 37 more ... | "wall_likes"'.
+  Overload 2 of 2, '(relation: never): PostgrestQueryBuilder<{ PostgrestVersion: "13.0.4"; }, { Tables: { branch_status: { Row: { branch_name: string; candidates_today: number; created_at: string; id: string; incidents_open: number; ... 7 more ...; workstations_total: number; }; Insert: { ...; }; Update: { ...; }; Relationships: []; }; ... 45 more ...; wall_posts: { ...; }; }; ... 6 more ...; CompositeTypes: {}; }, never, never, never>', gave the following error.
+    Argument of type 'string' is not assignable to parameter of type 'never'.
+src/components/EventManager.tsx(100,17): error TS2345: Argument of type '{ assigned_to: string; branch_location: string; category: string; closed_at: string; closure_remarks: string; created_at: string; description: string; event_date: string; id: string; priority: string; reporter_id: string; status: string; title: string; updated_at: string; }[]' is not assignable to parameter of type 'SetStateAction<Event[]>'.
+  Type '{ assigned_to: string; branch_location: string; category: string; closed_at: string; closure_remarks: string; created_at: string; description: string; event_date: string; id: string; priority: string; reporter_id: string; status: string; title: string; updated_at: string; }[]' is not assignable to type 'Event[]'.
+    Type '{ assigned_to: string; branch_location: string; category: string; closed_at: string; closure_remarks: string; created_at: string; description: string; event_date: string; id: string; priority: string; reporter_id: string; status: string; title: string; updated_at: string; }' is not assignable to type 'Event'.
+      Types of property 'priority' are incompatible.
+        Type 'string' is not assignable to type '"critical" | "major" | "minor"'.
+src/components/Feed.tsx(54,9): error TS2353: Object literal may only specify known properties, and 'attachments' does not exist in type '{ content: string; author_id: string; author: any; }'.
+src/components/FetsCalendarPremium.tsx(321,30): error TS2339: Property 'name' does not exist on type 'BranchType'.
+  Property 'name' does not exist on type '"global"'.
+src/components/FetsCalendarPremium.tsx(321,53): error TS2339: Property 'name' does not exist on type 'BranchType'.
+  Property 'name' does not exist on type '"global"'.
+src/components/FetsConnectNew.tsx(104,39): error TS2339: Property 'location' does not exist on type '{ avatar_url: string; bio: string; base_centre: string; branch_assigned: string; certifications: string[]; created_at: string; department: string; email: string; full_name: string; hire_date: string; ... 8 more ...; user_id: string; }'.
+src/components/FetsIntelligence.tsx(46,26): error TS2448: Block-scoped variable 'loadIntelligenceData' used before its declaration.
+src/components/FetsIntelligence.tsx(71,7): error TS2448: Block-scoped variable 'loadAnalytics' used before its declaration.
+src/components/FetsIntelligence.tsx(71,22): error TS2448: Block-scoped variable 'loadInsights' used before its declaration.
+src/components/FetsIntelligence.tsx(71,36): error TS2448: Block-scoped variable 'loadReports' used before its declaration.
+src/components/FetsManager.tsx(147,11): error TS2589: Type instantiation is excessively deep and possibly infinite.
+src/components/FetsManager.tsx(147,25): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(relation: "staff_profiles" | "checklist_instances" | "checklist_template_items" | "checklist_templates" | "conversations" | "desktop_public_posts" | "events" | "messages" | "posts" | ... 37 more ... | "wall_likes"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"news_ticker"' is not assignable to parameter of type '"staff_profiles" | "checklist_instances" | "checklist_template_items" | "checklist_templates" | "conversations" | "desktop_public_posts" | "events" | "messages" | "posts" | ... 37 more ... | "wall_likes"'.
+  Overload 2 of 2, '(relation: never): PostgrestQueryBuilder<{ PostgrestVersion: "13.0.4"; }, { Tables: { branch_status: { Row: { branch_name: string; candidates_today: number; created_at: string; id: string; incidents_open: number; ... 7 more ...; workstations_total: number; }; Insert: { ...; }; Update: { ...; }; Relationships: []; }; ... 45 more ...; wall_posts: { ...; }; }; ... 6 more ...; CompositeTypes: {}; }, never, never, never>', gave the following error.
+    Argument of type 'string' is not assignable to parameter of type 'never'.
+src/components/FetsRoster.tsx(132,13): error TS2322: Type '{ id: string; user_id: string; full_name: string; role: string; email: string; department: string; branch_assigned: string; }[]' is not assignable to type '{ avatar_url: string; bio: string; base_centre: string; branch_assigned: string; certifications: string[]; created_at: string; department: string; email: string; full_name: string; hire_date: string; ... 8 more ...; user_id: string; }[]'.
+  Type '{ id: string; user_id: string; full_name: string; role: string; email: string; department: string; branch_assigned: string; }' is missing the following properties from type '{ avatar_url: string; bio: string; base_centre: string; branch_assigned: string; certifications: string[]; created_at: string; department: string; email: string; full_name: string; hire_date: string; ... 8 more ...; user_id: string; }': avatar_url, bio, base_centre, certifications, and 8 more.
+src/components/FetsRosterPremium.tsx(131,13): error TS2322: Type '{ id: string; user_id: string; full_name: string; role: string; email: string; department: string; branch_assigned: string; }[]' is not assignable to type '{ avatar_url: string; bio: string; base_centre: string; branch_assigned: string; certifications: string[]; created_at: string; department: string; email: string; full_name: string; hire_date: string; ... 8 more ...; user_id: string; }[]'.
+  Type '{ id: string; user_id: string; full_name: string; role: string; email: string; department: string; branch_assigned: string; }' is missing the following properties from type '{ avatar_url: string; bio: string; base_centre: string; branch_assigned: string; certifications: string[]; created_at: string; department: string; email: string; full_name: string; hire_date: string; ... 8 more ...; user_id: string; }': avatar_url, bio, base_centre, certifications, and 8 more.
+src/components/FetsRosterPremium.tsx(358,30): error TS2339: Property 'name' does not exist on type 'BranchType'.
+  Property 'name' does not exist on type '"global"'.
+src/components/FetsRosterPremium.tsx(358,53): error TS2339: Property 'name' does not exist on type 'BranchType'.
+  Property 'name' does not exist on type '"global"'.
+src/components/FetsVault.tsx(316,21): error TS2448: Block-scoped variable 'loadVaultData' used before its declaration.
+src/components/iCloud/NotificationPanel.tsx(100,55): error TS2322: Type '{ children: Element[]; className: string; style: { padding: number; }; }' is not assignable to type 'IntrinsicAttributes & GlassCardProps & RefAttributes<HTMLDivElement>'.
+  Property 'style' does not exist on type 'IntrinsicAttributes & GlassCardProps & RefAttributes<HTMLDivElement>'.
+src/components/iCloud/NotificationPanel.tsx(200,23): error TS2353: Object literal may only specify known properties, and 'className' does not exist in type 'Properties<string | number, string & {}>'.
+src/components/iCloud/TimelineWidget.tsx(40,21): error TS2448: Block-scoped variable 'loadNext7DaysData' used before its declaration.
+src/components/IncidentManager.tsx(115,20): error TS2345: Argument of type '{ assigned_to: string; branch_location: string; category: string; closed_at: string; closure_remarks: string; created_at: string; description: string; event_date: string; id: string; priority: string; reporter_id: string; status: string; title: string; updated_at: string; }[]' is not assignable to parameter of type 'SetStateAction<Incident[]>'.
+  Type '{ assigned_to: string; branch_location: string; category: string; closed_at: string; closure_remarks: string; created_at: string; description: string; event_date: string; id: string; priority: string; reporter_id: string; status: string; title: string; updated_at: string; }[]' is not assignable to type 'Incident[]'.
+    Type '{ assigned_to: string; branch_location: string; category: string; closed_at: string; closure_remarks: string; created_at: string; description: string; event_date: string; id: string; priority: string; reporter_id: string; status: string; title: string; updated_at: string; }' is not assignable to type 'Incident'.
+      Types of property 'priority' are incompatible.
+        Type 'string' is not assignable to type '"critical" | "major" | "minor"'.
+src/components/IncidentManager.tsx(240,30): error TS2339: Property 'name' does not exist on type 'BranchType'.
+  Property 'name' does not exist on type '"global"'.
+src/components/IncidentManager.tsx(240,53): error TS2339: Property 'name' does not exist on type 'BranchType'.
+  Property 'name' does not exist on type '"global"'.
+src/components/IncidentManager.tsx(859,21): error TS2345: Argument of type '{ author_full_name: string; author_id: string; body: string; created_at: string; id: number; incident_id: string; }[]' is not assignable to parameter of type 'SetStateAction<Comment[]>'.
+  Type '{ author_full_name: string; author_id: string; body: string; created_at: string; id: number; incident_id: string; }[]' is not assignable to type 'Comment[]'.
+    Type '{ author_full_name: string; author_id: string; body: string; created_at: string; id: number; incident_id: string; }' is not assignable to type 'Comment'.
+      Types of property 'id' are incompatible.
+        Type 'number' is not assignable to type 'string'.
+src/components/IncidentManager.tsx(917,19): error TS2345: Argument of type '(prev: Comment[]) => ({ author_full_name: string; author_id: string; body: string; created_at: string; id: number; incident_id: string; } | Comment)[]' is not assignable to parameter of type 'SetStateAction<Comment[]>'.
+  Type '(prev: Comment[]) => ({ author_full_name: string; author_id: string; body: string; created_at: string; id: number; incident_id: string; } | Comment)[]' is not assignable to type '(prevState: Comment[]) => Comment[]'.
+    Type '({ author_full_name: string; author_id: string; body: string; created_at: string; id: number; incident_id: string; } | Comment)[]' is not assignable to type 'Comment[]'.
+      Type '{ author_full_name: string; author_id: string; body: string; created_at: string; id: number; incident_id: string; } | Comment' is not assignable to type 'Comment'.
+        Type '{ author_full_name: string; author_id: string; body: string; created_at: string; id: number; incident_id: string; }' is not assignable to type 'Comment'.
+          Types of property 'id' are incompatible.
+            Type 'number' is not assignable to type 'string'.
+src/components/IncidentManager.tsx(917,42): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+src/components/LogIncident.tsx(125,20): error TS2345: Argument of type '{ assigned_to: string; branch_location: string; category: string; completed_at: string; created_at: string; description: string; due_date: string; id: string; is_todo_task: boolean; notes: string; ... 6 more ...; user_id: string; }[]' is not assignable to parameter of type 'SetStateAction<Incident[]>'.
+  Type '{ assigned_to: string; branch_location: string; category: string; completed_at: string; created_at: string; description: string; due_date: string; id: string; is_todo_task: boolean; notes: string; ... 6 more ...; user_id: string; }[]' is not assignable to type 'Incident[]'.
+    Type '{ assigned_to: string; branch_location: string; category: string; completed_at: string; created_at: string; description: string; due_date: string; id: string; is_todo_task: boolean; notes: string; ... 6 more ...; user_id: string; }' is not assignable to type 'Incident'.
+      Types of property 'severity' are incompatible.
+        Type 'string' is not assignable to type '"critical" | "high" | "medium" | "low"'.
+src/components/MyDesk.tsx(63,13): error TS2448: Block-scoped variable 'loadFeedData' used before its declaration.
+src/components/MyDesk.tsx(79,7): error TS2448: Block-scoped variable 'loadMockFeedData' used before its declaration.
+src/components/NewsManager.tsx(47,15): error TS2322: Type 'string' is not assignable to type 'number'.
+src/components/NotificationBanner.tsx(89,51): error TS2339: Property 'dismissNotification' does not exist on type '{ notifications: Notification[]; unreadCount: number; criticalNotifications: Notification[]; highNotifications: Notification[]; unreadNotifications: Notification[]; ... 9 more ...; isDismissing: boolean; }'.
+src/components/NotificationBanner.tsx(148,62): error TS2339: Property 'icon' does not exist on type 'Notification'.
+src/components/NotificationBanner.tsx(149,60): error TS2339: Property 'color' does not exist on type 'Notification'.
+src/components/NotificationBanner.tsx(221,66): error TS2339: Property 'icon' does not exist on type 'Notification'.
+src/components/NotificationBanner.tsx(222,64): error TS2339: Property 'color' does not exist on type 'Notification'.
+src/components/NotificationBanner.tsx(232,43): error TS2551: Property 'isRead' does not exist on type 'Notification'. Did you mean 'is_read'?
+src/components/NotificationBanner.tsx(236,42): error TS2551: Property 'isRead' does not exist on type 'Notification'. Did you mean 'is_read'?
+src/components/NotificationBanner.tsx(262,54): error TS2339: Property 'timestamp' does not exist on type 'Notification'.
+src/components/SettingsPage.tsx(184,32): error TS2589: Type instantiation is excessively deep and possibly infinite.
+src/components/SettingsPage.tsx(185,17): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(relation: "staff_profiles" | "checklist_instances" | "checklist_template_items" | "checklist_templates" | "conversations" | "desktop_public_posts" | "events" | "messages" | "posts" | ... 37 more ... | "wall_likes"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"user_settings"' is not assignable to parameter of type '"staff_profiles" | "checklist_instances" | "checklist_template_items" | "checklist_templates" | "conversations" | "desktop_public_posts" | "events" | "messages" | "posts" | ... 37 more ... | "wall_likes"'.
+  Overload 2 of 2, '(relation: never): PostgrestQueryBuilder<{ PostgrestVersion: "13.0.4"; }, { Tables: { branch_status: { Row: { branch_name: string; candidates_today: number; created_at: string; id: string; incidents_open: number; ... 7 more ...; workstations_total: number; }; Insert: { ...; }; Update: { ...; }; Relationships: []; }; ... 45 more ...; wall_posts: { ...; }; }; ... 6 more ...; CompositeTypes: {}; }, never, never, never>', gave the following error.
+    Argument of type 'string' is not assignable to parameter of type 'never'.
+src/components/SettingsPage.tsx(193,28): error TS2339: Property 'theme' does not exist on type '{ address: string; branch_location: string; center_id: string; check_in_time: string; client_name: string; confirmation_number: string; created_at: string; exam_date: string; exam_name: string; ... 8 more ...; user_id: string; } | ... 45 more ... | { ...; }'.
+  Property 'theme' does not exist on type '{ address: string; branch_location: string; center_id: string; check_in_time: string; client_name: string; confirmation_number: string; created_at: string; exam_date: string; exam_name: string; ... 8 more ...; user_id: string; }'.
+src/components/SettingsPage.tsx(194,30): error TS2339: Property 'language' does not exist on type '{ address: string; branch_location: string; center_id: string; check_in_time: string; client_name: string; confirmation_number: string; created_at: string; exam_date: string; exam_name: string; ... 8 more ...; user_id: string; } | ... 45 more ... | { ...; }'.
+  Property 'language' does not exist on type '{ address: string; branch_location: string; center_id: string; check_in_time: string; client_name: string; confirmation_number: string; created_at: string; exam_date: string; exam_name: string; ... 8 more ...; user_id: string; }'.
+src/components/SettingsPage.tsx(195,30): error TS2339: Property 'timezone' does not exist on type '{ address: string; branch_location: string; center_id: string; check_in_time: string; client_name: string; confirmation_number: string; created_at: string; exam_date: string; exam_name: string; ... 8 more ...; user_id: string; } | ... 45 more ... | { ...; }'.
+  Property 'timezone' does not exist on type '{ address: string; branch_location: string; center_id: string; check_in_time: string; client_name: string; confirmation_number: string; created_at: string; exam_date: string; exam_name: string; ... 8 more ...; user_id: string; }'.
+src/components/SettingsPage.tsx(196,32): error TS2339: Property 'date_format' does not exist on type '{ address: string; branch_location: string; center_id: string; check_in_time: string; client_name: string; confirmation_number: string; created_at: string; exam_date: string; exam_name: string; ... 8 more ...; user_id: string; } | ... 45 more ... | { ...; }'.
+  Property 'date_format' does not exist on type '{ address: string; branch_location: string; center_id: string; check_in_time: string; client_name: string; confirmation_number: string; created_at: string; exam_date: string; exam_name: string; ... 8 more ...; user_id: string; }'.
+src/components/SettingsPage.tsx(198,34): error TS2339: Property 'notifications' does not exist on type '{ address: string; branch_location: string; center_id: string; check_in_time: string; client_name: string; confirmation_number: string; created_at: string; exam_date: string; exam_name: string; ... 8 more ...; user_id: string; } | ... 45 more ... | { ...; }'.
+  Property 'notifications' does not exist on type '{ address: string; branch_location: string; center_id: string; check_in_time: string; client_name: string; confirmation_number: string; created_at: string; exam_date: string; exam_name: string; ... 8 more ...; user_id: string; }'.
+src/components/SettingsPage.tsx(221,47): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(relation: "staff_profiles" | "checklist_instances" | "checklist_template_items" | "checklist_templates" | "conversations" | "desktop_public_posts" | "events" | "messages" | "posts" | ... 37 more ... | "wall_likes"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"user_settings"' is not assignable to parameter of type '"staff_profiles" | "checklist_instances" | "checklist_template_items" | "checklist_templates" | "conversations" | "desktop_public_posts" | "events" | "messages" | "posts" | ... 37 more ... | "wall_likes"'.
+  Overload 2 of 2, '(relation: never): PostgrestQueryBuilder<{ PostgrestVersion: "13.0.4"; }, { Tables: { branch_status: { Row: { branch_name: string; candidates_today: number; created_at: string; id: string; incidents_open: number; ... 7 more ...; workstations_total: number; }; Insert: { ...; }; Update: { ...; }; Relationships: []; }; ... 45 more ...; wall_posts: { ...; }; }; ... 6 more ...; CompositeTypes: {}; }, never, never, never>', gave the following error.
+    Argument of type 'string' is not assignable to parameter of type 'never'.
+src/components/ShiftSwapModal.tsx(7,10): error TS2305: Module '"../types/database.types"' has no exported member 'StaffProfile'.
+src/components/ShiftSwapModal.tsx(7,24): error TS2305: Module '"../types/database.types"' has no exported member 'LeaveRequest'.
+src/components/ShiftSwapModal.tsx(47,29): error TS2448: Block-scoped variable 'loadStaffProfiles' used before its declaration.
+src/components/ShiftSwapModal.tsx(47,48): error TS2448: Block-scoped variable 'loadSwapRequests' used before its declaration.
+src/components/ShiftSwapModal.tsx(96,41): error TS2339: Property 'full_name' does not exist on type 'SelectQueryError<"could not find the relation between leave_requests and profiles">'.
+src/components/ShiftSwapModal.tsx(98,45): error TS2339: Property 'full_name' does not exist on type 'SelectQueryError<"could not find the relation between leave_requests and profiles">'.
+src/components/StaffManagement.tsx(23,10): error TS2305: Module '"../types/database.types"' has no exported member 'StaffProfile'.
+src/components/StaffManagement.tsx(523,20): error TS2345: Argument of type 'Omit<StaffProfile, "id" | "created_at"> & { password?: string; }' is not assignable to parameter of type 'Omit<{ avatar_url: string; bio: string; base_centre: string; branch_assigned: string; certifications: string[]; created_at: string; department: string; email: string; full_name: string; hire_date: string; ... 8 more ...; user_id: string; }, "id" | "created_at"> & { ...; }'.
+  Type 'Omit<StaffProfile, "id" | "created_at"> & { password?: string; }' is missing the following properties from type 'Omit<{ avatar_url: string; bio: string; base_centre: string; branch_assigned: string; certifications: string[]; created_at: string; department: string; email: string; full_name: string; hire_date: string; ... 8 more ...; user_id: string; }, "id" | "created_at">': user_id, status, updated_at, full_name, and 13 more.
+src/components/StaffManagement.tsx(684,38): error TS2322: Type 'string' is not assignable to type '"calicut" | "cochin"'.
+src/components/TaskBoard.tsx(44,21): error TS2345: Argument of type '(task: Task) => void' is not assignable to parameter of type '(value: { assigned_by: { error: true; } & "could not find the relation between user_tasks and profiles"; assigned_to: string; completed_at: string; created_at: string; description: string; ... 5 more ...; updated_at: string; }, index: number, array: { ...; }[]) => void'.
+  Types of parameters 'task' and 'value' are incompatible.
+    Type '{ assigned_by: { error: true; } & "could not find the relation between user_tasks and profiles"; assigned_to: string; completed_at: string; created_at: string; description: string; ... 5 more ...; updated_at: string; }' is not assignable to type 'Task'.
+      Types of property 'status' are incompatible.
+        Type 'string' is not assignable to type 'TaskStatus'.
+src/components/TaskModal.tsx(22,5): error TS2554: Expected 1 arguments, but got 2.
+src/components/TaskModal.tsx(68,23): error TS2345: Argument of type '{ assigned_by: any; assigned_to?: string; description?: string; title?: string; due_date?: string; }' is not assignable to parameter of type '{ title: string; description?: string; assigned_to: string; assigned_by: string; due_date?: string; }'.
+  Property 'title' is optional in type '{ assigned_by: any; assigned_to?: string; description?: string; title?: string; due_date?: string; }' but required in type '{ title: string; description?: string; assigned_to: string; assigned_by: string; due_date?: string; }'.
+src/hooks/useCalendarSessions.ts(50,11): error TS2352: Conversion of type '(SelectQueryError<"Invalid Relationships cannot infer result type"> | SelectQueryError<"Invalid RelationName cannot infer result type">)[]' to type 'Session[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'SelectQueryError<"Invalid Relationships cannot infer result type"> | SelectQueryError<"Invalid RelationName cannot infer result type">' is not comparable to type 'Session'.
+    Type '{ error: true; } & String' is missing the following properties from type 'Session': id, date, start_time, end_time, and 4 more.
+src/hooks/useChat.ts(242,14): error TS2345: Argument of type '"get_direct_conversation"' is not assignable to parameter of type '"is_admin" | "cleanup_old_typing_indicators" | "find_or_create_dm_conversation" | "get_staff_profile_id" | "get_user_role" | "is_authorized" | "is_incident_open" | "is_super_admin" | "log_date_discrepancies" | "like_post" | "unlike_post" | "add_comment"'.
+src/hooks/useChat.ts(444,31): error TS2339: Property 'user_id' does not exist on type '{ presence_ref: string; }'.
+src/hooks/useCommandCentre.ts(36,27): error TS2589: Type instantiation is excessively deep and possibly infinite.
+src/hooks/usePerformanceMonitoring.ts(99,7): error TS2448: Block-scoped variable 'updateCurrentMetrics' used before its declaration.
+src/hooks/useQueries.ts(4,15): error TS2305: Module '"../types/database.types"' has no exported member 'CandidateMetrics'.
+src/hooks/useQueries.ts(4,33): error TS2305: Module '"../types/database.types"' has no exported member 'IncidentStats'.
+src/hooks/useQueries.ts(269,37): error TS2304: Cannot find name 'Inserts'.
+src/hooks/useQueries.ts(288,64): error TS2304: Cannot find name 'Updates'.
+src/hooks/useQueries.ts(439,34): error TS2304: Cannot find name 'Inserts'.
+src/hooks/useQueries.ts(458,64): error TS2304: Cannot find name 'Updates'.
+src/hooks/useQueries.ts(532,33): error TS2304: Cannot find name 'Inserts'.
+src/hooks/useQueries.ts(608,34): error TS2304: Cannot find name 'Inserts'.
+src/hooks/useQueries.ts(627,64): error TS2304: Cannot find name 'Updates'.
+src/hooks/useQueries.ts(688,64): error TS2304: Cannot find name 'Updates'.
+src/hooks/useRealtimeNotifications.ts(149,13): error TS2339: Property 'info' does not exist on type '{ (message: Message, opts?: Partial<Pick<Toast, "id" | "position" | "icon" | "className" | "style" | "duration" | "ariaProps" | "iconTheme" | "toasterId" | "removeDelay">>): string; ... 8 more ...; promise<T>(promise: Promise<...> | (() => Promise<...>), msgs: { ...; }, opts?: DefaultToastOptions): Promise<...>; }'.
+src/hooks/useSessions.ts(31,13): error TS2589: Type instantiation is excessively deep and possibly infinite.
+src/types/shared.ts(6,57): error TS2339: Property 'notifications' does not exist on type '{ branch_status: { Row: { branch_name: string; candidates_today: number; created_at: string; id: string; incidents_open: number; last_updated: string; network_status: string; power_status: string; ... 4 more ...; workstations_total: number; }; Insert: { ...; }; Update: { ...; }; Relationships: []; }; ... 45 more ......'.
+ ELIFECYCLE  Command failed with exit code 1.
