@@ -120,7 +120,7 @@ const TaskModal = ({
                 setFormData({ ...formData, description: e.target.value })
               }
               className="w-full mt-1 p-2 border rounded-md"
-              rows="3"
+              rows={3}
             ></textarea>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -186,8 +186,8 @@ const TaskModal = ({
             {isAdding || isUpdating
               ? 'Saving...'
               : task
-              ? 'Update Task'
-              : 'Create Task'}
+                ? 'Update Task'
+                : 'Create Task'}
           </button>
         </div>
       </motion.div>

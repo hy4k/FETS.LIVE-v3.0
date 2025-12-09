@@ -37,7 +37,7 @@ export const candidatesService = {
 
       if (filters?.date) {
         query = query.gte('exam_date', `${filters.date}T00:00:00Z`)
-                     .lt('exam_date', `${filters.date}T23:59:59Z`)
+          .lt('exam_date', `${filters.date}T23:59:59Z`)
       }
 
       if (filters?.status) {
@@ -593,7 +593,7 @@ export const chatService = {
   async getRooms() {
     try {
       const { data, error } = await supabase
-        .from('chat_rooms')
+        .from('chat_rooms' as any)
         .select('*')
         .order('name', { ascending: true })
 
@@ -982,7 +982,7 @@ export const brainstormService = {
 
   async updateNote(id: string, updates: { content?: string; color?: string; category?: string }) {
     try {
-      const { data, error} = await (supabase as any)
+      const { data, error } = await (supabase as any)
         .from('brainstorm_notes')
         .update({ ...updates, updated_at: new Date().toISOString() } as any)
         .eq('id', id)

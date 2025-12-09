@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
-import { 
-  Vault, 
-  Plus, 
-  Search, 
-  FileText, 
-  Eye, 
-  Edit, 
-  Lock, 
+import {
+  Vault,
+  Plus,
+  Search,
+  FileText,
+  Eye,
+  Edit,
+  Lock,
   Trash2,
   X,
   Tag,
@@ -85,14 +85,14 @@ interface ModernStatsCardProps {
   clickable?: boolean
 }
 
-function ModernStatsCard({ 
-  title, 
-  value, 
-  subtitle, 
-  icon: Icon, 
-  status = 'primary', 
-  onClick, 
-  clickable = false 
+function ModernStatsCard({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  status = 'primary',
+  onClick,
+  clickable = false
 }: ModernStatsCardProps) {
   const statusClassMap: Record<string, string> = {
     positive: 'status-positive',
@@ -104,7 +104,7 @@ function ModernStatsCard({
   const statusClass = statusClassMap[status] || statusClassMap.primary
 
   return (
-    <div 
+    <div
       className={`stats-card ${clickable ? 'cursor-pointer' : ''}`}
       onClick={clickable ? onClick : undefined}
     >
@@ -118,11 +118,11 @@ function ModernStatsCard({
   )
 }
 
-function PasswordVerificationModal({ 
-  isOpen, 
-  onClose, 
-  onSuccess, 
-  itemTitle 
+function PasswordVerificationModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  itemTitle
 }: {
   isOpen: boolean
   onClose: () => void
@@ -302,7 +302,7 @@ export function FetsVault() {
 
   const types: VaultFormData['type'][] = [
     'document',
-    'procedure', 
+    'procedure',
     'manual',
     'template',
     'policy',
@@ -319,7 +319,7 @@ export function FetsVault() {
     try {
       setLoading(true)
       console.log('Loading vault data...')
-      
+
       // Load categories
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('vault_categories')
@@ -343,12 +343,12 @@ export function FetsVault() {
         `)
         .eq('is_deleted', false)
         .order('created_at', { ascending: false })
-      
+
       // Apply branch filter
       if (!isGlobalView) {
         vaultQuery = applyFilter(vaultQuery)
       }
-      
+
       const { data, error } = await vaultQuery
 
       if (error) {
@@ -360,7 +360,7 @@ export function FetsVault() {
           ...item,
           author: item.profiles
         }))
-        setVaultItems(processedItems)
+        setVaultItems(processedItems as VaultItem[])
         console.log(`Loaded ${processedItems.length} vault items for ${isGlobalView ? 'all branches' : activeBranch}`)
       }
 
@@ -473,8 +473,8 @@ export function FetsVault() {
 
         if (error) throw error
 
-        setVaultItems(vaultItems.map(item => 
-          item.id === editingItem.id ? { ...data, author: data.profiles } : item
+        setVaultItems(vaultItems.map(item =>
+          item.id === editingItem.id ? { ...data, author: data.profiles } as VaultItem : item
         ))
         setSuccess('Item updated successfully!')
       } else {
@@ -492,7 +492,7 @@ export function FetsVault() {
 
         if (error) throw error
 
-        setVaultItems([{ ...data, author: data.profiles }, ...vaultItems])
+        setVaultItems([{ ...data, author: data.profiles } as VaultItem, ...vaultItems])
         setSuccess('Item created successfully!')
       }
 
@@ -540,7 +540,7 @@ export function FetsVault() {
 
         if (error) throw error
 
-        setCategories(categories.map(cat => 
+        setCategories(categories.map(cat =>
           cat.id === editingCategory.id ? data : cat
         ))
         setSuccess('Category updated successfully!')
@@ -678,8 +678,8 @@ export function FetsVault() {
 
   const filteredItems = vaultItems.filter(item => {
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         item.content?.toLowerCase().includes(searchQuery.toLowerCase())
+      item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.content?.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesCategory = filterCategory === 'all' || item.category_id === filterCategory
     const matchesType = filterType === 'all' || item.type === filterType
     return matchesSearch && matchesCategory && matchesType
@@ -741,7 +741,7 @@ export function FetsVault() {
                 <span className="text-white/80">{vaultItems.length} resources available</span>
               </div>
             </div>
-            
+
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => {
@@ -838,7 +838,7 @@ export function FetsVault() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            
+
             <select
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900"
               value={filterCategory}
@@ -849,7 +849,7 @@ export function FetsVault() {
                 <option key={category.id} value={category.id}>{category.name}</option>
               ))}
             </select>
-            
+
             <select
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-gray-900"
               value={filterType}
@@ -898,7 +898,7 @@ export function FetsVault() {
           {Object.entries(itemsByCategory).map(([categoryId, items]) => {
             if (items.length === 0) return null
 
-            const category = categoryId === 'uncategorized' 
+            const category = categoryId === 'uncategorized'
               ? { name: 'Uncategorized', color: '#6B7280' } as VaultCategory
               : categories.find(cat => cat.id === categoryId)
 
@@ -909,7 +909,7 @@ export function FetsVault() {
                 {/* Category Header */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div 
+                    <div
                       className="w-4 h-4 rounded-full"
                       style={{ backgroundColor: category.color }}
                     ></div>
@@ -991,7 +991,7 @@ export function FetsVault() {
                             <><Eye className="h-4 w-4" /><span>View</span></>
                           )}
                         </button>
-                        
+
                         <div className="flex items-center space-x-2">
                           <button
                             onClick={() => handleEditItem(item)}
@@ -1019,7 +1019,7 @@ export function FetsVault() {
               <Vault className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-2">No resources found</h3>
               <p className="text-gray-500 mb-6">
-                {vaultItems.length === 0 
+                {vaultItems.length === 0
                   ? "Start building your knowledge base by adding your first resource."
                   : "Try adjusting your search or filter criteria."
                 }
@@ -1087,7 +1087,7 @@ export function FetsVault() {
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
               {editingItem ? 'Edit Resource' : 'Add New Resource'}
             </h2>
-            
+
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -1100,7 +1100,7 @@ export function FetsVault() {
                     required
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
                   <select
@@ -1116,7 +1116,7 @@ export function FetsVault() {
                   </select>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
@@ -1130,7 +1130,7 @@ export function FetsVault() {
                     ))}
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Tags</label>
                   <input
@@ -1142,7 +1142,7 @@ export function FetsVault() {
                   />
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                 <input
@@ -1152,7 +1152,7 @@ export function FetsVault() {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
                 <textarea
@@ -1161,7 +1161,7 @@ export function FetsVault() {
                   onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                 />
               </div>
-              
+
               <div className="flex items-center space-x-3">
                 <input
                   type="checkbox"
@@ -1176,7 +1176,7 @@ export function FetsVault() {
                 </label>
               </div>
             </form>
-            
+
             <div className="flex items-center justify-end space-x-4 mt-6">
               <button
                 onClick={() => setShowModal(false)}
@@ -1204,7 +1204,7 @@ export function FetsVault() {
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
               {editingCategory ? 'Edit Category' : 'Add New Category'}
             </h2>
-            
+
             <form onSubmit={handleCategorySubmit} className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -1217,7 +1217,7 @@ export function FetsVault() {
                     required
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Display Order</label>
                   <input
@@ -1229,7 +1229,7 @@ export function FetsVault() {
                   />
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                 <input
@@ -1239,7 +1239,7 @@ export function FetsVault() {
                   onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
                 />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Color</label>
@@ -1258,7 +1258,7 @@ export function FetsVault() {
                     />
                   </div>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Icon</label>
                   <input
@@ -1271,7 +1271,7 @@ export function FetsVault() {
                 </div>
               </div>
             </form>
-            
+
             <div className="flex items-center justify-between mt-6">
               <div>
                 {editingCategory && (
@@ -1285,7 +1285,7 @@ export function FetsVault() {
                   </button>
                 )}
               </div>
-              
+
               <div className="flex items-center space-x-4">
                 <button
                   onClick={() => setShowCategoryModal(false)}
@@ -1325,7 +1325,7 @@ export function FetsVault() {
                 <X className="h-6 w-6" />
               </button>
             </div>
-            
+
             <div className="space-y-6">
               <div className="flex items-center space-x-4 text-sm text-gray-600">
                 <span className={`px-3 py-1 rounded-full ${getTypeColor(selectedItem.type)}`}>
@@ -1334,13 +1334,13 @@ export function FetsVault() {
                 <span>Created: {formatDate(selectedItem.created_at)}</span>
                 <span>Author: {selectedItem.author?.full_name || 'Unknown'}</span>
               </div>
-              
+
               {selectedItem.description && (
                 <div className="p-4 bg-gray-50 rounded-lg border-l-4 border-yellow-400">
                   <p className="text-gray-700">{selectedItem.description}</p>
                 </div>
               )}
-              
+
               {selectedItem.content && (
                 <div className="prose max-w-none">
                   <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
@@ -1348,7 +1348,7 @@ export function FetsVault() {
                   </div>
                 </div>
               )}
-              
+
               {selectedItem.tags && selectedItem.tags.length > 0 && (
                 <div>
                   <h4 className="text-sm font-medium text-gray-700 mb-2">Tags:</h4>
@@ -1362,7 +1362,7 @@ export function FetsVault() {
                 </div>
               )}
             </div>
-            
+
             <div className="flex items-center justify-end space-x-4 mt-6">
               <button
                 onClick={() => setShowViewer(false)}

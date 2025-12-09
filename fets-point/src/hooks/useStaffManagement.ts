@@ -53,10 +53,10 @@ const deleteStaff = async (staffId: string) => {
   const tablesToDeleteFrom = ['roster_schedules', 'leave_requests', 'checklist_items']
   for (const table of tablesToDeleteFrom) {
     // These will not throw an error if the column doesn't exist, which is safe.
-    await supabase.from(table).delete().eq('profile_id', staffId)
-    await supabase.from(table).delete().eq('staff_profile_id', staffId)
-    await supabase.from(table).delete().eq('assigned_to', staffId)
-    await supabase.from(table).delete().eq('completed_by', staffId)
+    await supabase.from(table as any).delete().eq('profile_id', staffId)
+    await supabase.from(table as any).delete().eq('staff_profile_id', staffId)
+    await supabase.from(table as any).delete().eq('assigned_to', staffId)
+    await supabase.from(table as any).delete().eq('completed_by', staffId)
   }
 
   // 2. Now, delete the staff profile itself.

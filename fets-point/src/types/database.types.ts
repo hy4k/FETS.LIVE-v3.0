@@ -176,6 +176,36 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_rooms: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string | null
+          type: string | null
+          updated_at: string | null
+          last_message: string | null
+          last_message_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name?: string | null
+          type?: string | null
+          updated_at?: string | null
+          last_message?: string | null
+          last_message_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string | null
+          type?: string | null
+          updated_at?: string | null
+          last_message?: string | null
+          last_message_at?: string | null
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           author_id: string
@@ -1392,6 +1422,36 @@ export type Database = {
         }
         Relationships: []
       }
+      roster_audit_log: {
+        Row: {
+          action: string | null
+          branch_name: string | null
+          created_at: string | null
+          details: Json | null
+          id: string
+          performed_by: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action?: string | null
+          branch_name?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          performed_by?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: string | null
+          branch_name?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          performed_by?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
       roster_schedules: {
         Row: {
           branch_location: string | null
@@ -2084,6 +2144,18 @@ export type Database = {
           new_date: string
           old_date: string
         }[]
+      }
+      like_post: {
+        Args: { post_id: string }
+        Returns: void
+      }
+      unlike_post: {
+        Args: { post_id: string }
+        Returns: void
+      }
+      add_comment: {
+        Args: { post_id: string; content: string }
+        Returns: void
       }
     }
     Enums: {

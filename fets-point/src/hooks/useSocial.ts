@@ -38,7 +38,7 @@ export const useSocialPosts = () => {
     queryKey: ['social-posts'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('social_posts')
+        .from('social_posts' as any)
         .select(`
           *,
           user:staff_profiles!social_posts_user_id_fkey(id, full_name, avatar_url, role),
@@ -56,7 +56,7 @@ export const useSocialPosts = () => {
       if (error) throw error;
 
       // Add count
-      return (data || []).map(post => ({
+      return ((data as any[]) || []).map((post: any) => ({
         ...post,
         _count: {
           likes: post.likes?.length || 0,
@@ -96,7 +96,7 @@ export const useCreatePost = () => {
     mutationFn: async ({ content, image_url, user_id, post_type, branch_location }: { content: string; image_url?: string; user_id: string; post_type?: string; branch_location?: string }) => {
       // Insert without returning to avoid RLS issues
       const { error } = await supabase
-        .from('social_posts')
+        .from('social_posts' as any)
         .insert([{
           content,
           image_url,
@@ -130,14 +130,13 @@ export const useToggleLike = () => {
       if (isLiked) {
         // Unlike - use RPC to bypass RLS
         const { error } = await supabase.rpc('unlike_post', {
-          p_post_id: post_id,
-          p_user_id: user_id
+          post_id: post_id
         });
 
         // Fallback to direct delete if RPC doesn't exist
         if (error && error.message?.includes('function')) {
           const { error: deleteError } = await supabase
-            .from('social_likes')
+            .from('social_likes' as any)
             .delete()
             .eq('post_id', post_id)
             .eq('user_id', user_id);
@@ -148,14 +147,13 @@ export const useToggleLike = () => {
       } else {
         // Like - use RPC to bypass RLS
         const { error } = await supabase.rpc('like_post', {
-          p_post_id: post_id,
-          p_user_id: user_id
+          post_id: post_id
         });
 
         // Fallback to direct insert if RPC doesn't exist
         if (error && error.message?.includes('function')) {
           const { error: insertError } = await supabase
-            .from('social_likes')
+            .from('social_likes' as any)
             .insert([{ post_id, user_id }]);
           if (insertError) throw insertError;
         } else if (error) {
@@ -181,15 +179,14 @@ export const useAddComment = () => {
     mutationFn: async ({ post_id, user_id, content }: { post_id: string; user_id: string; content: string }) => {
       // Use RPC to bypass RLS issues
       const { error } = await supabase.rpc('add_comment', {
-        p_post_id: post_id,
-        p_user_id: user_id,
-        p_content: content
+        post_id: post_id,
+        content: content
       });
 
       // Fallback to direct insert if RPC doesn't exist
       if (error && error.message?.includes('function')) {
         const { error: insertError } = await supabase
-          .from('social_comments')
+          .from('social_comments' as any)
           .insert([{ post_id, user_id, content }]);
         if (insertError) throw insertError;
       } else if (error) {
@@ -216,7 +213,7 @@ export const useDeletePost = () => {
   return useMutation({
     mutationFn: async (post_id: string) => {
       const { error } = await supabase
-        .from('social_posts')
+        .from('social_posts' as any)
         .delete()
         .eq('id', post_id);
 

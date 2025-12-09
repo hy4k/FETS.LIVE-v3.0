@@ -470,7 +470,7 @@ export default function CommandCentrePremium() {
                 Command Centre
               </h1>
               <p className="text-lg text-gray-600 font-medium">
-                {activeBranch?.name ? `${activeBranch.name} · ` : ''}Welcome back, {profile?.full_name || 'User'}
+                {activeBranch && activeBranch !== 'global' ? `${activeBranch.charAt(0).toUpperCase() + activeBranch.slice(1)} · ` : ''}Welcome back, {profile?.full_name || 'User'}
               </p>
             </div>
             <div className="text-right">

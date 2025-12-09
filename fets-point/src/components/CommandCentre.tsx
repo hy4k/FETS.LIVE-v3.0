@@ -14,7 +14,7 @@ import { SevenDayCalendarWidget } from './SevenDayCalendarWidget'
 import { SevenDayRosterDisplay } from './SevenDayRosterDisplay'
 import { supabase } from '../lib/supabase' // Keep for mutations
 import { ChecklistFillModal } from './ChecklistFillModal'
-import { CreateCustomChecklistModal } from './CreateCustomChecklistModal'
+
 import { NotificationBanner } from './NotificationBanner'
 
 interface DashboardData {
@@ -780,8 +780,8 @@ export default function CommandCentre({ onNavigate }: { onNavigate?: (tab: strin
                     <div
                       key={item.id}
                       className={`p-4 rounded-xl border-2 transition-all ${fillData.items[item.id.toString()]
-                          ? 'bg-green-50 border-green-300'
-                          : 'bg-white border-gray-200 hover:border-gray-300'
+                        ? 'bg-green-50 border-green-300'
+                        : 'bg-white border-gray-200 hover:border-gray-300'
                         }`}
                     >
                       <label className="flex items-start gap-4 cursor-pointer">

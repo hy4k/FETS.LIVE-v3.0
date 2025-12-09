@@ -304,7 +304,9 @@ export function CandidateTrackerPremium() {
           filename: uploadFile.name,
           total_candidates: 0,
           uploaded_by_user_id: user.id,
-          status: 'processing'
+          status: 'processing',
+          exam_provider: 'Bulk Upload',
+          file_type: uploadFile.type || 'text/csv'
         })
         .select()
         .single()
