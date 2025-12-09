@@ -21,8 +21,10 @@ import { supabase } from './lib/supabase';
 import { useIsMobile, useScreenSize } from './hooks/use-mobile';
 
 // Lazy load all page components for better performance
+// Lazy load all page components for better performance
 const Dashboard = lazy(() => import('./components/iCloud/iCloudDashboard').then(module => ({ default: module.ICloudDashboard })))
 const CommandCentre = lazy(() => import('./components/CommandCentrePremium').then(module => ({ default: module.default })))
+const MobileDashboard = lazy(() => import('./components/MobileDashboard').then(module => ({ default: module.MobileDashboard }))) // New Import
 const CandidateTracker = lazy(() => import('./components/CandidateTracker').then(module => ({ default: module.CandidateTracker })))
 const MyDesk = lazy(() => import('./components/MyDeskNew').then(module => ({ default: module.MyDeskNew })))
 const StaffManagement = lazy(() => import('./components/StaffManagement').then(module => ({ default: module.StaffManagement })))
@@ -53,14 +55,14 @@ const queryClient = new QueryClient({
 // Connection status component for debugging
 function ConnectionStatus() {
   const [connectionTest, setConnectionTest] = useState<string>('untested')
-  
+
   const testConnection = async () => {
     try {
       setConnectionTest('testing')
       console.log('🔄 Testing Supabase connection...')
-      
+
       const { error } = await supabase.from('staff_profiles').select('count', { count: 'exact', head: true })
-      
+
       if (error) {
         console.error('❌ Connection test failed:', error.message)
         setConnectionTest('failed')
@@ -73,14 +75,14 @@ function ConnectionStatus() {
       setConnectionTest('failed')
     }
   }
-  
+
   if (process.env.NODE_ENV === 'development') {
     return (
       <div className="fixed bottom-4 right-4 bg-white p-4 rounded-lg shadow-lg border z-50">
         <div className="text-sm">
           <div className="font-medium mb-2">Supabase Connection</div>
           <div className="flex items-center space-x-2">
-            <button 
+            <button
               onClick={testConnection}
               className="px-3 py-1 bg-blue-500 text-white rounded text-xs"
               disabled={connectionTest === 'testing'}
@@ -95,23 +97,31 @@ function ConnectionStatus() {
       </div>
     )
   }
-  
+
   return null
 }
 
 function AppContent() {
   const { user, loading, profile } = useAuth()
   const { activeBranch, getBranchTheme } = useBranch()
-  const [activeTab, setActiveTab] = useState('command-center')
+  const isMobile = useIsMobile()
+  // Initialize tab based on device type
+  const [activeTab, setActiveTab] = useState(isMobile ? 'mobile-home' : 'command-center')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const isMobile = useIsMobile()
   const screenSize = useScreenSize()
 
 
   // Log app initialization
   console.log('🚀 FETS POINT App initialized')
   console.log('📊 App state:', { userAuthenticated: !!user, loading, isMobile, screenSize })
+
+  // Effect to switch to mobile home if screen resizes to mobile and we are on command-center (optional, but good for UX)
+  useEffect(() => {
+    if (isMobile && activeTab === 'command-center') {
+      setActiveTab('mobile-home');
+    }
+  }, [isMobile]);
 
   useEffect(() => {
     // Role-based access control check
@@ -131,9 +141,9 @@ function AppContent() {
       <div className="golden-theme flex items-center justify-center relative min-h-screen">
         <div className="text-center relative z-10 px-4">
           <div className="golden-logo inline-block mb-8 golden-pulse">
-            <img 
-              src="/fets-point-logo.png" 
-              alt="FETS POINT" 
+            <img
+              src="/fets-point-logo.png"
+              alt="FETS POINT"
               className="h-16 w-16 sm:h-20 sm:w-20"
             />
           </div>
@@ -160,6 +170,10 @@ function AppContent() {
   const renderContent = () => {
     // Map routes to components with proper error boundaries and loading states
     const routeComponents: { [key: string]: { component: JSX.Element; name: string } } = {
+      'mobile-home': {
+        component: <MobileDashboard onNavigate={setActiveTab} />,
+        name: 'Home'
+      },
       'command-center': {
         component: <CommandCentre />,
         name: 'Command Centre'
@@ -215,9 +229,9 @@ function AppContent() {
     }
 
     const currentRoute = routeComponents[activeTab] || routeComponents['command-center']
-    
+
     return (
-      <LazyErrorBoundary 
+      <LazyErrorBoundary
         routeName={currentRoute.name}
         onGoBack={() => setActiveTab('command-center')}
         onRetry={() => {
@@ -240,25 +254,27 @@ function AppContent() {
         isMobile={isMobile}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
+        activeTab={activeTab}
+        onNavigate={setActiveTab}
       />
-      
 
-      
+
+
       {/* Desktop Sidebar */}
       {!isMobile && (
-        <Sidebar 
-          activeTab={activeTab} 
-          setActiveTab={setActiveTab} 
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
           isMobile={false}
           isCollapsed={sidebarCollapsed}
           setIsCollapsed={setSidebarCollapsed}
         />
       )}
-      
+
       {/* Mobile Sidebar */}
       {isMobile && sidebarOpen && (
-        <Sidebar 
-          activeTab={activeTab} 
+        <Sidebar
+          activeTab={activeTab}
           setActiveTab={(tab) => {
             setActiveTab(tab)
             setSidebarOpen(false)
@@ -267,7 +283,7 @@ function AppContent() {
           onClose={() => setSidebarOpen(false)}
         />
       )}
-      
+
       {/* Main Content with proper spacing */}
       <div className="content-with-single-banner">
         <div className="dashboard-centered">
@@ -275,7 +291,7 @@ function AppContent() {
         </div>
       </div>
 
-      
+
       <ConnectionStatus />
       {process.env.NODE_ENV === 'development' && <DatabaseSetup />}
     </div>

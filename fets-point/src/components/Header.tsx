@@ -1,6 +1,6 @@
 import { FetsLogo } from './FetsLogo';
 import './HeaderTheme.css'; // Import the new theme
-import { Bell, Menu, X, ChevronDown, MapPin, Sparkles, User, Zap, Building2 } from 'lucide-react';
+import { Bell, Menu, X, ChevronDown, MapPin, Sparkles, User, Zap, Building2, Home } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useBranch } from '../hooks/useBranch';
@@ -13,9 +13,11 @@ interface HeaderProps {
   isMobile?: boolean;
   sidebarOpen?: boolean;
   setSidebarOpen?: (open: boolean) => void;
+  onNavigate?: (tab: string) => void;
+  activeTab?: string;
 }
 
-export function Header({ isMobile = false, sidebarOpen = false, setSidebarOpen }: HeaderProps = {}) {
+export function Header({ isMobile = false, sidebarOpen = false, setSidebarOpen, onNavigate, activeTab }: HeaderProps = {}) {
   const { profile, user } = useAuth();
   const { activeBranch, setActiveBranch } = useBranch();
   const unreadCount = useUnreadCount();
@@ -72,14 +74,27 @@ export function Header({ isMobile = false, sidebarOpen = false, setSidebarOpen }
           {/* LEFT: Branding */}
           <div className="flex items-center gap-6 shrink-0">
             {/* Mobile Menu */}
-            {isMobile && setSidebarOpen && (
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="fets-panel p-3 text-yellow-950 transition-colors"
-                style={{ borderRadius: '12px' }}
-              >
-                {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-              </button>
+            {isMobile && (
+              <div className="flex gap-2">
+                {activeTab !== 'mobile-home' && onNavigate && (
+                  <button
+                    onClick={() => onNavigate('mobile-home')}
+                    className="fets-panel p-3 text-yellow-950 transition-colors bg-white/20"
+                    style={{ borderRadius: '12px' }}
+                  >
+                    <Home className="h-6 w-6" />
+                  </button>
+                )}
+                {setSidebarOpen && (
+                  <button
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    className="fets-panel p-3 text-yellow-950 transition-colors"
+                    style={{ borderRadius: '12px' }}
+                  >
+                    {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                  </button>
+                )}
+              </div>
             )}
 
             {/* FETS.LIVE Logo - Animated Button Edition */}

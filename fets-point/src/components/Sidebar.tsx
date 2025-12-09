@@ -43,7 +43,7 @@ interface NavigationItem {
 }
 
 // NAVIGATION STRUCTURE - PREMIUM ICONS FOR VISUAL RECOGNITION
-const navigationGroups: { [key: string]: NavigationItem[] } = {
+export const navigationGroups: { [key: string]: NavigationItem[] } = {
   operations: [
     { id: 'command-center', name: 'Command Centre', icon: LayoutDashboard, badge: 'Home' },
     { id: 'candidate-tracker', name: 'Candidate Tracker', icon: UserSearch },
