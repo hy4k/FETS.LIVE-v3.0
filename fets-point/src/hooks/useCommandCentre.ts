@@ -20,42 +20,42 @@ export const useDashboardStats = () => {
     queryFn: async () => {
       const today = new Date().toISOString().split('T')[0]
 
+      // 1. Fetch High-Level Branch Status (Pre-aggregated)
+      const { data: branchStatus } = await supabase
+        .from('branch_status')
+        .select('*')
+        .eq('branch_name', activeBranch === 'global' ? 'calicut' : activeBranch) // Fallback for global
+        .single();
+
+      // 2. Fetch Granular Real-time Data (where tables exist)
       const [
-        { count: totalCandidates },
         { count: todayCandidates },
-        { count: openEvents },
-        { count: pendingChecklists },
-        { data: todaysRosterData },
-        { count: newPosts }, // This will now correctly query the 'posts' table
+        { count: openIncidents },
         { count: newMessages },
-        { count: pendingIncidents },
-        { data: todaysExams },
+        { count: newPosts }
       ] = await Promise.all([
-        applyBranchFilter(supabase.from('candidates').select('*', { count: 'exact', head: true }), activeBranch),
         applyBranchFilter(supabase.from('candidates').select('*', { count: 'exact', head: true }).gte('created_at', `${today}T00:00:00`), activeBranch),
-        applyBranchFilter(supabase.from('events').select('*', { count: 'exact', head: true }).eq('is_pending', true), activeBranch),
-        applyBranchFilter(supabase.from('checklist_items').select('*', { count: 'exact', head: true }).is('completed_at', null), activeBranch),
-        applyBranchFilter(supabase.from('staff_schedules').select('staff_profiles(full_name)').eq('schedule_date', today), activeBranch),
-        applyBranchFilter(supabase.from('posts').select('*', { count: 'exact', head: true }).gte('created_at', `${today}T00:00:00`), activeBranch),
-        applyBranchFilter(supabase.from('chat_messages').select('*', { count: 'exact', head: true }).gte('created_at', `${today}T00:00:00`), activeBranch),
-        applyBranchFilter(supabase.from('incidents').select('*', { count: 'exact', head: true }).neq('status', 'closed'), activeBranch),
-        applyBranchFilter(supabase.from('sessions').select('client_name, candidate_count').eq('date', today), activeBranch),
+        applyBranchFilter(supabase.from('events').select('*', { count: 'exact', head: true }).eq('status', 'open').or('category.eq.incident,priority.eq.high'), activeBranch),
+        applyBranchFilter(supabase.from('chat_messages').select('*', { count: 'exact', head: true }).is('read_at', null), activeBranch), // Assuming simple unread logic
+        applyBranchFilter(supabase.from('desktop_public_posts').select('*', { count: 'exact', head: true }).gte('created_at', `${today}T00:00:00`), activeBranch),
       ])
 
-      const todaysRoster = todaysRosterData && todaysRosterData.length > 0
-        ? { date: today, day: new Date().toLocaleDateString('en-US', { weekday: 'short' }), staff: todaysRosterData.map((r: any) => r.staff_profiles.full_name) }
-        : null
+      // 3. Mock or Fallback data for missing tables (Staff Schedules, Sessions)
+      // We will rely on branchStatus for these if possible, or 0
+      const staffPresent = branchStatus?.staff_present || 0;
+      const candidatesFromStatus = branchStatus?.candidates_today || 0;
 
       return {
-        totalCandidates: totalCandidates ?? 0,
-        todayCandidates: todayCandidates ?? 0,
-        openEvents: openEvents ?? 0,
-        pendingChecklists: pendingChecklists ?? 0,
-        todaysRoster,
+        totalCandidates: todayCandidates ?? candidatesFromStatus, // Prefer real-time
+        todayCandidates: todayCandidates ?? candidatesFromStatus,
+        openEvents: openIncidents ?? branchStatus?.incidents_open ?? 0,
+        pendingChecklists: 0, // Removed broken query
+        todaysRoster: { staff: [] }, // Placeholder until roster_schedules is fixed
         newPosts: newPosts ?? 0,
         newMessages: newMessages ?? 0,
-        pendingIncidents: pendingIncidents ?? 0,
-        todaysExams: todaysExams || [],
+        pendingIncidents: openIncidents ?? 0,
+        todaysExams: [], // Placeholder
+        branchStatusData: branchStatus // Return full status object for detailed views
       }
     },
     staleTime: STALE_TIME,
@@ -79,7 +79,7 @@ export const useCandidateTrend = () => {
           .select('*', { count: 'exact', head: true })
           .gte('created_at', `${dateString}T00:00:00`)
           .lt('created_at', `${dateString}T23:59:59`)
-        
+
         return applyBranchFilter(query, activeBranch).then(({ count }) => ({ date: dateString, count: count ?? 0 }))
       })
       const trendData = await Promise.all(trendPromises)

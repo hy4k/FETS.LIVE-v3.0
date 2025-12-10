@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Activity,
@@ -15,13 +15,18 @@ import {
   FilePlus,
   Clock,
   ChevronRight,
-  AlertCircle,
-  MoreHorizontal
+  MoreHorizontal,
+  Trash2,
+  CheckCircle,
+  Circle
 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useDashboardStats } from '../hooks/useCommandCentre'
 import { useBranch } from '../hooks/useBranch'
 import { format } from 'date-fns'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { taskService, Task } from '../services/task.service'
+import { toast } from 'react-hot-toast'
 
 // --- Interfaces ---
 
@@ -133,11 +138,17 @@ const StatRow = ({ label, value, subtext }: { label: string, value: string | num
   </div>
 )
 
-const TaskItem = ({ title, priority }: { title: string, priority: 'high' | 'medium' | 'low' }) => (
-  <div className="flex items-center gap-3 py-2 px-2 hover:bg-white/50 rounded-lg cursor-pointer transition-colors group">
-    <div className={`w-2 h-2 rounded-full ${priority === 'high' ? 'bg-red-500' : priority === 'medium' ? 'bg-amber-500' : 'bg-emerald-500'} ring-4 ring-opacity-20 ring-${priority === 'high' ? 'red' : priority === 'medium' ? 'amber' : 'emerald'}-500`} />
-    <span className="text-sm font-medium text-gray-700 flex-1 truncate">{title}</span>
-    <ChevronRight size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+const TaskItem = ({ task, onToggle }: { task: Task, onToggle?: (id: string, status: string) => void }) => (
+  <div
+    className="flex items-center gap-3 py-2 px-2 hover:bg-white/50 rounded-lg cursor-pointer transition-colors group"
+    onClick={(e) => {
+      e.stopPropagation();
+      if (onToggle) onToggle(task.id, task.status === 'completed' ? 'pending' : 'completed');
+    }}
+  >
+    <div className={`w-2 h-2 rounded-full ${task.priority === 'high' ? 'bg-red-500' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-emerald-500'} ring-4 ring-opacity-20 ring-${task.priority === 'high' ? 'red' : task.priority === 'medium' ? 'amber' : 'emerald'}-500`} />
+    <span className={`text-sm font-medium flex-1 truncate ${task.status === 'completed' ? 'text-gray-400 line-through' : 'text-gray-700'}`}>{task.title}</span>
+    {task.status === 'completed' ? <CheckCircle size={14} className="text-emerald-500" /> : <ChevronRight size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />}
   </div>
 )
 
@@ -158,40 +169,55 @@ export function MyDeskNew() {
   const { activeBranch } = useBranch()
   const { data: stats } = useDashboardStats()
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const queryClient = useQueryClient();
 
-  // Tasks Setup (Mock + LocalStorage Logic reuse)
-  const [tasks, setTasks] = useState<any[]>([])
+  // Tasks Data
+  const { data: tasks = [] } = useQuery({
+    queryKey: ['myTasks'],
+    queryFn: taskService.getMyTasks,
+  });
 
-  useEffect(() => {
-    const saved = localStorage.getItem('fets-tasks')
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        // Flatten tasks from columns for preview
-        const allTasks = parsed.flatMap((col: any) => col.tasks)
-        setTasks(allTasks.slice(0, 3))
-      } catch (e) { console.error(e) }
-    } else {
-      // Mock initial
-      setTasks([
-        { id: '1', title: 'Review candidates', priority: 'high' },
-        { id: '2', title: 'Approve rosters', priority: 'medium' },
-        { id: '3', title: 'Briefing notes', priority: 'low' },
-      ])
+  const createTaskMutation = useMutation({
+    mutationFn: taskService.createTask,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
+      console.log('Task created!');
     }
-  }, [])
+  });
+
+  const updateTaskMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string, updates: Partial<Task> }) => taskService.updateTask(id, updates),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['myTasks'] })
+  });
+
+  const deleteTaskMutation = useMutation({
+    mutationFn: taskService.deleteTask,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['myTasks'] })
+  });
 
   // Derived Data
-  const sessionCount = stats?.todaysExams?.length || 0
-  const candidateCount = stats?.todayCandidates || 0
+  const sessionCount = stats?.todayCandidates || 0 // Fallback logic
+  const candidateCount = stats?.todaysExams?.reduce((acc: any, s: any) => acc + (s.candidate_count || 0), 0) || stats?.todayCandidates || 0;
   const incidentCount = stats?.pendingIncidents || 0
+  const unreadMessages = stats?.newMessages || 0;
 
   // rosterStaff fallback is critical if data is missing
-  const rosterStaff: string[] = stats?.todaysRoster?.staff || ['Mithun', 'Niyas', 'Adithyan']
+  const rosterStaff: string[] = stats?.todaysRoster?.staff || []
 
   // Handlers
   const handleExpand = (id: string) => setExpandedId(id)
   const handleClose = () => setExpandedId(null)
+
+  const handleCreateTask = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    createTaskMutation.mutate({
+      title: formData.get('title') as string,
+      priority: formData.get('priority') as any || 'medium',
+      status: 'pending'
+    });
+    e.currentTarget.reset();
+  };
 
   return (
     <div className="min-h-screen bg-[#e0e5ec] pt-28 pb-12 px-4 md:px-8">
@@ -204,7 +230,7 @@ export function MyDeskNew() {
           </h1>
           <p className="text-gray-500 font-medium mt-1 ml-1 flex items-center gap-2">
             <span className={`w-2 h-2 rounded-full ${activeBranch === 'calicut' ? 'bg-amber-500' : 'bg-blue-500'}`}></span>
-            {activeBranch.toUpperCase()} OPERATIONS CENTER
+            {activeBranch.toUpperCase()} OPERATIONS
           </p>
         </div>
 
@@ -224,27 +250,34 @@ export function MyDeskNew() {
         <LiveTile id="ops" title="Today Ops" icon={Activity} onExpand={() => handleExpand('ops')} color="amber">
           <div className="space-y-1">
             <StatRow
-              label="Active Sessions"
-              value={sessionCount}
-              subtext={`${stats?.todaysExams?.reduce((acc: number, s: any) => acc + (s.candidate_count || 0), 0) || 0} Seats`}
+              label="Active Candidates"
+              value={candidateCount}
+              subtext="Checked In Today"
             />
-            <StatRow label="Pending Incidents" value={incidentCount} subtext="Requires Attention" />
+            <StatRow label="Open Incidents" value={incidentCount} subtext="Requires Attention" />
             <div className="mt-4 pt-3 border-t border-gray-200/50 flex items-center justify-between">
               <span className="text-xs font-bold text-gray-400 uppercase">System Status</span>
-              <span className="text-xs font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">OPERATIONAL</span>
+              <span className="text-xs font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">
+                {stats?.branchStatusData?.system_health || 'OPERATIONAL'}
+              </span>
             </div>
           </div>
         </LiveTile>
 
-        {/* 2. Task Queue Tile */}
+        {/* 2. Task Queue Tile - REAL DATA */}
         <LiveTile id="tasks" title="Task Queue" icon={CheckSquare} onExpand={() => handleExpand('tasks')} color="emerald">
-          <div className="space-y-2 mb-2">
-            {tasks.map(task => (
-              <TaskItem key={task.id} title={task.title} priority={task.priority} />
+          <div className="space-y-2 mb-2 flex-1 overflow-hidden">
+            {tasks.length === 0 ? (
+              <div className="text-center text-gray-400 text-sm py-4">No pending tasks</div>
+            ) : tasks.slice(0, 3).map(task => (
+              <TaskItem key={task.id} task={task} />
             ))}
           </div>
-          <button className="w-full mt-auto py-2 flex items-center justify-center gap-2 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors font-semibold text-sm">
-            <Plus size={16} /> Add New Task
+          <button
+            onClick={(e) => { e.stopPropagation(); handleExpand('tasks'); }}
+            className="w-full mt-auto py-2 flex items-center justify-center gap-2 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors font-semibold text-sm"
+          >
+            <Plus size={16} /> Manage Tasks
           </button>
         </LiveTile>
 
@@ -252,16 +285,16 @@ export function MyDeskNew() {
         <LiveTile id="messages" title="Messages" icon={MessageSquare} onExpand={() => handleExpand('messages')} color="blue">
           <div className="flex flex-col items-center justify-center py-4">
             <div className="relative">
-              <div className="absolute inset-0 bg-blue-400 blur-xl opacity-20 rounded-full animate-pulse"></div>
+              <div className={`absolute inset-0 bg-blue-400 blur-xl opacity-20 rounded-full ${unreadMessages > 0 ? 'animate-pulse' : ''}`}></div>
               <MessageSquare size={48} className="text-blue-500 relative z-10" />
-              {stats?.newMessages > 0 && (
+              {unreadMessages > 0 && (
                 <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full border-2 border-[#e0e5ec] flex items-center justify-center">
-                  <span className="text-[10px] font-bold text-white">{stats.newMessages}</span>
+                  <span className="text-[10px] font-bold text-white">{unreadMessages}</span>
                 </div>
               )}
             </div>
-            <h4 className="mt-4 text-2xl font-bold text-gray-800">{stats?.newMessages || 0} Unread</h4>
-            <p className="text-sm text-gray-500 font-medium">Staff Notes & Alerts</p>
+            <h4 className="mt-4 text-2xl font-bold text-gray-800">{unreadMessages} New</h4>
+            <p className="text-sm text-gray-500 font-medium">Unread Messages</p>
           </div>
         </LiveTile>
 
@@ -269,8 +302,8 @@ export function MyDeskNew() {
         <LiveTile id="roster" title="Roster Snapshot" icon={Users} onExpand={() => handleExpand('roster')} color="purple">
           <div className="space-y-3">
             <div className="flex items-center justify-between text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-              <span>On Duty Now</span>
-              <span>{rosterStaff.length} Active</span>
+              <span>Scheduled Today</span>
+              <span>{rosterStaff.length} Staff</span>
             </div>
             <div className="flex -space-x-3 overflow-hidden py-2 px-1">
               {rosterStaff.slice(0, 5).map((staff: string, i: number) => (
@@ -278,22 +311,22 @@ export function MyDeskNew() {
                   {staff.charAt(0)}
                 </div>
               ))}
-              {rosterStaff.length > 5 && (
+              {rosterStaff.length === 0 && (
                 <div className="w-10 h-10 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-xs font-bold text-gray-500">
-                  +{rosterStaff.length - 5}
+                  --
                 </div>
               )}
             </div>
             {rosterStaff.length > 0 && (
               <div className="bg-purple-50 p-3 rounded-lg border border-purple-100">
-                <p className="text-xs text-purple-800 font-medium"><span className="font-bold">{rosterStaff[0]}</span> is Shift Mgr.</p>
+                <p className="text-xs text-purple-800 font-medium"><span className="font-bold">{rosterStaff[0]}</span> is on shift.</p>
               </div>
             )}
           </div>
         </LiveTile>
 
         {/* 5. Candidate Flow Tile (Capacity) */}
-        <LiveTile id="candidates" title="Candidate Flow" icon={TrendingUp} onExpand={() => handleExpand('candidates')} color="rose">
+        <LiveTile id="candidates" title="Capacity" icon={TrendingUp} onExpand={() => handleExpand('candidates')} color="rose">
           <div className="flex items-center justify-between h-full">
             <div className="relative w-24 h-24">
               {/* Circular Progress Mock */}
@@ -306,9 +339,10 @@ export function MyDeskNew() {
               </div>
             </div>
             <div className="text-right flex-1 pl-4">
-              <p className="text-3xl font-bold text-gray-800">{Math.round((candidateCount / 50) * 100)}%</p>
-              <p className="text-xs font-bold text-gray-400 uppercase">Capacity Usage</p>
-              <p className="text-xs text-rose-600 font-medium mt-1">+12% vs last hour</p>
+              <p className="text-sm font-bold text-gray-400 uppercase">Today's Load</p>
+              <p className="text-2xl font-bold text-gray-800">
+                {Math.min(100, Math.round((candidateCount / 60) * 100))}%
+              </p>
             </div>
           </div>
         </LiveTile>
@@ -316,9 +350,9 @@ export function MyDeskNew() {
         {/* 6. Quick Tools Tile */}
         <LiveTile id="tools" title="Quick Tools" icon={Zap} onExpand={() => { }} color="indigo" colSpan={1}>
           <div className="grid grid-cols-2 gap-3 h-full">
-            <QuickActionButton icon={QrCode} label="Scan QR" onClick={() => console.log('Scan')} />
-            <QuickActionButton icon={Search} label="ID Lookup" onClick={() => console.log('Lookup')} />
-            <QuickActionButton icon={FilePlus} label="New Incident" onClick={() => console.log('Incident')} />
+            <QuickActionButton icon={QrCode} label="Scan QR" onClick={() => alert('QR Scanner logic would open here')} />
+            <QuickActionButton icon={Search} label="Lookup" onClick={() => alert('Candidate Search Modal')} />
+            <QuickActionButton icon={FilePlus} label="Incident" onClick={() => alert('New Incident Form')} />
             <QuickActionButton icon={MoreHorizontal} label="More" onClick={() => console.log('More')} />
           </div>
         </LiveTile>
@@ -327,42 +361,81 @@ export function MyDeskNew() {
 
       {/* Expanded Overlay Manager */}
       <AnimatePresence>
-        {expandedId === 'ops' && (
-          <ExpandedPanel id="ops" title="Operations Overview" onClose={handleClose}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
-                <h3 className="text-xl font-bold mb-4">Live Session Data</h3>
-                {/* Placeholder for detailed Ops View */}
-                <div className="h-64 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400">Detailed Graphs & Session Lists would go here</div>
+        {expandedId === 'tasks' && (
+          <ExpandedPanel id="tasks" title="Task Manager" onClose={handleClose}>
+            <div className="grid md:grid-cols-3 gap-6">
+              {/* Task Form */}
+              <div className="md:col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
+                <h3 className="font-bold text-gray-800 mb-4">Add New Task</h3>
+                <form onSubmit={handleCreateTask} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Title</label>
+                    <input name="title" required className="w-full p-3 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-emerald-500" placeholder="What needs doing?" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Priority</label>
+                    <select name="priority" className="w-full p-3 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-emerald-500">
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="low">Low</option>
+                    </select>
+                  </div>
+                  <button type="submit" disabled={createTaskMutation.isPending} className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-colors">
+                    {createTaskMutation.isPending ? 'Adding...' : 'Add Task'}
+                  </button>
+                </form>
               </div>
-              <div className="p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
-                <h3 className="text-xl font-bold mb-4">Incident Log</h3>
-                <div className="h-64 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400">Critical Incidents List</div>
+
+              {/* Task List */}
+              <div className="md:col-span-2 space-y-3">
+                <h3 className="font-bold text-gray-800 mb-4">Your Tasks ({tasks.length})</h3>
+                {tasks.map(task => (
+                  <div key={task.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between group">
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={() => updateTaskMutation.mutate({ id: task.id, updates: { status: task.status === 'completed' ? 'pending' : 'completed' } })}
+                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${task.status === 'completed' ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-300 hover:border-emerald-500'}`}
+                      >
+                        {task.status === 'completed' && <CheckCircle size={14} />}
+                      </button>
+                      <div>
+                        <p className={`font-semibold ${task.status === 'completed' ? 'text-gray-400 line-through' : 'text-gray-800'}`}>{task.title}</p>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${task.priority === 'high' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
+                          {task.priority.toUpperCase()}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => deleteTaskMutation.mutate(task.id)}
+                      className="p-2 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
           </ExpandedPanel>
         )}
 
-        {expandedId === 'tasks' && (
-          <ExpandedPanel id="tasks" title="Task Management" onClose={handleClose}>
-            <div className="flex flex-col items-center justify-center py-20 text-gray-400 bg-white/50 rounded-3xl border-2 border-dashed border-gray-300">
-              <CheckSquare size={64} className="mb-4 opacity-50" />
-              <p className="text-xl font-semibold">Full Kanban Board Loading...</p>
-              <p className="text-sm">This would load the full FetsTaskWidget here.</p>
+        {/* Placeholder Replacements for other panels */}
+        {expandedId === 'ops' && (
+          <ExpandedPanel id="ops" title="Operations Detail" onClose={handleClose}>
+            <div className="p-12 text-center text-gray-400">
+              <Activity size={48} className="mx-auto mb-4 opacity-50" />
+              <p>Full Operations Log implementation coming soon.</p>
             </div>
           </ExpandedPanel>
         )}
 
         {expandedId === 'messages' && (
-          <ExpandedPanel id="messages" title="Communication Hub" onClose={handleClose}>
-            {/* Could load FetsConnectNew here */}
-            <div className="h-96 w-full bg-white rounded-xl shadow-sm flex items-center justify-center">
-              Message Center Placeholder
+          <ExpandedPanel id="messages" title="Message Center" onClose={handleClose}>
+            <div className="p-12 text-center text-gray-400">
+              <MessageSquare size={48} className="mx-auto mb-4 opacity-50" />
+              <p>Communication hub linking to Chat module.</p>
             </div>
           </ExpandedPanel>
         )}
-
-        {/* Add cases for other tiles... */}
 
       </AnimatePresence>
 
