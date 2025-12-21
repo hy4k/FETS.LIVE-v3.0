@@ -194,11 +194,13 @@ export default function NotificationPanel({ onClose }: NotificationPanelProps) {
                   }}
                 >
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'start' }}>
-                    <div style={{
-                      padding: '8px',
-                      borderRadius: '8px',
-                      className: getNotificationColor(notification.priority, notification.is_read)
-                    }}>
+                    <div
+                      style={{
+                        padding: '8px',
+                        borderRadius: '8px',
+                      }}
+                      className={getNotificationColor(notification.priority, notification.is_read)}
+                    >
                       {getNotificationIcon(notification.type)}
                     </div>
 

@@ -121,28 +121,7 @@ export const ChecklistFormModal: React.FC<ChecklistFormModalProps> = ({ template
                                     </label>
                                 )}
 
-                                {q.type === 'yes_no' && (
-                                    <div className="flex space-x-6">
-                                        <label className="flex items-center space-x-2 cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                value="yes"
-                                                {...register(q.id, { required: q.required })}
-                                                className="w-5 h-5 accent-green-500"
-                                            />
-                                            <span className="text-gray-700 font-medium">Yes</span>
-                                        </label>
-                                        <label className="flex items-center space-x-2 cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                value="no"
-                                                {...register(q.id, { required: q.required })}
-                                                className="w-5 h-5 accent-red-500"
-                                            />
-                                            <span className="text-gray-700 font-medium">No</span>
-                                        </label>
-                                    </div>
-                                )}
+
 
                                 {(q.type === 'dropdown') && (
                                     <select
