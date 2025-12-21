@@ -32,9 +32,9 @@ const Feed = ({ posts, isLoading, error, profile }) => {
     const text = newPostContent;
     const before = text.substring(0, start);
     const after = text.substring(end);
-    
+
     setNewPostContent(before + emoji + after);
-    
+
     // Set cursor position after emoji
     setTimeout(() => {
       textarea.selectionStart = textarea.selectionEnd = start + emoji.length;
@@ -52,8 +52,8 @@ const Feed = ({ posts, isLoading, error, profile }) => {
         author_id: profile.id,
         author: profile,
         attachments: attachments.length > 0 ? attachments : undefined
-      });
-      
+      } as any);
+
       setNewPostContent('');
       setAttachments([]);
       toast.success('Post created successfully!');

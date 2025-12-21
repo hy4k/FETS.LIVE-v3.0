@@ -101,7 +101,7 @@ const FetsConnectNew: React.FC = () => {
         content: postContent,
         post_type: postType,
         image_url: imageUrl,
-        branch_location: currentUser?.location || 'global',
+        branch_location: (currentUser as any)?.location || currentUser?.branch_assigned || 'global',
         user_id: currentUser.id
       })
 

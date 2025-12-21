@@ -14,7 +14,7 @@ export default function NotificationPanel({ onClose }: NotificationPanelProps) {
     unreadCount,
     markAsRead,
     markAllAsRead,
-    dismiss,
+    dismissNotification,
     isLoading
   } = useNotifications({ limit: 50 })
 
@@ -222,7 +222,7 @@ export default function NotificationPanel({ onClose }: NotificationPanelProps) {
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
-                            dismiss(notification.id)
+                            dismissNotification(notification.id)
                           }}
                           style={{
                             padding: '2px',

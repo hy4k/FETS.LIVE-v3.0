@@ -1,15 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Calendar, 
-  Clock, 
-  User, 
-  Trash2, 
-  X, 
-  CheckCircle, 
-  XCircle, 
-  AlertTriangle, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  Clock,
+  User,
+  Trash2,
+  X,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
   Plus,
   Eye,
   Search,
@@ -33,12 +33,12 @@ import { supabase } from '../lib/supabase'
 import { formatDateForIST } from '../utils/dateUtils'
 import { LeaveRequest, Schedule, StaffProfile, SHIFT_CODES, ShiftCode } from '../types/shared'
 
-type ViewMode = 'month' | 'list';import '../styles/glassmorphism.css'
+type ViewMode = 'month' | 'list'; import '../styles/glassmorphism.css'
 
 export function FetsRoster() {
   const { user, profile } = useAuth()
   const { activeBranch } = useBranch()
-  
+
   // Core state
   const [currentDate, setCurrentDate] = useState(new Date())
   const [schedules, setSchedules] = useState<Schedule[]>([])
@@ -46,7 +46,7 @@ export function FetsRoster() {
   const [requests, setRequests] = useState<LeaveRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<ViewMode>('month')
-  
+
   // UI state
   const [isRightDrawerOpen, setIsRightDrawerOpen] = useState(false)
   const [drawerMode, setDrawerMode] = useState<'edit' | 'requests' | 'analysis' | 'generate'>('edit')
@@ -56,7 +56,7 @@ export function FetsRoster() {
   const [selectedStaffFilter, setSelectedStaffFilter] = useState<string>('')
   const [showQuickAddModal, setShowQuickAddModal] = useState(false)
   const [showFilter, setShowFilter] = useState(false)
-  
+
   // New modal states for enhanced functionality
   const [showShiftCellPopup, setShowShiftCellPopup] = useState(false)
   const [showRequestsModal, setShowRequestsModal] = useState(false)
@@ -68,19 +68,19 @@ export function FetsRoster() {
     currentShift?: string
     currentOvertimeHours?: number
   } | null>(null)
-  
+
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'warning'; message: string } | null>(null)
 
   // Permission checks - Use profile from AuthContext as primary source
   const getCurrentUserStaffProfile = () => {
     // First try to use profile from AuthContext (more reliable)
     if (profile) return profile
-    
+
     // Fallback to finding in staffProfiles array
     if (!user) return null
     return staffProfiles.find(p => p.user_id === user.id)
   }
-  
+
   const currentStaffProfile = getCurrentUserStaffProfile()
   const isSuperAdmin = currentStaffProfile?.role === 'super_admin'
   const isAdmin = currentStaffProfile?.role === 'admin' || isSuperAdmin
@@ -94,7 +94,7 @@ export function FetsRoster() {
   const getViewDateRange = useCallback(() => {
     const year = currentDate.getFullYear()
     const month = currentDate.getMonth()
-    
+
     const startDate = new Date(year, month, 1)
     const endDate = new Date(year, month + 1, 0)
     return { startDate, endDate }
@@ -104,13 +104,13 @@ export function FetsRoster() {
   const loadData = useCallback(async () => {
     try {
       setLoading(true)
-       
+
       // Load staff profiles with branch-specific filtering
       let profileQuery = supabase
         .from('staff_profiles')
         .select('id, user_id, full_name, role, email, department, branch_assigned')
         .not('full_name', 'in', '("MITHUN","NIYAS","Mithun","Niyas")')
-      
+
       // Apply branch filtering based on active branch
       if (activeBranch === 'calicut') {
         console.log('🔍 Filtering for Calicut branch')
@@ -126,9 +126,9 @@ export function FetsRoster() {
       const { data: profiles, error: profilesError } = await profileQuery.order('full_name')
 
       console.log(`📊 Loaded ${profiles?.length || 0} staff profiles for ${activeBranch} branch`)
-      
+
       if (profilesError) throw profilesError
-      
+
       const mappedProfiles: StaffProfile[] = (profiles || []).map(profile => ({
         id: profile.id,
         user_id: profile.user_id,
@@ -137,32 +137,32 @@ export function FetsRoster() {
         email: profile.email || '',
         department: profile.department,
         branch_assigned: profile.branch_assigned
-      }))
-      
+      })) as unknown as StaffProfile[]
+
       setStaffProfiles(mappedProfiles)
 
       // Calculate date range based on view mode
       const { startDate, endDate } = getViewDateRange()
-      
+
       const { data: scheduleData, error: scheduleError } = await supabase
         .from('roster_schedules')
         .select('id, profile_id, date, shift_code, overtime_hours, status, created_at, updated_at')
         .gte('date', startDate.toISOString().split('T')[0])
         .lte('date', endDate.toISOString().split('T')[0])
         .order('date')
-      
+
       if (scheduleError) throw scheduleError
       setSchedules(scheduleData || [])
-      
+
       // Load requests
       const { data: requestData, error: requestError } = await supabase
         .from('leave_requests')
         .select('*')
         .order('created_at', { ascending: false })
-      
+
       if (requestError) throw requestError
       setRequests(requestData || [])
-      
+
     } catch (error) {
       console.error('Error loading data:', error)
       showNotification('error', `Failed to load data: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -176,7 +176,7 @@ export function FetsRoster() {
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'
     ]
-    
+
     switch (viewMode) {
       case 'month':
       case 'list':
@@ -187,7 +187,7 @@ export function FetsRoster() {
 
   const navigateDate = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate)
-    
+
     switch (viewMode) {
       case 'month':
       case 'list':
@@ -195,7 +195,7 @@ export function FetsRoster() {
         newDate.setMonth(currentDate.getMonth() + (direction === 'next' ? 1 : -1))
         break
     }
-    
+
     setCurrentDate(newDate)
   }
 
@@ -222,7 +222,7 @@ export function FetsRoster() {
     const dateStr = formatDateForIST(date)
     const staffMember = staffProfiles.find(s => s.id === profileId)
     const existingSchedule = schedules.find(s => s.profile_id === profileId && s.date === dateStr)
-    
+
     setSelectedCellData({
       profileId,
       date: dateStr,
@@ -249,7 +249,7 @@ export function FetsRoster() {
       updated_at: new Date().toISOString()
     }
 
-    const existingIndex = schedules.findIndex(s => 
+    const existingIndex = schedules.findIndex(s =>
       s.profile_id === selectedCellData.profileId && s.date === selectedCellData.date
     )
 
@@ -270,13 +270,13 @@ export function FetsRoster() {
           .from('roster_schedules')
           .update(scheduleData)
           .eq('id', schedules[existingIndex].id)
-        
+
         if (error) throw error
       } else {
         const { error } = await supabase
           .from('roster_schedules')
           .insert([{ ...scheduleData, created_at: new Date().toISOString() }])
-        
+
         if (error) throw error
       }
 
@@ -297,18 +297,18 @@ export function FetsRoster() {
     }
 
     try {
-      const existing = schedules.find(s => 
+      const existing = schedules.find(s =>
         s.profile_id === selectedCellData.profileId && s.date === selectedCellData.date
       )
-      
+
       if (existing) {
         const { error } = await supabase
           .from('roster_schedules')
           .delete()
           .eq('id', existing.id)
-        
+
         if (error) throw error
-        
+
         await updateVersionTracking(`Deleted shift for ${selectedCellData.staffName} on ${selectedCellData.date}`)
         await loadData()
         showNotification('success', 'Shift deleted successfully!')
@@ -347,11 +347,10 @@ export function FetsRoster() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Notification System */}
       {notification && (
-        <div className={`fixed top-4 right-4 z-50 p-4 rounded-xl glassmorphic-card ${
-          notification.type === 'success' ? 'border-green-200 bg-green-50/80' :
-          notification.type === 'error' ? 'border-red-200 bg-red-50/80' :
-          'border-yellow-200 bg-yellow-50/80'
-        }`}>
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-xl glassmorphic-card ${notification.type === 'success' ? 'border-green-200 bg-green-50/80' :
+            notification.type === 'error' ? 'border-red-200 bg-red-50/80' :
+              'border-yellow-200 bg-yellow-50/80'
+          }`}>
           <div className="flex items-center space-x-3">
             {notification.type === 'success' && <CheckCircle className="h-5 w-5 text-green-500" />}
             {notification.type === 'error' && <XCircle className="h-5 w-5 text-red-500" />}
@@ -453,9 +452,9 @@ export function FetsRoster() {
             staffProfiles={staffProfiles}
           />
         )}
-        
+
         {currentView === 'analysis' && (
-          <EnhancedAnalysisView 
+          <EnhancedAnalysisView
             schedules={schedules}
             staffProfiles={filteredStaff}
             requests={requests}
@@ -463,7 +462,7 @@ export function FetsRoster() {
           />
         )}
       </div>
-      
+
       <EnhancedQuickAddModal
         isOpen={showQuickAddModal}
         onClose={() => setShowQuickAddModal(false)}
@@ -471,7 +470,7 @@ export function FetsRoster() {
         staffProfiles={staffProfiles}
         currentDate={currentDate}
       />
-      
+
       {/* Enhanced Requests Modal */}
       <EnhancedRequestsModal
         isOpen={showRequestsModal}
@@ -479,7 +478,7 @@ export function FetsRoster() {
         onSuccess={() => loadData()}
         staffProfiles={filteredStaff}
       />
-      
+
       {/* Shift Cell Popup */}
       <ShiftCellPopup
         isOpen={showShiftCellPopup}

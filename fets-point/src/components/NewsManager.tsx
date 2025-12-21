@@ -42,9 +42,9 @@ const NewsModal = ({ isOpen, onClose, newsItem, onSave }) => {
             <label className="block font-semibold text-gray-700 mb-1">Content *</label>
             <textarea
               value={formData.content}
-              onChange={e => setFormData({...formData, content: e.target.value})}
+              onChange={e => setFormData({ ...formData, content: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              rows="4"
+              rows={4}
               placeholder="Enter news content..."
             />
           </div>
@@ -53,7 +53,7 @@ const NewsModal = ({ isOpen, onClose, newsItem, onSave }) => {
               <label className="block font-semibold text-gray-700 mb-1">Priority</label>
               <select
                 value={formData.priority}
-                onChange={e => setFormData({...formData, priority: e.target.value})}
+                onChange={e => setFormData({ ...formData, priority: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="normal">Normal</option>
@@ -64,7 +64,7 @@ const NewsModal = ({ isOpen, onClose, newsItem, onSave }) => {
               <label className="block font-semibold text-gray-700 mb-1">Branch</label>
               <select
                 value={formData.branch_location}
-                onChange={e => setFormData({...formData, branch_location: e.target.value})}
+                onChange={e => setFormData({ ...formData, branch_location: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="global">Global (All Branches)</option>
@@ -74,21 +74,21 @@ const NewsModal = ({ isOpen, onClose, newsItem, onSave }) => {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-             <div>
+            <div>
               <label className="block font-semibold text-gray-700 mb-1">Expires At</label>
               <input
                 type="date"
                 value={formData.expires_at}
-                onChange={e => setFormData({...formData, expires_at: e.target.value})}
+                onChange={e => setFormData({ ...formData, expires_at: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <p className="text-xs text-gray-500 mt-1">Leave empty for no expiration</p>
             </div>
-             <div>
+            <div>
               <label className="block font-semibold text-gray-700 mb-1">Status</label>
               <select
                 value={String(formData.is_active)}
-                onChange={e => setFormData({...formData, is_active: e.target.value === 'true'})}
+                onChange={e => setFormData({ ...formData, is_active: e.target.value === 'true' })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="true">✅ Active</option>
