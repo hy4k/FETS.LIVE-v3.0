@@ -41,7 +41,8 @@ const CENTRE_COLORS = {
 type ClientType = keyof typeof CLIENT_COLORS
 
 export function FetsCalendarPremium() {
-  const { user } = useAuth()
+  const { user, hasPermission } = useAuth()
+  const canEdit = hasPermission('calendar_edit')
   const { activeBranch } = useBranch()
   const { applyFilter, isGlobalView } = useBranchFilter()
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -318,7 +319,7 @@ export function FetsCalendarPremium() {
               FETS Calendar
             </h1>
             <p className="text-lg text-gray-600 font-medium">
-              {activeBranch?.name ? `${activeBranch.name} · ` : ''}Session Planning & Overview
+              {activeBranch && activeBranch !== 'global' ? `${activeBranch.charAt(0).toUpperCase() + activeBranch.slice(1)} · ` : ''}Session Planning & Overview
             </p>
           </div>
           <div className="text-right">
@@ -364,7 +365,8 @@ export function FetsCalendarPremium() {
             {/* Add Session Button */}
             <button
               onClick={() => openModal()}
-              className="px-5 py-2.5 bg-gradient-to-r from-slate-800 to-slate-900 text-white flex items-center space-x-2 font-bold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+              disabled={!canEdit}
+              className="px-5 py-2.5 bg-gradient-to-r from-slate-800 to-slate-900 text-white flex items-center space-x-2 font-bold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="h-4 w-4" />
               <span>Add Session</span>
@@ -575,28 +577,30 @@ export function FetsCalendarPremium() {
                                 </div>
 
                                 {/* Action Buttons */}
-                                <div className="flex space-x-2 pt-4 mt-2 border-t border-slate-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      openModal(selectedDate, session)
-                                    }}
-                                    className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors"
-                                  >
-                                    Edit
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      if (session.id) {
-                                        handleDelete(session.id)
-                                      }
-                                    }}
-                                    className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-semibold transition-colors"
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </button>
-                                </div>
+                                {canEdit && (
+                                  <div className="flex space-x-2 pt-4 mt-2 border-t border-slate-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        openModal(selectedDate, session)
+                                      }}
+                                      className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        if (session.id) {
+                                          handleDelete(session.id)
+                                        }
+                                      }}
+                                      className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-semibold transition-colors"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>

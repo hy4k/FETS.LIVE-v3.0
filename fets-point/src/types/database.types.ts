@@ -480,36 +480,77 @@ export type Database = {
           },
         ]
       }
+      checklist_submissions: {
+        Row: {
+          id: string
+          template_id: string
+          submitted_by: string
+          branch_id: string | null
+          submitted_at: string
+          answers: Json
+          status: string
+        }
+        Insert: {
+          id?: string
+          template_id: string
+          submitted_by: string
+          branch_id?: string | null
+          submitted_at?: string
+          answers: Json
+          status: string
+        }
+        Update: {
+          id?: string
+          template_id?: string
+          submitted_by?: string
+          branch_id?: string | null
+          submitted_at?: string
+          answers?: Json
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_submissions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_templates"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       checklist_templates: {
         Row: {
-          category: string
           created_at: string
           created_by: string
           description: string | null
           id: string
-          is_active: boolean | null
-          name: string
+          is_active: boolean
+          title: string
+          type: string
           updated_at: string
+          questions: Json
         }
         Insert: {
-          category: string
           created_at?: string
           created_by: string
           description?: string | null
           id?: string
-          is_active?: boolean | null
-          name: string
+          is_active?: boolean
+          title: string
+          type: string
           updated_at?: string
+          questions: Json
         }
         Update: {
-          category?: string
           created_at?: string
           created_by?: string
           description?: string | null
           id?: string
-          is_active?: boolean | null
-          name?: string
+          is_active?: boolean
+          title?: string
+          type?: string
           updated_at?: string
+          questions?: Json
         }
         Relationships: []
       }
@@ -1559,6 +1600,7 @@ export type Database = {
           status: string | null
           updated_at: string | null
           user_id: string | null
+          permissions: Json
         }
         Insert: {
           avatar_url?: string | null
@@ -1580,6 +1622,7 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
           user_id?: string | null
+          permissions?: Json
         }
         Update: {
           avatar_url?: string | null
@@ -1601,6 +1644,7 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
           user_id?: string | null
+          permissions?: Json
         }
         Relationships: []
       }
@@ -2029,110 +2073,110 @@ export type Database = {
         ]
       }
     }
-      news_ticker: {
-        Row: {
-          branch_location: string | null
-          content: string
-          created_at: string | null
-          created_by: string | null
-          expires_at: string | null
-          id: string
-          is_active: boolean | null
-          priority: string | null
-        }
-        Insert: {
-          branch_location?: string | null
-          content: string
-          created_at?: string | null
-          created_by?: string | null
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean | null
-          priority?: string | null
-        }
-        Update: {
-          branch_location?: string | null
-          content?: string
-          created_at?: string | null
-          created_by?: string | null
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean | null
-          priority?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "news_ticker_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "staff_profiles"
-            referencedColumns: ["id"]
-          }
-        ]
+    news_ticker: {
+      Row: {
+        branch_location: string | null
+        content: string
+        created_at: string | null
+        created_by: string | null
+        expires_at: string | null
+        id: string
+        is_active: boolean | null
+        priority: string | null
       }
-      user_settings: {
-        Row: {
-          date_format: string | null
-          language: string | null
-          notifications: Json | null
-          theme: string | null
-          timezone: string | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          date_format?: string | null
-          language?: string | null
-          notifications?: Json | null
-          theme?: string | null
-          timezone?: string | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          date_format?: string | null
-          language?: string | null
-          notifications?: Json | null
-          theme?: string | null
-          timezone?: string | null
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
+      Insert: {
+        branch_location?: string | null
+        content: string
+        created_at?: string | null
+        created_by?: string | null
+        expires_at?: string | null
+        id?: string
+        is_active?: boolean | null
+        priority?: string | null
       }
-      notifications: {
-        Row: {
-          id: string
-          user_id: string
-          title: string
-          message: string
-          type: string
-          priority: string
-          is_read: boolean
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          title: string
-          message: string
-          type: string
-          priority?: string
-          is_read?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          title?: string
-          message?: string
-          type?: string
-          priority?: string
-          is_read?: boolean
-          updated_at?: string
-        }
-        Relationships: []
+      Update: {
+        branch_location?: string | null
+        content?: string
+        created_at?: string | null
+        created_by?: string | null
+        expires_at?: string | null
+        id?: string
+        is_active?: boolean | null
+        priority?: string | null
       }
+      Relationships: [
+        {
+          foreignKeyName: "news_ticker_created_by_fkey"
+          columns: ["created_by"]
+          isOneToOne: false
+          referencedRelation: "staff_profiles"
+          referencedColumns: ["id"]
+        }
+      ]
+    }
+    user_settings: {
+      Row: {
+        date_format: string | null
+        language: string | null
+        notifications: Json | null
+        theme: string | null
+        timezone: string | null
+        updated_at: string | null
+        user_id: string
+      }
+      Insert: {
+        date_format?: string | null
+        language?: string | null
+        notifications?: Json | null
+        theme?: string | null
+        timezone?: string | null
+        updated_at?: string | null
+        user_id: string
+      }
+      Update: {
+        date_format?: string | null
+        language?: string | null
+        notifications?: Json | null
+        theme?: string | null
+        timezone?: string | null
+        updated_at?: string | null
+        user_id?: string
+      }
+      Relationships: []
+    }
+    notifications: {
+      Row: {
+        id: string
+        user_id: string
+        title: string
+        message: string
+        type: string
+        priority: string
+        is_read: boolean
+        created_at: string
+        updated_at: string
+      }
+      Insert: {
+        id?: string
+        user_id: string
+        title: string
+        message: string
+        type: string
+        priority?: string
+        is_read?: boolean
+        created_at?: string
+        updated_at?: string
+      }
+      Update: {
+        title?: string
+        message?: string
+        type?: string
+        priority?: string
+        is_read?: boolean
+        updated_at?: string
+      }
+      Relationships: []
+    }
     Views: {
       [_ in never]: never
     }

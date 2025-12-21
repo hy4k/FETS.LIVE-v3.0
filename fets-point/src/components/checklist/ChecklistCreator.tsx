@@ -8,7 +8,8 @@ import toast from 'react-hot-toast';
 interface ChecklistCreatorProps {
     onCancel: () => void;
     onSuccess: () => void;
-    currentUser: any; // Replace with proper user type
+    currentUser: any;
+    initialData?: ChecklistTemplate | null;
 }
 
 const QUESTION_TYPES: { value: QuestionType; label: string }[] = [
@@ -18,18 +19,19 @@ const QUESTION_TYPES: { value: QuestionType; label: string }[] = [
     { value: 'dropdown', label: 'Dropdown' },
     { value: 'radio', label: 'Radio Button' },
     { value: 'date', label: 'Date Picker' },
-    { value: 'yes_no', label: 'Yes/No' },
+    { value: 'time', label: 'Time Input' },
+    { value: 'textarea', label: 'Detailed Text Area' },
 ];
 
-export const ChecklistCreator: React.FC<ChecklistCreatorProps> = ({ onCancel, onSuccess, currentUser }) => {
+export const ChecklistCreator: React.FC<ChecklistCreatorProps> = ({ onCancel, onSuccess, currentUser, initialData }) => {
     const [isPreviewMode, setIsPreviewMode] = useState(false);
     const { register, control, handleSubmit, watch, formState: { errors } } = useForm<ChecklistTemplate>({
         defaultValues: {
-            title: '',
-            description: '',
-            type: 'custom',
-            questions: [],
-            is_active: true,
+            title: initialData?.title || '',
+            description: initialData?.description || '',
+            type: initialData?.type || 'custom',
+            questions: initialData?.questions || [],
+            is_active: initialData?.is_active ?? true,
         }
     });
 
@@ -42,23 +44,41 @@ export const ChecklistCreator: React.FC<ChecklistCreatorProps> = ({ onCancel, on
 
     const onSubmit = async (data: ChecklistTemplate) => {
         try {
-            const { error } = await supabase
-                .from('checklist_templates' as any)
-                .insert({
-                    title: data.title,
-                    description: data.description,
-                    type: data.type,
-                    questions: data.questions,
-                    is_active: data.is_active,
-                    created_by: currentUser.id,
-                });
+            if (initialData?.id) {
+                // Update existing
+                const { error } = await supabase
+                    .from('checklist_templates' as any)
+                    .update({
+                        title: data.title,
+                        description: data.description,
+                        type: data.type,
+                        questions: data.questions,
+                        is_active: data.is_active,
+                    })
+                    .eq('id', initialData.id);
 
-            if (error) throw error;
-            toast.success('Checklist created successfully!');
+                if (error) throw error;
+                toast.success('Checklist updated successfully!');
+            } else {
+                // Create new
+                const { error } = await supabase
+                    .from('checklist_templates' as any)
+                    .insert({
+                        title: data.title,
+                        description: data.description,
+                        type: data.type,
+                        questions: data.questions,
+                        is_active: data.is_active,
+                        created_by: currentUser.user_id,
+                    });
+
+                if (error) throw error;
+                toast.success('Checklist created successfully!');
+            }
             onSuccess();
         } catch (error) {
-            console.error('Error creating checklist:', error);
-            toast.error('Failed to create checklist');
+            console.error('Error saving checklist:', error);
+            toast.error('Failed to save checklist');
         }
     };
 
@@ -87,12 +107,7 @@ export const ChecklistCreator: React.FC<ChecklistCreatorProps> = ({ onCancel, on
                             {q.type === 'text' && <input type="text" className={`w-full p-3 ${neumorphicInset} outline-none`} placeholder="Enter text..." disabled />}
                             {q.type === 'number' && <input type="number" className={`w-full p-3 ${neumorphicInset} outline-none`} placeholder="0" disabled />}
                             {q.type === 'checkbox' && <div className="flex items-center"><input type="checkbox" className="w-5 h-5 mr-2" disabled /> <span className="text-gray-600">Check this box</span></div>}
-                            {q.type === 'yes_no' && (
-                                <div className="flex space-x-4">
-                                    <label className="flex items-center"><input type="radio" name={`q_${idx}`} disabled className="mr-2" /> Yes</label>
-                                    <label className="flex items-center"><input type="radio" name={`q_${idx}`} disabled className="mr-2" /> No</label>
-                                </div>
-                            )}
+
                             {(q.type === 'dropdown' || q.type === 'radio') && (
                                 <div className="space-y-2">
                                     {q.options?.map((opt, i) => (

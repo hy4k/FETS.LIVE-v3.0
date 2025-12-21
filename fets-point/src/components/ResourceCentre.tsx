@@ -60,7 +60,7 @@ const TYPE_CONFIG = {
 }
 
 export default function ResourceCentre() {
-  const { profile } = useAuth()
+  const { profile, hasPermission } = useAuth()
 
   const [categories, setCategories] = useState<VaultCategory[]>([])
   const [items, setItems] = useState<VaultItem[]>([])
@@ -424,7 +424,7 @@ export default function ResourceCentre() {
     setShowEditModal(true)
   }
 
-  const isAdmin = userRole === 'admin' || userRole === 'super_admin'
+  const isAdmin = hasPermission('sop_edit')
 
   if (loading) {
     return (

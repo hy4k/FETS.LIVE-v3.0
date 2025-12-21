@@ -1,11 +1,12 @@
-export type QuestionType = 
-  | 'text' 
-  | 'number' 
-  | 'checkbox' 
-  | 'radio' 
-  | 'dropdown' 
-  | 'date' 
-  | 'yes_no';
+export type QuestionType =
+  | 'text'
+  | 'number'
+  | 'checkbox'
+  | 'radio'
+  | 'dropdown'
+  | 'date'
+  | 'time'
+  | 'textarea';
 
 export interface Question {
   id: string;

@@ -35,6 +35,7 @@ const ChecklistManagement = lazy(() => import('./components/checklist/ChecklistM
 const NewsManager = lazy(() => import('./components/NewsManager').then(module => ({ default: module.NewsManager })))
 const SettingsPage = lazy(() => import('./components/SettingsPage').then(module => ({ default: module.SettingsPage })))
 const FetsManager = lazy(() => import('./components/FetsManager').then(module => ({ default: module.default })))
+const UserManagement = lazy(() => import('./components/UserManagement').then(module => ({ default: module.UserManagement })))
 
 // Create QueryClient instance with optimized settings
 const queryClient = new QueryClient({
@@ -124,6 +125,11 @@ function AppContent() {
       console.warn(`Access denied for tab: ${activeTab}. User role: ${profile?.role}`);
       setActiveTab('command-center'); // Redirect to a safe default page
     }
+
+    if (activeTab === 'user-management' && profile?.email !== 'mithun@fets.in') {
+      console.warn(`Access denied for tab: ${activeTab}. Resticted to specific admin email.`);
+      setActiveTab('command-center');
+    }
   }, [activeTab, profile]);
 
   if (loading) {
@@ -211,6 +217,10 @@ function AppContent() {
       'fets-manager': {
         component: <FetsManager />,
         name: 'FETS Manager'
+      },
+      'user-management': {
+        component: <UserManagement />,
+        name: 'User Management'
       }
     }
 

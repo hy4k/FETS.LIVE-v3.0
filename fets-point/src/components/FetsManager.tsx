@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ClipboardList,
   Newspaper,
   Users,
   Maximize2,
@@ -16,8 +15,8 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import { NewsManager } from './NewsManager';
-import { StaffManagement } from './StaffManagement';
 import { ChecklistManager } from './checklist/ChecklistManager';
+import { ClipboardList } from 'lucide-react';
 
 // --- Interfaces ---
 
@@ -126,12 +125,11 @@ const StatRow = ({ label, value, subtext }: { label: string, value: string | num
 // --- Main FetsManager Component ---
 
 export function FetsManager() {
-  const { profile } = useAuth();
+  const { profile, hasPermission } = useAuth();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [stats, setStats] = useState({
-    checklistCount: 0,
     activeNews: 0,
-    staffCount: 0
+    checklistCount: 0
   });
 
   // Fetch quick stats for the tiles
@@ -139,19 +137,16 @@ export function FetsManager() {
     const fetchStats = async () => {
       try {
         const [
-          { count: checklists },
-          { count: news },
-          { count: staff }
+          newsResponse,
+          checklistResponse
         ] = await Promise.all([
-          supabase.from('checklist_templates').select('*', { count: 'exact', head: true }),
-          supabase.from('news_ticker').select('*', { count: 'exact', head: true }).eq('is_active', true),
-          supabase.from('staff_profiles').select('*', { count: 'exact', head: true })
+          supabase.from('news_updates').select('*', { count: 'exact', head: true }).eq('is_active', true),
+          supabase.from('checklist_templates').select('*', { count: 'exact', head: true })
         ]);
 
         setStats({
-          checklistCount: checklists || 0,
-          activeNews: news || 0,
-          staffCount: staff || 0
+          activeNews: newsResponse.count || 0,
+          checklistCount: checklistResponse.count || 0
         });
       } catch (error) {
         console.error('Error fetching manager stats', error);
@@ -186,60 +181,35 @@ export function FetsManager() {
       {/* Tiles Grid */}
       <div className="max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
 
-        {/* 1. Checklist Protocol Tile */}
-        <LiveTile id="checklists" title="Checklist Protocols" icon={ClipboardList} onExpand={() => handleExpand('checklists')} color="emerald" colSpan={1}>
-          <div className="space-y-4">
-            <div className="text-center py-4 bg-emerald-50 rounded-xl border border-emerald-100">
-              <span className="block text-4xl font-black text-emerald-600">{stats.checklistCount}</span>
-              <span className="text-emerald-800/60 text-xs font-bold uppercase tracking-wider">Active Templates</span>
+        {/* 1. Newsroom Tile */}
+        {hasPermission('news_edit') && (
+          <LiveTile id="news" title="Newsroom Control" icon={Newspaper} onExpand={() => handleExpand('news')} color="blue" colSpan={1}>
+            <div className="space-y-2">
+              <StatRow label="Active Alerts" value={stats.activeNews} subtext="Currently live" />
+              <StatRow label="Priority High" value={2} subtext="Critical Info" />
+              <div className="mt-4 flex items-center gap-2 p-3 bg-blue-50 rounded-lg text-blue-700 text-xs font-medium border border-blue-100">
+                <Activity size={16} /> Broadcasts are updating in real-time
+              </div>
             </div>
-            <p className="text-sm text-gray-500 text-center px-4 leading-relaxed">
-              Manage operational verification protocols, pre-exam & post-exam checklists.
-            </p>
-            <button className="w-full py-3 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-xl font-bold transition-colors text-sm">
-              Launch Protocol Manager
-            </button>
-          </div>
-        </LiveTile>
+          </LiveTile>
+        )}
 
-        {/* 2. Newsroom Tile */}
-        <LiveTile id="news" title="Newsroom Control" icon={Newspaper} onExpand={() => handleExpand('news')} color="blue" colSpan={1}>
-          <div className="space-y-2">
-            <StatRow label="Active Alerts" value={stats.activeNews} subtext="Currently live" />
-            <StatRow label="Priority High" value={2} subtext="Critical Info" />
-            <div className="mt-4 flex items-center gap-2 p-3 bg-blue-50 rounded-lg text-blue-700 text-xs font-medium border border-blue-100">
-              <Activity size={16} /> Broadcasts are updating in real-time
+        {/* 2. Checklist Governance Tile */}
+        {hasPermission('checklist_edit') && (
+          <LiveTile id="checklists" title="Checklist Governance" icon={ClipboardList} onExpand={() => handleExpand('checklists')} color="amber" colSpan={1}>
+            <div className="space-y-2">
+              <StatRow label="Templates" value={(stats as any).checklistCount || 0} subtext="Total designs" />
+              <StatRow label="Verified Today" value={0} subtext="Completed" />
+              <div className="mt-4 flex items-center gap-2 p-3 bg-amber-50 rounded-lg text-amber-700 text-xs font-medium border border-amber-100">
+                <ShieldCheck size={16} /> Protocol adherence is monitored
+              </div>
             </div>
-          </div>
-        </LiveTile>
+          </LiveTile>
+        )}
 
-        {/* 3. Staff Command Tile */}
-        <LiveTile id="staff" title="Staff Command" icon={Users} onExpand={() => handleExpand('staff')} color="purple" colSpan={2}>
-          <div className="flex h-full items-center gap-8">
-            <div className="flex-1 space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="text-5xl font-black text-purple-600">{stats.staffCount}</div>
-                <div className="text-sm text-gray-500 font-medium">Total Registered<br />Team Members</div>
-              </div>
-              <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-                <div className="h-full bg-purple-500 w-3/4 animate-pulse"></div>
-              </div>
-              <p className="text-sm text-gray-400">System capacity at optimal levels.</p>
-            </div>
-            <div className="flex-1 grid grid-cols-2 gap-3">
-              <div className="p-4 bg-purple-50 rounded-xl border border-purple-100 text-center">
-                <ShieldCheck className="mx-auto text-purple-500 mb-2" size={24} />
-                <span className="block font-bold text-gray-700 text-sm">Access Control</span>
-              </div>
-              <div className="p-4 bg-purple-50 rounded-xl border border-purple-100 text-center">
-                <Database className="mx-auto text-purple-500 mb-2" size={24} />
-                <span className="block font-bold text-gray-700 text-sm">Records</span>
-              </div>
-            </div>
-          </div>
-        </LiveTile>
+        {/* Staff Command Tile Removed - Now under User Management Governance */}
 
-        {/* 4. System Health (Bonus) */}
+        {/* 3. System Health (Bonus) */}
         <LiveTile id="system" title="System Health" icon={Server} onExpand={() => { }} color="slate" colSpan={1}>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -261,23 +231,18 @@ export function FetsManager() {
 
       {/* Expanded Logic */}
       <AnimatePresence>
-        {expandedId === 'checklists' && (
-          <ExpandedPanel id="checklists" title="Checklist Management Protocols" onClose={handleClose}>
-            <ChecklistManager currentUser={profile} />
-          </ExpandedPanel>
-        )}
-
         {expandedId === 'news' && (
           <ExpandedPanel id="news" title="Broadcast Newsroom" onClose={handleClose}>
             <NewsManager />
           </ExpandedPanel>
         )}
 
-        {expandedId === 'staff' && (
-          <ExpandedPanel id="staff" title="Staff Personnel & Access Control" onClose={handleClose}>
-            <StaffManagement />
+        {expandedId === 'checklists' && (
+          <ExpandedPanel id="checklists" title="Mission Protocols" onClose={handleClose}>
+            <ChecklistManager currentUser={profile} />
           </ExpandedPanel>
         )}
+
       </AnimatePresence>
 
     </div>

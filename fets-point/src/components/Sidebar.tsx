@@ -20,7 +20,8 @@ import {
   UsersRound,
   Megaphone,
   Sliders,
-  Shield
+  Shield,
+  ClipboardList
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
@@ -49,6 +50,7 @@ const navigationGroups: { [key: string]: NavigationItem[] } = {
     { id: 'candidate-tracker', name: 'Candidate Tracker', icon: UserSearch },
     { id: 'fets-roster', name: 'FETS Roster', icon: UserCheck },
     { id: 'fets-calendar', name: 'FETS Calendar', icon: CalendarDays },
+    { id: 'checklist-management', name: 'Checklists', icon: ClipboardList },
     { id: 'incident-manager', name: 'Incident Manager', icon: ShieldAlert },
   ],
   compliance: [
@@ -56,6 +58,7 @@ const navigationGroups: { [key: string]: NavigationItem[] } = {
   ],
   admin: [
     { id: 'fets-manager', name: 'FETS Manager', icon: Shield, role: ['super_admin'], badge: 'ADMIN' },
+    { id: 'user-management', name: 'User Management', icon: UserCog, role: ['super_admin'], badge: 'GOVERNANCE' },
     { id: 'settings', name: 'Settings', icon: Sliders },
   ]
 }
@@ -160,6 +163,10 @@ export function Sidebar({
           let itemsToRender = items;
           if (groupName === 'admin') {
             itemsToRender = items.filter(item => {
+              // Special restriction for user-management: only Mithun
+              if (item.id === 'user-management') {
+                return profile?.email === 'mithun@fets.in';
+              }
               if (item.role) {
                 return item.role.includes(profile?.role || '');
               }

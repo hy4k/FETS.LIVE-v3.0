@@ -112,7 +112,7 @@ export default function IncidentManager() {
         return
       }
 
-      setIncidents(data || [])
+      setIncidents((data || []) as Incident[])
     } catch (error: any) {
       console.error('Error loading incidents:', error)
       toast.error('Failed to load incidents')
@@ -237,7 +237,7 @@ export default function IncidentManager() {
               Incident Manager
             </h1>
             <p className="text-lg text-gray-600 font-medium">
-              {activeBranch?.name ? `${activeBranch.name} · ` : ''}Track, manage, and resolve operational incidents
+              {activeBranch && activeBranch !== 'global' ? `${activeBranch.charAt(0).toUpperCase() + activeBranch.slice(1)} · ` : ''}Track, manage, and resolve operational incidents
             </p>
           </div>
           <div className="text-right">
@@ -765,7 +765,8 @@ function IncidentDetailModal({ incident, onClose, onIncidentUpdated }: {
 
   const categoryConfig = INCIDENT_CATEGORIES.find(cat => cat.id === incident.category) || INCIDENT_CATEGORIES[INCIDENT_CATEGORIES.length - 1]
   const Icon = categoryConfig.icon
-  const canEdit = profile?.role === 'admin' || profile?.role === 'super_admin'
+  const { hasPermission } = useAuth()
+  const canEdit = hasPermission('incident_edit')
 
   const handleUpdate = async () => {
     if (!canEdit) {
@@ -856,7 +857,7 @@ function IncidentDetailModal({ incident, onClose, onIncidentUpdated }: {
           .order('created_at', { ascending: true })
 
         if (error) throw error
-        setComments(data || [])
+        setComments((data || []) as unknown as Comment[])
       } catch (error) {
         console.error('Error fetching comments:', error)
         toast.error('Failed to load comments')
@@ -914,7 +915,7 @@ function IncidentDetailModal({ incident, onClose, onIncidentUpdated }: {
 
       if (error) throw error
 
-      setComments(prev => prev.some(c => c.id === data.id) ? prev : [...prev, data])
+      setComments(prev => prev.some(c => c.id === (data as any).id) ? prev : [...prev, data as unknown as Comment])
       setNewComment('')
     } catch (error: any) {
       console.error('Error posting comment:', error)

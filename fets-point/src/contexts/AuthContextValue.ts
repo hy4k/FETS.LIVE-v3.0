@@ -7,6 +7,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<any>;
   profile: any;
+  hasPermission: (permission: string) => boolean;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);

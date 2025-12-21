@@ -63,8 +63,9 @@ const STATUS_CONFIG = {
 }
 
 export default function EventManager() {
-  const { profile } = useAuth()
+  const { profile, hasPermission } = useAuth()
   const { activeBranch } = useBranch()
+  const canEdit = hasPermission('event_edit')
 
   const [events, setEvents] = useState<Event[]>([])
   const [stats, setStats] = useState<EventStats>({
@@ -97,7 +98,7 @@ export default function EventManager() {
       const { data, error } = await query
       if (error) throw error
 
-      setEvents(data || [])
+      setEvents((data || []) as Event[])
     } catch (error) {
       console.error('Error loading events:', error)
       toast.error('Failed to load events')
@@ -157,7 +158,7 @@ export default function EventManager() {
 
   const filteredEvents = events.filter(event => {
     if (searchQuery && !event.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !event.description.toLowerCase().includes(searchQuery.toLowerCase())) {
+      !event.description.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false
     }
     if (categoryFilter !== 'all' && event.category !== categoryFilter) return false
@@ -618,7 +619,8 @@ function EventDetailModal({ event, onClose, onEventUpdated }: {
 
   const categoryConfig = EVENT_CATEGORIES.find(cat => cat.id === event.category) || EVENT_CATEGORIES[EVENT_CATEGORIES.length - 1]
   const Icon = categoryConfig.icon
-  const canEdit = profile?.role === 'admin' || profile?.role === 'super_admin'
+  const { hasPermission } = useAuth()
+  const canEdit = hasPermission('event_edit')
 
   const handleUpdate = async () => {
     setUpdating(true)

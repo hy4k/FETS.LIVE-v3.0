@@ -140,8 +140,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const hasPermission = (permission: string): boolean => {
+    if (!profile) return false;
+
+    // Super admins have all permissions by default
+    if (profile.role === 'super_admin') return true;
+
+    // Check specific permissions in JSONB
+    const permissions = typeof profile.permissions === 'object' && profile.permissions !== null
+      ? (profile.permissions as Record<string, boolean>)
+      : {};
+
+    return !!permissions[permission];
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signOut, profile }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signOut, profile, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );

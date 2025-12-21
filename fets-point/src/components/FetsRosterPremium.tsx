@@ -74,16 +74,8 @@ export function FetsRosterPremium() {
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'warning'; message: string } | null>(null)
 
-  // Permission checks
-  const getCurrentUserStaffProfile = () => {
-    if (profile) return profile
-    if (!user) return null
-    return staffProfiles.find(p => p.user_id === user.id)
-  }
-
-  const currentStaffProfile = getCurrentUserStaffProfile()
-  const isSuperAdmin = currentStaffProfile?.role === 'super_admin'
-  const isAdmin = currentStaffProfile?.role === 'admin' || isSuperAdmin
+  const { hasPermission } = useAuth()
+  const canEdit = hasPermission('roster_edit')
 
   // Notification system
   const showNotification = useCallback((type: 'success' | 'error' | 'warning', message: string) => {
@@ -136,7 +128,7 @@ export function FetsRosterPremium() {
         email: profile.email || '',
         department: profile.department,
         branch_assigned: profile.branch_assigned
-      }))
+      } as StaffProfile))
 
       setStaffProfiles(mappedProfiles)
 
@@ -231,7 +223,7 @@ export function FetsRosterPremium() {
   }
 
   const handleShiftCellSave = async (shiftData: { shift_code: string; overtime_hours: number }) => {
-    if (!selectedCellData || !user || !isAdmin) {
+    if (!selectedCellData || !user || !canEdit) {
       showNotification('warning', 'Unable to save shift - permission or context issue')
       return
     }
@@ -287,7 +279,7 @@ export function FetsRosterPremium() {
   }
 
   const handleShiftCellDelete = async () => {
-    if (!selectedCellData || !user || !isAdmin) {
+    if (!selectedCellData || !user || !canEdit) {
       showNotification('warning', 'Unable to delete shift - permission or context issue')
       return
     }
@@ -355,7 +347,7 @@ export function FetsRosterPremium() {
               FETS Roster
             </h1>
             <p className="text-lg text-gray-600 font-medium">
-              {activeBranch?.name ? `${activeBranch.name} · ` : ''}Staff Scheduling & Management
+              {activeBranch && activeBranch !== 'global' ? `${activeBranch.charAt(0).toUpperCase() + activeBranch.slice(1)} · ` : ''}Staff Scheduling & Management
             </p>
           </div>
           <div className="text-right">
@@ -468,7 +460,7 @@ export function FetsRosterPremium() {
             {/* Quick Add & Analysis Buttons */}
             <button
               onClick={() => setShowQuickAddModal(true)}
-              disabled={!isAdmin}
+              disabled={!canEdit}
               className="neomorphic-btn px-4 py-2 text-amber-700 flex items-center space-x-2 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="h-4 w-4" />
