@@ -8,7 +8,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './useAuth'
 import { toast } from 'react-hot-toast'
-import type { Notification} from '../services/notification.service'
+import type { Notification } from '../services/notification.service'
 
 /**
  * Hook to subscribe to real-time notification updates for the current user
@@ -146,7 +146,7 @@ function showToastNotification(notification: Notification) {
       break
 
     default:
-      toast.info(`${title}: ${message}`, {
+      toast(`${title}: ${message}`, {
         icon: icon,
         duration: 4000
       })
