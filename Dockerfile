@@ -25,7 +25,8 @@ FROM nginx:alpine
 COPY --from=builder /app/fets-point/dist /usr/share/nginx/html
 
 # Copy nginx configuration for SPA
-RUN echo 'server {
+RUN cat > /etc/nginx/conf.d/default.conf << 'EOF'
+server {
     listen 80;
     server_name _;
     root /usr/share/nginx/html;
@@ -36,7 +37,8 @@ RUN echo 'server {
     location = /index.html {
         add_header Cache-Control "no-cache, no-store, must-revalidate";
     }
-}' > /etc/nginx/conf.d/default.conf
+}
+EOF
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
