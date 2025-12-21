@@ -41,34 +41,9 @@ export function FetsIntelligence() {
   const [activeTab, setActiveTab] = useState('overview')
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    loadIntelligenceData()
-  }, [selectedTimeframe, loadIntelligenceData])
-
-  const loadIntelligenceData = useCallback(async () => {
-    try {
-      setIsLoading(true)
-      await loadAnalytics()
-      await loadInsights()
-      await loadReports()
-    } catch (error) {
-      console.error('Error loading intelligence data:', error)
-      // Set empty state instead of mock data
-      setAnalytics({
-        totalSessions: 0,
-        successRate: 0,
-        avgDuration: '0 min',
-        peakHours: 'N/A',
-        topExams: [],
-        monthlyTrend: [],
-        issueReports: []
-      })
-      setInsights([])
-      setReports([])
-    } finally {
-      setIsLoading(false)
-    }
-  }, [loadAnalytics, loadInsights, loadReports])
+  // Mock loaders moved inside or helper functions.
+  // Actually, to minimize diff, I will just move the useEffect TO THE BOTTOM of the function definitions.
+  // But wait, useEffect is at the top.
 
   const loadAnalytics = useCallback(async () => {
     try {
@@ -213,6 +188,35 @@ export function FetsIntelligence() {
     }
   }, [])
 
+  const loadIntelligenceData = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      await loadAnalytics()
+      await loadInsights()
+      await loadReports()
+    } catch (error) {
+      console.error('Error loading intelligence data:', error)
+      // Set empty state instead of mock data
+      setAnalytics({
+        totalSessions: 0,
+        successRate: 0,
+        avgDuration: '0 min',
+        peakHours: 'N/A',
+        topExams: [],
+        monthlyTrend: [],
+        issueReports: []
+      })
+      setInsights([])
+      setReports([])
+    } finally {
+      setIsLoading(false)
+    }
+  }, [loadAnalytics, loadInsights, loadReports])
+
+  useEffect(() => {
+    loadIntelligenceData()
+  }, [selectedTimeframe, loadIntelligenceData])
+
   const loadMockAnalytics = () => {
     const mockAnalytics: Analytics = {
       totalSessions: 147,
@@ -265,7 +269,7 @@ export function FetsIntelligence() {
   const getInsightColor = (type: string, priority: string) => {
     if (priority === 'high') return 'text-red-400 bg-red-500/20 border-red-500/50'
     if (priority === 'medium') return 'text-yellow-400 bg-yellow-500/20 border-yellow-500/50'
-    
+
     switch (type) {
       case 'performance': return 'text-green-400 bg-green-500/20 border-green-500/50'
       case 'optimization': return 'text-blue-400 bg-blue-500/20 border-blue-500/50'
@@ -332,7 +336,7 @@ export function FetsIntelligence() {
               <Calendar className="h-8 w-8 text-black/70" />
             </div>
           </div>
-          
+
           <div className="golden-card p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -381,11 +385,10 @@ export function FetsIntelligence() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-t-lg font-medium transition-colors ${
-                  activeTab === tab.id
+                className={`flex items-center space-x-2 px-4 py-2 rounded-t-lg font-medium transition-colors ${activeTab === tab.id
                     ? 'text-yellow-400 border-b-2 border-yellow-400'
                     : 'text-gray-400 hover:text-white'
-                }`}
+                  }`}
               >
                 <Icon className="h-4 w-4" />
                 <span>{tab.name}</span>
@@ -443,7 +446,7 @@ export function FetsIntelligence() {
                   const height = (month.sessions / maxSessions) * 100
                   return (
                     <div key={index} className="flex flex-col items-center">
-                      <div 
+                      <div
                         className="w-8 bg-gradient-to-t from-yellow-600 to-yellow-400 rounded-t"
                         style={{ height: `${height}px`, minHeight: '20px' }}
                       ></div>
@@ -463,7 +466,7 @@ export function FetsIntelligence() {
               <h3 className="text-lg font-semibold text-white">AI-Powered Insights</h3>
               <span className="text-sm text-gray-400">{insights.length} insights generated</span>
             </div>
-            
+
             {insights.map((insight) => (
               <div key={insight.id} className={`p-4 rounded-lg border transition-colors ${getInsightColor(insight.type, insight.priority)}`}>
                 <div className="flex items-start space-x-4">
@@ -510,18 +513,17 @@ export function FetsIntelligence() {
                 Generate New Report
               </button>
             </div>
-            
+
             {reports.map((report) => (
               <div key={report.id} className="p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-semibold text-white">{report.title}</h4>
                   <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      report.type === 'daily' ? 'bg-blue-500/20 text-blue-400' :
-                      report.type === 'weekly' ? 'bg-green-500/20 text-green-400' :
-                      report.type === 'monthly' ? 'bg-yellow-500/20 text-yellow-400' :
-                      'bg-gray-500/20 text-gray-400'
-                    }`}>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${report.type === 'daily' ? 'bg-blue-500/20 text-blue-400' :
+                        report.type === 'weekly' ? 'bg-green-500/20 text-green-400' :
+                          report.type === 'monthly' ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-gray-500/20 text-gray-400'
+                      }`}>
                       {report.type.toUpperCase()}
                     </span>
                   </div>

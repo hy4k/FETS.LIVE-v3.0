@@ -182,20 +182,21 @@ export function SettingsPage() {
 
       if (profile?.user_id) {
         const { data } = await supabase
-          .from('user_settings')
+          .from('user_settings' as any)
           .select('*')
           .eq('user_id', profile.user_id)
           .single()
 
         if (data) {
+          const settingsData = data as any
           setSettings({
             display: {
-              theme: (data.theme as any) || 'light',
-              language: data.language || 'en',
-              timezone: data.timezone || 'UTC',
-              dateFormat: data.date_format || 'MM/DD/YYYY'
+              theme: settingsData.theme || 'light',
+              language: settingsData.language || 'en',
+              timezone: settingsData.timezone || 'UTC',
+              dateFormat: settingsData.date_format || 'MM/DD/YYYY'
             },
-            notifications: (data.notifications as any) || {
+            notifications: settingsData.notifications || {
               emailAlerts: true,
               pushNotifs: false,
               weeklyDigest: true
@@ -218,7 +219,7 @@ export function SettingsPage() {
 
     if (profile?.user_id) {
       try {
-        const { error } = await supabase.from('user_settings').upsert({
+        const { error } = await supabase.from('user_settings' as any).upsert({
           user_id: profile.user_id,
           theme: settings.display.theme,
           language: settings.display.language,

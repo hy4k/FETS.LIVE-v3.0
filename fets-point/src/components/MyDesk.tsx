@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { 
-  User, 
-  Calendar, 
+import {
+  User,
+  Calendar,
   Heart,
   MessageCircle,
   Share2,
@@ -52,31 +52,11 @@ export function MyDesk() {
   const [posts, setPosts] = useState<WallPost[]>([])
   const [loading, setLoading] = useState(true)
   const [newPostContent, setNewPostContent] = useState('')
-  const [newCommentContent, setNewCommentContent] = useState<{[key: string]: string}>({})
-  const [showComments, setShowComments] = useState<{[key: string]: boolean}>({})
+  const [newCommentContent, setNewCommentContent] = useState<{ [key: string]: string }>({})
+  const [showComments, setShowComments] = useState<{ [key: string]: boolean }>({})
   const [postingUpdate, setPostingUpdate] = useState(false)
 
-  useEffect(() => {
-    if (user) {
-      loadFeedData()
-    }
-  }, [user, loadFeedData])
 
-  const loadFeedData = useCallback(async () => {
-    try {
-      setLoading(true)
-      console.log('Loading My Desk feed data...')
-      
-      // Load mock data since wall tables don't exist
-      loadMockFeedData()
-
-    } catch (error) {
-      console.error('Error loading feed data:', error)
-      setPosts([])
-    } finally {
-      setLoading(false)
-    }
-  }, [loadMockFeedData])
 
   const loadMockFeedData = useCallback(() => {
     const mockPosts: WallPost[] = [
@@ -132,9 +112,31 @@ export function MyDesk() {
     setPosts(mockPosts)
   }, [user, profile])
 
+  const loadFeedData = useCallback(async () => {
+    try {
+      setLoading(true)
+      console.log('Loading My Desk feed data...')
+
+      // Load mock data since wall tables don't exist
+      loadMockFeedData()
+
+    } catch (error) {
+      console.error('Error loading feed data:', error)
+      setPosts([])
+    } finally {
+      setLoading(false)
+    }
+  }, [loadMockFeedData])
+
+  useEffect(() => {
+    if (user) {
+      loadFeedData()
+    }
+  }, [user, loadFeedData])
+
   const handleCreatePost = async () => {
     if (!newPostContent.trim() || !user) return
-    
+
     try {
       setPostingUpdate(true)
       // Add optimistic update for demo (wall tables don't exist)
@@ -170,12 +172,12 @@ export function MyDesk() {
     if (!post) return
 
     // Update UI optimistically (wall tables don't exist)
-    setPosts(posts.map(p => p.id === postId 
-      ? { 
-          ...p, 
-          user_liked: !p.user_liked, 
-          likes_count: p.user_liked ? p.likes_count - 1 : p.likes_count + 1 
-        }
+    setPosts(posts.map(p => p.id === postId
+      ? {
+        ...p,
+        user_liked: !p.user_liked,
+        likes_count: p.user_liked ? p.likes_count - 1 : p.likes_count + 1
+      }
       : p
     ))
   }
@@ -185,11 +187,11 @@ export function MyDesk() {
     if (!content || !user) return
 
     // Update UI optimistically (wall tables don't exist)
-    setPosts(posts.map(p => p.id === postId 
+    setPosts(posts.map(p => p.id === postId
       ? { ...p, comments_count: p.comments_count + 1 }
       : p
     ))
-    
+
     // Clear comment input
     setNewCommentContent({ ...newCommentContent, [postId]: '' })
   }
@@ -200,7 +202,7 @@ export function MyDesk() {
     const diffInMs = now.getTime() - past.getTime()
     const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60))
     const diffInDays = Math.floor(diffInHours / 24)
-    
+
     if (diffInHours < 1) {
       const diffInMins = Math.floor(diffInMs / (1000 * 60))
       return diffInMins < 1 ? 'Just now' : `${diffInMins}m ago`
@@ -265,10 +267,10 @@ export function MyDesk() {
           <div className="text-right">
             <div className="text-black/80 text-sm">Today</div>
             <div className="text-black font-bold text-xl">
-              {new Date().toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                month: 'short', 
-                day: 'numeric' 
+              {new Date().toLocaleDateString('en-US', {
+                weekday: 'long',
+                month: 'short',
+                day: 'numeric'
               })}
             </div>
           </div>
@@ -288,11 +290,10 @@ export function MyDesk() {
               <button
                 key={tab.id}
                 onClick={() => setSelectedTab(tab.id)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-t-lg font-medium transition-colors ${
-                  selectedTab === tab.id
-                    ? 'text-yellow-600 border-b-2 border-yellow-500'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-t-lg font-medium transition-colors ${selectedTab === tab.id
+                  ? 'text-yellow-600 border-b-2 border-yellow-500'
+                  : 'text-gray-500 hover:text-gray-700'
+                  }`}
               >
                 <Icon className="h-4 w-4" />
                 <span>{tab.name}</span>
@@ -377,9 +378,9 @@ export function MyDesk() {
                   <div className="mb-4">
                     <p className="text-gray-800 leading-relaxed">{post.content}</p>
                     {post.image_url && (
-                      <img 
-                        src={post.image_url} 
-                        alt="Post image" 
+                      <img
+                        src={post.image_url}
+                        alt="Post image"
                         className="mt-3 rounded-lg max-w-full h-auto"
                       />
                     )}
@@ -388,17 +389,16 @@ export function MyDesk() {
                   {/* Post Actions */}
                   <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                     <div className="flex items-center space-x-6">
-                      <button 
+                      <button
                         onClick={() => handleLikePost(post.id)}
-                        className={`flex items-center space-x-2 transition-colors ${
-                          post.user_liked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
-                        }`}
+                        className={`flex items-center space-x-2 transition-colors ${post.user_liked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
+                          }`}
                       >
                         <Heart className={`h-5 w-5 ${post.user_liked ? 'fill-current' : ''}`} />
                         <span className="text-sm">{post.likes_count}</span>
                       </button>
-                      <button 
-                        onClick={() => setShowComments({...showComments, [post.id]: !showComments[post.id]})}
+                      <button
+                        onClick={() => setShowComments({ ...showComments, [post.id]: !showComments[post.id] })}
                         className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors"
                       >
                         <MessageCircle className="h-5 w-5" />
@@ -422,7 +422,7 @@ export function MyDesk() {
                           <input
                             type="text"
                             value={newCommentContent[post.id] || ''}
-                            onChange={(e) => setNewCommentContent({...newCommentContent, [post.id]: e.target.value})}
+                            onChange={(e) => setNewCommentContent({ ...newCommentContent, [post.id]: e.target.value })}
                             placeholder="Write a comment..."
                             className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                             onKeyPress={(e) => {

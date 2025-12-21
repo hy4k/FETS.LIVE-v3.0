@@ -149,7 +149,7 @@ export function useNotifications(filters?: NotificationFilters) {
     // Actions
     markAsRead: markAsReadMutation.mutate,
     markAllAsRead: markAllAsReadMutation.mutate,
-    dismiss: dismissMutation.mutate,
+    dismissNotification: dismissMutation.mutate,
     dismissAllRead: dismissAllReadMutation.mutate,
     refetch,
 

@@ -144,7 +144,7 @@ export function NotificationBanner({ onNavigate }: NotificationBannerProps) {
                   }
                 }}
               >
-                {[...displayNotifications, ...displayNotifications].map((notification, index) => {
+                {[...displayNotifications, ...displayNotifications].map((notification: any, index) => {
                   const IconComponent = iconMap[notification.icon as keyof typeof iconMap] || Bell
                   const scheme = colorSchemes[notification.color as keyof typeof colorSchemes] || colorSchemes.gray
 
@@ -217,7 +217,7 @@ export function NotificationBanner({ onNavigate }: NotificationBannerProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[400px] overflow-y-auto custom-scrollbar">
                   <AnimatePresence>
-                    {displayNotifications.map((notification) => {
+                    {displayNotifications.map((notification: any) => {
                       const IconComponent = iconMap[notification.icon as keyof typeof iconMap] || Bell
                       const scheme = colorSchemes[notification.color as keyof typeof colorSchemes] || colorSchemes.gray
 
@@ -228,12 +228,11 @@ export function NotificationBanner({ onNavigate }: NotificationBannerProps) {
                           initial={{ opacity: 0, scale: 0.9 }}
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.9 }}
-                          className={`relative ${scheme.bg} backdrop-blur-sm border ${scheme.border} rounded-xl p-4 cursor-pointer transition-all ${scheme.hover} ${
-                            !notification.isRead ? 'ring-2 ring-offset-2 ' + scheme.border : ''
-                          }`}
+                          className={`relative ${scheme.bg} backdrop-blur-sm border ${scheme.border} rounded-xl p-4 cursor-pointer transition-all ${scheme.hover} ${!notification.is_read ? 'ring-2 ring-offset-2 ' + scheme.border : ''
+                            }`}
                           onClick={() => handleNotificationClick(notification)}
                         >
-                          {!notification.isRead && (
+                          {!notification.is_read && (
                             <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${scheme.badge} animate-pulse`}></div>
                           )}
 
@@ -259,7 +258,7 @@ export function NotificationBanner({ onNavigate }: NotificationBannerProps) {
 
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-gray-500">
-                              {new Date(notification.timestamp).toLocaleDateString('en-US', {
+                              {new Date(notification.created_at).toLocaleDateString('en-US', {
                                 month: 'short',
                                 day: 'numeric',
                                 hour: '2-digit',

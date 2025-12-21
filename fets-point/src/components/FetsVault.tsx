@@ -311,9 +311,7 @@ export function FetsVault() {
     'knowledge'
   ]
 
-  useEffect(() => {
-    loadVaultData()
-  }, [activeBranch, loadVaultData]) // Reload when branch changes
+
 
   const loadVaultData = useCallback(async () => {
     try {
@@ -373,6 +371,10 @@ export function FetsVault() {
       setLoading(false)
     }
   }, [activeBranch, applyFilter, isGlobalView, showNotification])
+
+  useEffect(() => {
+    loadVaultData()
+  }, [activeBranch, loadVaultData]) // Reload when branch changes
 
   const loadMockData = () => {
     const mockItems: VaultItem[] = [

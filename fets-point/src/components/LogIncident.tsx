@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { 
-  AlertTriangle, 
-  Plus, 
-  Search, 
-  Edit, 
+import {
+  AlertTriangle,
+  Plus,
+  Search,
+  Edit,
   Trash2,
   X,
   Calendar,
@@ -122,7 +122,7 @@ export function LogIncident() {
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      setIncidents(data || [])
+      setIncidents((data as any) || [])
     } catch (error) {
       console.error('Error loading incidents:', error)
       setError('Failed to load incidents')
@@ -226,22 +226,21 @@ export function LogIncident() {
 
   const filteredIncidents = incidents.filter(incident => {
     const matchesSearch = incident.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         incident.description.toLowerCase().includes(searchQuery.toLowerCase())
+      incident.description.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesCategory = filterCategory === 'all' || incident.category === filterCategory
     const matchesStatus = filterStatus === 'all' || incident.status === filterStatus
-    const matchesType = filterType === 'all' || 
-                       (filterType === 'incidents' && !incident.is_todo_task) ||
-                       (filterType === 'todos' && incident.is_todo_task)
-    
+    const matchesType = filterType === 'all' ||
+      (filterType === 'incidents' && !incident.is_todo_task) ||
+      (filterType === 'todos' && incident.is_todo_task)
+
     return matchesSearch && matchesCategory && matchesStatus && matchesType
   })
 
   const getStatusBadge = (status: string) => {
     const statusConfig = statuses.find(s => s.value === status)
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${
-        statusConfig?.color || 'bg-gray-500'
-      }`}>
+      <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${statusConfig?.color || 'bg-gray-500'
+        }`}>
         {statusConfig?.label || status}
       </span>
     )
@@ -250,9 +249,8 @@ export function LogIncident() {
   const getSeverityBadge = (severity: string) => {
     const severityConfig = severities.find(s => s.value === severity)
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${
-        severityConfig?.color || 'bg-gray-500'
-      }`}>
+      <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${severityConfig?.color || 'bg-gray-500'
+        }`}>
         {severityConfig?.label || severity}
       </span>
     )
@@ -490,7 +488,7 @@ export function LogIncident() {
                     type="checkbox"
                     id="is_todo_task"
                     checked={formData.is_todo_task}
-                    onChange={(e) => setFormData({...formData, is_todo_task: e.target.checked})}
+                    onChange={(e) => setFormData({ ...formData, is_todo_task: e.target.checked })}
                     className="mr-2"
                   />
                   <label htmlFor="is_todo_task" className="text-sm font-medium text-gray-700">
@@ -505,7 +503,7 @@ export function LogIncident() {
                   <input
                     type="text"
                     value={formData.title}
-                    onChange={(e) => setFormData({...formData, title: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     required
                     className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     placeholder="Enter incident title..."
@@ -518,7 +516,7 @@ export function LogIncident() {
                   </label>
                   <textarea
                     value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     required
                     rows={3}
                     className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
@@ -533,7 +531,7 @@ export function LogIncident() {
                     </label>
                     <select
                       value={formData.todo_type}
-                      onChange={(e) => setFormData({...formData, todo_type: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, todo_type: e.target.value })}
                       className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     >
                       <option value="">Select todo type...</option>
@@ -549,7 +547,7 @@ export function LogIncident() {
                     </label>
                     <select
                       value={formData.category}
-                      onChange={(e) => setFormData({...formData, category: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                       required
                       className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     >
@@ -567,7 +565,7 @@ export function LogIncident() {
                     </label>
                     <select
                       value={formData.severity}
-                      onChange={(e) => setFormData({...formData, severity: e.target.value as any})}
+                      onChange={(e) => setFormData({ ...formData, severity: e.target.value as any })}
                       className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     >
                       {severities.map(sev => (
@@ -582,7 +580,7 @@ export function LogIncident() {
                     </label>
                     <select
                       value={formData.status}
-                      onChange={(e) => setFormData({...formData, status: e.target.value as any})}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
                       className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     >
                       {statuses.map(status => (
@@ -600,7 +598,7 @@ export function LogIncident() {
                     <input
                       type="text"
                       value={formData.assigned_to}
-                      onChange={(e) => setFormData({...formData, assigned_to: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, assigned_to: e.target.value })}
                       className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                       placeholder="Assign to staff member..."
                     />
@@ -614,7 +612,7 @@ export function LogIncident() {
                       <input
                         type="date"
                         value={formData.due_date}
-                        onChange={(e) => setFormData({...formData, due_date: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
                         className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                       />
                     </div>

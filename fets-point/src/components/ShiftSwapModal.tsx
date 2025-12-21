@@ -4,7 +4,10 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useBranch } from '../hooks/useBranch'
 import toast from 'react-hot-toast'
-import { StaffProfile, LeaveRequest } from '../types/database.types'
+import { Database } from '../types/database.types'
+
+type StaffProfile = Database['public']['Tables']['staff_profiles']['Row']
+// LeaveRequest type not used explicitly as type but implied. No export needed if using inference or explicit typing in map.
 
 interface ShiftSwapModalProps {
   isOpen: boolean
@@ -39,13 +42,6 @@ export const ShiftSwapModal: React.FC<ShiftSwapModalProps> = ({
   const [loading, setLoading] = useState(false)
   const [swapRequests, setSwapRequests] = useState<SwapRequest[]>([])
 
-  useEffect(() => {
-    if (isOpen) {
-      loadStaffProfiles()
-      loadSwapRequests()
-    }
-  }, [isOpen, activeBranch, loadStaffProfiles, loadSwapRequests])
-
   const loadStaffProfiles = useCallback(async () => {
     try {
       let query = supabase
@@ -53,16 +49,16 @@ export const ShiftSwapModal: React.FC<ShiftSwapModalProps> = ({
         .select('id, full_name, role, branch_assigned')
         .not('full_name', 'in', '("MITHUN","NIYAS","Mithun","Niyas")')
         .neq('id', profile?.id) // Exclude current user
-      
+
       // Apply branch filtering
       if (activeBranch !== 'global') {
         query = query.eq('branch_assigned', activeBranch)
       }
-      
+
       const { data, error } = await query.order('full_name')
       if (error) throw error
-      
-      setStaffProfiles(data || [])
+
+      setStaffProfiles((data as any) || [])
     } catch (error) {
       console.error('Error loading staff:', error)
       toast.error('Failed to load staff profiles')
@@ -86,10 +82,10 @@ export const ShiftSwapModal: React.FC<ShiftSwapModalProps> = ({
         `)
         .eq('request_type', 'shift_swap')
         .order('created_at', { ascending: false })
-      
+
       if (error) throw error
-      
-      const mappedRequests: SwapRequest[] = (data || []).map(req => {
+
+      const mappedRequests: SwapRequest[] = (data || []).map((req: any) => {
         return {
           id: req.id,
           requestor_id: req.user_id,
@@ -102,13 +98,20 @@ export const ShiftSwapModal: React.FC<ShiftSwapModalProps> = ({
           created_at: req.created_at
         }
       })
-      
+
       setSwapRequests(mappedRequests)
     } catch (error) {
       console.error('Error loading swap requests:', error)
       toast.error('Failed to load swap requests')
     }
   }, [])
+
+  useEffect(() => {
+    if (isOpen) {
+      loadStaffProfiles()
+      loadSwapRequests()
+    }
+  }, [isOpen, activeBranch, loadStaffProfiles, loadSwapRequests])
 
   const createSwapRequest = async () => {
     if (!selectedDate || !selectedTargetStaff) {
@@ -128,9 +131,9 @@ export const ShiftSwapModal: React.FC<ShiftSwapModalProps> = ({
           reason: reason,
           status: 'pending'
         })
-      
+
       if (error) throw error
-      
+
       toast.success('Shift swap request created successfully')
       setSelectedDate('')
       setSelectedTargetStaff('')
@@ -154,19 +157,19 @@ export const ShiftSwapModal: React.FC<ShiftSwapModalProps> = ({
       // Update request status
       const { error: updateError } = await supabase
         .from('leave_requests')
-        .update({ 
+        .update({
           status: approved ? 'approved' : 'rejected',
           approved_by: profile?.id,
           approved_at: new Date().toISOString()
         })
         .eq('id', requestId)
-      
+
       if (updateError) throw updateError
 
       if (approved) {
         // Auto-swap the rosters for the requested date
         await performAutoSwap(request.requestor_id, request.target_id, request.request_date)
-        
+
         // Log the swap in audit trail
         await supabase
           .from('roster_audit_log')
@@ -177,7 +180,7 @@ export const ShiftSwapModal: React.FC<ShiftSwapModalProps> = ({
             affected_date: request.request_date
           })
       }
-      
+
       toast.success(approved ? 'Shift swap approved and executed' : 'Shift swap rejected')
       loadSwapRequests()
       onSuccess()
@@ -196,25 +199,25 @@ export const ShiftSwapModal: React.FC<ShiftSwapModalProps> = ({
       .select('*')
       .in('profile_id', [user1Id, user2Id])
       .eq('date', date)
-    
+
     if (fetchError) throw fetchError
-    
+
     const user1Shift = shifts?.find(s => s.profile_id === user1Id)
     const user2Shift = shifts?.find(s => s.profile_id === user2Id)
-    
+
     // Delete existing shifts
     if (shifts && shifts.length > 0) {
       const { error: deleteError } = await supabase
         .from('roster_schedules')
         .delete()
         .in('id', shifts.map(s => s.id))
-      
+
       if (deleteError) throw deleteError
     }
-    
+
     // Create swapped shifts
     const newShifts = []
-    
+
     if (user1Shift) {
       newShifts.push({
         profile_id: user2Id,
@@ -224,7 +227,7 @@ export const ShiftSwapModal: React.FC<ShiftSwapModalProps> = ({
         status: 'confirmed'
       })
     }
-    
+
     if (user2Shift) {
       newShifts.push({
         profile_id: user1Id,
@@ -234,12 +237,12 @@ export const ShiftSwapModal: React.FC<ShiftSwapModalProps> = ({
         status: 'confirmed'
       })
     }
-    
+
     if (newShifts.length > 0) {
       const { error: insertError } = await supabase
         .from('roster_schedules')
         .insert(newShifts)
-      
+
       if (insertError) throw insertError
     }
   }
@@ -249,11 +252,11 @@ export const ShiftSwapModal: React.FC<ShiftSwapModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div 
+      <div
         className="absolute inset-0 backdrop-blur-sm bg-black/20"
         onClick={onClose}
       />
-      
+
       {/* Modal */}
       <div className="relative w-full max-w-2xl bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
         {/* Header */}
@@ -270,26 +273,24 @@ export const ShiftSwapModal: React.FC<ShiftSwapModalProps> = ({
               <X className="h-5 w-5 text-gray-400" />
             </button>
           </div>
-          
+
           {/* Tabs */}
           <div className="flex mt-4 space-x-1 bg-gray-100/50 rounded-xl p-1">
             <button
               onClick={() => setActiveTab('create')}
-              className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                activeTab === 'create'
+              className={`flex-1 py-2 px-4 rounded-lg transition-colors ${activeTab === 'create'
                   ? 'bg-white shadow-sm text-blue-600'
                   : 'text-gray-600 hover:text-gray-900'
-              }`}
+                }`}
             >
               Create Request
             </button>
             <button
               onClick={() => setActiveTab('pending')}
-              className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
-                activeTab === 'pending'
+              className={`flex-1 py-2 px-4 rounded-lg transition-colors ${activeTab === 'pending'
                   ? 'bg-white shadow-sm text-blue-600'
                   : 'text-gray-600 hover:text-gray-900'
-              }`}
+                }`}
             >
               Pending Requests
             </button>
@@ -368,11 +369,10 @@ export const ShiftSwapModal: React.FC<ShiftSwapModalProps> = ({
                           <span className="font-medium text-gray-900">
                             {request.requestor_name} ↔ {request.target_name}
                           </span>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            request.status === 'approved' ? 'bg-green-100 text-green-800' :
-                            'bg-red-100 text-red-800'
-                          }`}>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              request.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                'bg-red-100 text-red-800'
+                            }`}>
                             {request.status}
                           </span>
                         </div>
@@ -388,7 +388,7 @@ export const ShiftSwapModal: React.FC<ShiftSwapModalProps> = ({
                           <p className="text-sm text-gray-600 mt-2 italic">{request.reason}</p>
                         )}
                       </div>
-                      
+
                       {request.status === 'pending' && (
                         <div className="flex space-x-2 ml-4">
                           <button

@@ -50,7 +50,7 @@ export function NewsTickerBar() {
       const currentBranch = typeof activeBranch === 'string' ? activeBranch : (activeBranch as any)?.name || 'calicut';
 
       const { data, error } = await supabase
-        .from('news_ticker')
+        .from('news_ticker' as any)
         .select('*')
         .eq('is_active', true)
         .or(`expires_at.is.null,expires_at.gt.${now}`)
@@ -60,7 +60,7 @@ export function NewsTickerBar() {
       if (error) throw error;
 
       // Filter by branch
-      const filteredNews = (data || []).filter(item =>
+      const filteredNews = ((data as any) || []).filter((item: any) =>
         item.branch_location === currentBranch || item.branch_location === 'global'
       );
 
