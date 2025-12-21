@@ -41,7 +41,7 @@ export function TaskBoard() {
   const memoizedColumns = useMemo(() => {
     const newColumns: TaskColumns = { pending: [], in_progress: [], completed: [] }
     if (tasks) {
-      tasks.forEach((task: Task) => {
+      tasks.forEach((task: any) => {
         if (task.status && newColumns[task.status]) {
           newColumns[task.status].push(task)
         }
@@ -97,9 +97,8 @@ export function TaskBoard() {
                 <div
                   ref={provided.innerRef}
                   {...provided.droppableProps}
-                  className={`flex flex-col bg-gray-100 rounded-lg p-4 transition-colors ${
-                    snapshot.isDraggingOver ? 'bg-gray-200' : ''
-                  }`}
+                  className={`flex flex-col bg-gray-100 rounded-lg p-4 transition-colors ${snapshot.isDraggingOver ? 'bg-gray-200' : ''
+                    }`}
                 >
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="font-bold text-gray-700">{columnConfig[columnId]?.title}</h3>
@@ -114,9 +113,8 @@ export function TaskBoard() {
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
-                            className={`bg-white p-4 rounded-md shadow-sm border border-gray-200 ${
-                              snapshot.isDragging ? 'shadow-lg ring-2 ring-blue-500' : ''
-                            }`}
+                            className={`bg-white p-4 rounded-md shadow-sm border border-gray-200 ${snapshot.isDragging ? 'shadow-lg ring-2 ring-blue-500' : ''
+                              }`}
                           >
                             <div className="flex justify-between items-start">
                               <p className="font-semibold text-gray-800">{task.title}</p>

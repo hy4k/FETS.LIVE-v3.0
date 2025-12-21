@@ -520,7 +520,7 @@ export function StaffManagement() {
   }
 
   const handleAddStaff = async (newStaffData: Omit<StaffProfile, 'id' | 'created_at'> & { password?: string }) => {
-    await addStaff(newStaffData)
+    await addStaff(newStaffData as any)
     setShowAddModal(false)
   }
 
