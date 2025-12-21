@@ -20,10 +20,11 @@ import { useBranch } from '../hooks/useBranch'
 import { toast } from 'react-hot-toast'
 import { useStaff, useStaffMutations } from '../hooks/useStaffManagement'
 import { ProfilePictureUpload } from './ProfilePictureUpload'
-import { StaffProfile } from '../types/database.types'
+import { Database } from '../types/database.types'
+type StaffProfile = Database['public']['Tables']['staff_profiles']['Row']
 
 interface BaseCentreBadgeProps {
-  centre: 'calicut' | 'cochin' | null
+  centre: string | null
   size?: 'sm' | 'md'
 }
 
@@ -411,7 +412,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess }: AddStaffModalProps) {
 
     setSaving(true)
     try {
-      await onSuccess(formData)
+      await onSuccess(formData as any)
       onClose()
     } catch (error: any) {
       // Error toast is already handled by the mutation hook
