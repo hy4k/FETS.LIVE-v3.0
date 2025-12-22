@@ -162,6 +162,15 @@ export function FetsIntelligence() {
   const handleAiSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!prompt.trim()) return
+    // DEBUG COMMAND
+    if (prompt === '/debug-auth') {
+      const key = import.meta.env.VITE_AI_API_KEY;
+      const status = key ? `Loaded (${key.length} chars)` : 'Missing';
+      const prefix = key ? `Prefix: ${key.substring(0, 5)}...` : '';
+      const charCheck = key ? `First: '${key[0]}', Last: '${key[key.length - 1]}'` : '';
+      setAiResponse(`DEBUG REPORT:\nStatus: ${status}\n${prefix}\n${charCheck}\nTypically invalid if length < 39 or contains quotes.`);
+      return;
+    }
 
     setIsAiProcessing(true)
     setAiResponse(null)
