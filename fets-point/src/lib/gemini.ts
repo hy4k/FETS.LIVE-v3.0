@@ -4,14 +4,21 @@ const GEMINI_API_KEY = import.meta.env.VITE_AI_API_KEY;
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 export async function askGemini(userPrompt: string) {
-    if (!GEMINI_API_KEY) {
-        throw new Error("AI API Key is missing.");
+    // Re-check key at runtime to be safe
+    const apiKey = import.meta.env.VITE_AI_API_KEY;
+
+    // Strict validation
+    if (!apiKey || apiKey === 'undefined' || apiKey.length < 10) {
+        console.error("Gemini API Key Check Failed. Value:", apiKey);
+        throw new Error("AI API Key is missing or invalid in environment variables.");
     }
+
+    console.log("Calling Gemini API with Key Prefix:", apiKey.substring(0, 5) + "...");
 
     // 1. Gather Context from Supabase
     // We fetch a summary of relevant data to feed the AI so it can answer grounded questions.
 
-    // A. Fetch today's/tomorrow's exams (simulated via events or a schedule table if it existed, falling back to 'events' for now)
+    // A. Fetch today's/tomorrow's exams
     const today = new Date().toISOString().split('T')[0];
     const { data: events } = await (supabase as any)
         .from('events')
@@ -47,11 +54,15 @@ export async function askGemini(userPrompt: string) {
     - Be professional, concise, and futuristic.
   `;
 
-    // 2. Call Gemini API
-    const response = await fetch(API_URL, {
+    // 2. Call Gemini API (Using Header for Auth)
+    // Note: Removed ?key= param to rely on header
+    const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+
+    const response = await fetch(url, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
+            "x-goog-api-key": apiKey
         },
         body: JSON.stringify({
             contents: [{
@@ -64,6 +75,11 @@ export async function askGemini(userPrompt: string) {
 
     if (!response.ok) {
         const err = await response.text();
+        console.error("Gemini API Error Response:", err);
+
+        if (response.status === 401) {
+            throw new Error("Authentication Failed. Please verify VITE_AI_API_KEY is set in Coolify Build Settings (and Redeploy).");
+        }
         throw new Error(`Gemini API Error: ${err}`);
     }
 
