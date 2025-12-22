@@ -3,8 +3,8 @@ import { supabase } from '../lib/supabase'
 import { toast } from 'react-hot-toast'
 
 const fetchNews = async () => {
-  const { data, error } = await supabase
-    .from('news_updates')
+  const { data, error } = await (supabase as any)
+    .from('news')
     .select('*')
     .order('created_at', { ascending: false })
 
@@ -14,7 +14,7 @@ const fetchNews = async () => {
 
 export const useNews = () => {
   return useQuery({
-    queryKey: ['news_updates'],
+    queryKey: ['news'],
     queryFn: fetchNews,
   })
 }
@@ -23,12 +23,12 @@ export const useNewsMutations = () => {
   const queryClient = useQueryClient()
 
   const invalidateNews = () => {
-    queryClient.invalidateQueries({ queryKey: ['news_updates'] })
+    queryClient.invalidateQueries({ queryKey: ['news'] })
   }
 
   const addNewsItem = useMutation({
     mutationFn: async (newItem: any) => {
-      const { error } = await supabase.from('news_updates').insert(newItem)
+      const { error } = await (supabase as any).from('news').insert(newItem)
       if (error) throw error
     },
     onSuccess: () => {
@@ -40,7 +40,7 @@ export const useNewsMutations = () => {
 
   const updateNewsItem = useMutation({
     mutationFn: async (updatedItem: any) => {
-      const { error } = await supabase.from('news_updates').update(updatedItem).eq('id', updatedItem.id)
+      const { error } = await (supabase as any).from('news').update(updatedItem).eq('id', updatedItem.id)
       if (error) throw error
     },
     onSuccess: () => {
@@ -52,7 +52,7 @@ export const useNewsMutations = () => {
 
   const deleteNewsItem = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('news_updates').delete().eq('id', id)
+      const { error } = await (supabase as any).from('news').delete().eq('id', id)
       if (error) throw error
     },
     onSuccess: () => {

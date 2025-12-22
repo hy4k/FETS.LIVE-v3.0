@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { Calendar, Plus, ChevronLeft, ChevronRight, Edit, Trash2, X, Check, Clock, Users, Eye, MapPin, Building, Filter } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { Calendar, Plus, ChevronLeft, ChevronRight, Edit, Trash2, X, Check, Clock, Users, Eye, MapPin, Building, Filter, TrendingUp } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { CalendarAnalysis } from './CalendarAnalysis'
 import { useAuth } from '../hooks/useAuth'
 import { useBranch } from '../hooks/useBranch'
 import { useBranchFilter } from '../hooks/useBranchFilter'
@@ -50,6 +51,7 @@ export function FetsCalendarPremium() {
   const { addSession, updateSession, deleteSession, isMutating } = useSessionMutations()
   const [showModal, setShowModal] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
+  const [showAnalysis, setShowAnalysis] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [editingSession, setEditingSession] = useState<Session | null>(null)
   const [formData, setFormData] = useState({
@@ -362,6 +364,15 @@ export function FetsCalendarPremium() {
           </div>
 
           <div className="flex items-center space-x-4">
+            {/* Analysis Button */}
+            <button
+              onClick={() => setShowAnalysis(true)}
+              className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-medium rounded-xl shadow-sm hover:shadow-md hover:bg-slate-50 transition-all flex items-center space-x-2"
+            >
+              <TrendingUp className="h-4 w-4 text-amber-500" />
+              <span>Analysis</span>
+            </button>
+
             {/* Add Session Button */}
             <button
               onClick={() => openModal()}
@@ -386,104 +397,80 @@ export function FetsCalendarPremium() {
           </div>
 
           {/* Calendar Days Grid */}
-          <div className="grid grid-cols-7 gap-3">
+          <div className="grid grid-cols-7 gap-px bg-slate-300 rounded-2xl shadow-xl border border-slate-300 overflow-hidden">
             {days.map((date, index) => {
               if (!date) {
                 return (
-                  <div key={index} className="h-40 rounded-2xl bg-slate-100/50 border border-transparent"></div>
+                  <div key={index} className="h-48 bg-slate-50/80"></div>
                 )
               }
 
-              const daySessions = getSessionsForDate(date)
               const clientAggregates = getClientAggregates(date)
               const isCurrentDay = isToday(date)
               const hasEvents = Object.keys(clientAggregates).length > 0
 
-              // Neumorphic / Premium Card Style
               return (
                 <div
                   key={index}
                   onClick={() => openDetailsModal(date)}
-                  className={`h-48 p-3 flex flex-col justify-between cursor-pointer transition-all duration-300 rounded-2xl border ${isCurrentDay
-                    ? 'bg-white border-amber-300 shadow-[0_0_15px_rgba(251,191,36,0.2)] ring-1 ring-amber-400'
-                    : hasEvents
-                      ? 'bg-white border-white shadow-[-5px_-5px_10px_rgba(255,255,255,0.8),5px_5px_10px_rgba(209,213,219,0.5)] hover:transform hover:scale-[1.02]'
-                      : 'bg-[#F0F4F8] border-transparent hover:bg-white hover:border-slate-100 hover:shadow-sm'
+                  className={`h-48 flex flex-col cursor-pointer transition-all duration-300 relative group overflow-hidden ${isCurrentDay
+                    ? 'bg-amber-50'
+                    : 'bg-white hover:bg-slate-50'
                     }`}
                 >
-                  <div className="w-full">
-                    {/* Date Number */}
-                    <div className="flex items-center justify-between mb-2">
-                      <div className={`text-lg font-bold font-rajdhani transition-colors ${isCurrentDay
-                        ? 'text-amber-600'
-                        : date.getMonth() === currentDate.getMonth()
-                          ? 'text-slate-700'
-                          : 'text-slate-400'
-                        }`}>
-                        {date.getDate()}
+                  {/* Date Header - Clearly Separated */}
+                  <div className={`px-3 py-2 flex items-center justify-between border-b ${isCurrentDay ? 'border-amber-200/50' : 'border-slate-100'}`}>
+                    <span className={`text-sm font-medium font-rajdhani ${isCurrentDay ? 'text-amber-600' : 'text-slate-400 opacity-80'}`}>
+                      {date.getDate()}
+                    </span>
+                    {hasEvents && (
+                      <div className="flex space-x-0.5">
+                        {/* Mini Dots for quick load visualization */}
+                        {Object.keys(clientAggregates).map((_, i) => (
+                          <div key={i} className={`w-1 h-1 rounded-full ${isCurrentDay ? 'bg-amber-400' : 'bg-slate-300'}`} />
+                        ))}
                       </div>
-                      {isCurrentDay && <div className="w-2 h-2 bg-amber-500 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.6)]"></div>}
-                      {hasEvents && !isCurrentDay && (<div className="w-2 h-2 bg-slate-400 rounded-full"></div>)}
-                    </div>
+                    )}
+                  </div>
 
-                    {/* Session Indicators - Logos */}
-                    <div className="mt-1 space-y-1 overflow-hidden flex flex-col items-center flex-1 w-full justify-start">
-                      {Object.entries(clientAggregates).slice(0, 2).map(([key, stat]) => {
-                        const logoSrc = getClientLogo(key)
-                        // Use key (normalized) to look up colors to be safe
-                        const clientColor = CLIENT_COLORS[key as ClientType] || CLIENT_COLORS['OTHER']
+                  {/* Content Area - Stacked List */}
+                  <div className="flex-1 p-2 space-y-1.5 overflow-y-auto custom-scrollbar">
+                    {Object.entries(clientAggregates).map(([key, stat]) => {
+                      const logoSrc = getClientLogo(key)
+                      const clientColor = CLIENT_COLORS[key as ClientType] || CLIENT_COLORS['OTHER']
 
-                        if (logoSrc) {
-                          return (
-                            <div key={key} className="w-full relative flex items-center justify-between p-2 rounded-xl bg-white/60 border border-slate-200/60 shadow-sm transition-all hover:bg-white hover:shadow-md group" title={`${stat.displayName}: ${stat.candidates} candidates in ${stat.sessions} sessions`}>
-                              {/* Logo Area */}
-                              <div className="flex-1 flex justify-center items-center h-8 px-1">
-                                <img src={logoSrc} alt={stat.displayName} className="h-full w-auto object-contain mix-blend-multiply opacity-90 group-hover:opacity-100 transition-opacity" />
-                              </div>
-
-                              {/* Stats Badge */}
-                              <div className="flex flex-col items-end space-y-0.5 min-w-[36px]">
-                                <div className="text-[11px] font-bold text-slate-700 leading-none">
-                                  {stat.candidates}
-                                </div>
-                                {stat.sessions > 1 && (
-                                  <div className="text-[8px] font-semibold text-amber-600 bg-amber-50 px-1 py-0.5 rounded border border-amber-100 leading-none whitespace-nowrap">
-                                    {stat.sessions} Sessions
-                                  </div>
-                                )}
-                                {stat.sessions === 1 && (
-                                  <div className="text-[8px] font-medium text-slate-400 leading-none">
-                                    Cands.
-                                  </div>
-                                )}
-                              </div>
+                      return (
+                        <div
+                          key={key}
+                          className="flex items-center justify-between p-1.5 rounded-lg bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all group/item"
+                        >
+                          {/* Left: Logo & Name */}
+                          <div className="flex items-center space-x-2 min-w-0 flex-1">
+                            <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center bg-slate-50 rounded p-0.5 border border-slate-100">
+                              {logoSrc ? (
+                                <img src={logoSrc} alt="" className="w-full h-full object-contain" />
+                              ) : (
+                                <span className="text-[8px] font-bold text-slate-400">{key.substring(0, 1)}</span>
+                              )}
                             </div>
-                          )
-                        }
-
-                        // Fallback for non-logo clients
-                        return (
-                          <div
-                            key={key}
-                            className="w-full text-[10px] rounded-lg px-2 py-1.5 font-semibold truncate flex items-center justify-between shadow-sm border border-slate-100 group transition-all hover:shadow-md"
-                            style={{ background: clientColor.bg, color: clientColor.text }}
-                            title={`${stat.displayName}: ${stat.candidates} candidates`}
-                          >
-                            <span className="truncate opacity-90 font-bold">{stat.displayName.toUpperCase()}</span>
-                            <div className="flex items-center space-x-1">
-                              {stat.sessions > 1 && <span className="text-[9px] font-bold bg-black/5 px-1 rounded text-current opacity-80">{stat.sessions}</span>}
-                              <span className={`ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md ${stat.sessions > 1 ? 'bg-white shadow-sm' : ''}`}>{stat.candidates}</span>
-                            </div>
+                            <span className="text-[10px] font-bold text-slate-700 truncate">
+                              {stat.displayName}
+                            </span>
                           </div>
-                        )
-                      })}
 
-                      {Object.keys(clientAggregates).length > 2 && (
-                        <div className="text-[9px] text-slate-400 font-bold px-1 pt-1 flex items-center justify-center bg-slate-50/50 rounded-full py-0.5">
-                          +{Object.keys(clientAggregates).length - 2} more
+                          {/* Right: Count with Icon */}
+                          <div
+                            className="flex items-center space-x-1 px-1.5 py-0.5 rounded ml-2"
+                            style={{ backgroundColor: clientColor.tint }}
+                          >
+                            <Users className="w-3 h-3 opacity-60" style={{ color: clientColor.text }} />
+                            <span className="text-[10px] font-bold" style={{ color: clientColor.text }}>
+                              {stat.candidates}
+                            </span>
+                          </div>
                         </div>
-                      )}
-                    </div>
+                      )
+                    })}
                   </div>
                 </div>
               )
@@ -759,6 +746,15 @@ export function FetsCalendarPremium() {
           </div>
         </div>
       )}
+      {/* Analysis Modal */}
+      <AnimatePresence>
+        {showAnalysis && (
+          <CalendarAnalysis
+            onClose={() => setShowAnalysis(false)}
+            activeBranch={activeBranch}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

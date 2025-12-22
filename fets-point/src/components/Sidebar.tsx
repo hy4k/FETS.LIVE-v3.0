@@ -21,7 +21,8 @@ import {
   Megaphone,
   Sliders,
   Shield,
-  ClipboardList
+  ClipboardList,
+  Brain
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
@@ -57,9 +58,8 @@ const navigationGroups: { [key: string]: NavigationItem[] } = {
     { id: 'my-desk', name: 'My Desk', icon: MessageSquare, badge: 'NEW' },
   ],
   admin: [
-    { id: 'fets-manager', name: 'FETS Manager', icon: Shield, role: ['super_admin'], badge: 'ADMIN' },
     { id: 'user-management', name: 'User Management', icon: UserCog, role: ['super_admin'], badge: 'GOVERNANCE' },
-    { id: 'settings', name: 'Settings', icon: Sliders },
+    { id: 'settings', name: 'FETS Intelligence', icon: Brain },
   ]
 }
 

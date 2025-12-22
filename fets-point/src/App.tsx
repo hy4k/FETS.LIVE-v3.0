@@ -22,7 +22,7 @@ import { useIsMobile, useScreenSize } from './hooks/use-mobile';
 
 // Lazy load all page components for better performance
 const Dashboard = lazy(() => import('./components/iCloud/iCloudDashboard').then(module => ({ default: module.ICloudDashboard })))
-const CommandCentre = lazy(() => import('./components/CommandCentrePremium').then(module => ({ default: module.default })))
+const CommandCentre = lazy(() => import('./components/CommandCentreFinal'))
 const CandidateTracker = lazy(() => import('./components/CandidateTracker').then(module => ({ default: module.CandidateTracker })))
 const MyDesk = lazy(() => import('./components/MyDeskNew').then(module => ({ default: module.MyDeskNew })))
 const StaffManagement = lazy(() => import('./components/StaffManagement').then(module => ({ default: module.StaffManagement })))
@@ -33,8 +33,6 @@ const FetsCalendar = lazy(() => import('./components/FetsCalendarPremium'))
 const IncidentManager = lazy(() => import('./components/IncidentManager').then(module => ({ default: module.default })))
 const ChecklistManagement = lazy(() => import('./components/checklist/ChecklistManager').then(module => ({ default: module.ChecklistManager })))
 const NewsManager = lazy(() => import('./components/NewsManager').then(module => ({ default: module.NewsManager })))
-const SettingsPage = lazy(() => import('./components/SettingsPage').then(module => ({ default: module.SettingsPage })))
-const FetsManager = lazy(() => import('./components/FetsManager').then(module => ({ default: module.default })))
 const UserManagement = lazy(() => import('./components/UserManagement').then(module => ({ default: module.UserManagement })))
 
 // Create QueryClient instance with optimized settings
@@ -211,12 +209,8 @@ function AppContent() {
         name: 'Checklist Management'
       },
       'settings': {
-        component: <SettingsPage />,
-        name: 'Settings'
-      },
-      'fets-manager': {
-        component: <FetsManager />,
-        name: 'FETS Manager'
+        component: <FetsIntelligence />,
+        name: 'FETS Intelligence'
       },
       'user-management': {
         component: <UserManagement />,
