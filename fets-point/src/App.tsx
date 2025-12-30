@@ -244,37 +244,15 @@ function AppContent() {
         isMobile={isMobile}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
+        setActiveTab={setActiveTab} // Pass setActiveTab for Mode Switching
+        activeTab={activeTab} // Pass activeTab for highlighting
       />
 
 
 
-      {/* Desktop Sidebar */}
-      {!isMobile && (
-        <Sidebar
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          isMobile={false}
-          isCollapsed={sidebarCollapsed}
-          setIsCollapsed={setSidebarCollapsed}
-        />
-      )}
-
-      {/* Mobile Sidebar */}
-      {isMobile && sidebarOpen && (
-        <Sidebar
-          activeTab={activeTab}
-          setActiveTab={(tab) => {
-            setActiveTab(tab)
-            setSidebarOpen(false)
-          }}
-          isMobile={true}
-          onClose={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Main Content with proper spacing */}
-      <div className="content-with-single-banner">
-        <div className="dashboard-centered">
+      {/* Main Content - Full Width since Sidebar is removed */}
+      <div className="pt-32 px-4 md:px-8 pb-8 transition-all duration-300">
+        <div className="max-w-[1920px] mx-auto">
           {renderContent()}
         </div>
       </div>
