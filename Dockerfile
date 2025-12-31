@@ -13,7 +13,7 @@ COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY fets-point ./fets-point
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Build the frontend
 RUN cd fets-point && pnpm build
