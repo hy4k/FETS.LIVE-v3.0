@@ -10,14 +10,21 @@
   --calicut-light: #fff8dc;
   --calicut-glow: rgba(231, 187, 90, 0.2);
   --calicut-border: rgba(231, 187, 90, 0.3);
-  
+
   /* Cochin Branch - Fresh Mint Green Accents */
   --cochin-primary: #4ade80;
   --cochin-secondary: #34d399;
   --cochin-light: #ecfdf5;
   --cochin-glow: rgba(74, 222, 128, 0.2);
   --cochin-border: rgba(74, 222, 128, 0.3);
-  
+
+  /* Kannur Branch - Energetic Rose Accents */
+  --kannur-primary: #f43f5e;
+  --kannur-secondary: #fb7185;
+  --kannur-light: #fff1f2;
+  --kannur-glow: rgba(244, 63, 94, 0.2);
+  --kannur-border: rgba(244, 63, 94, 0.3);
+
   /* Global Mode - Blue-Purple Gradient */
   --global-primary: #3b82f6;
   --global-secondary: #8b5cf6;
@@ -141,6 +148,63 @@
 }
 
 /* ==========================================================================
+   KANNUR BRANCH THEME - SUBTLE ACCENT STYLING
+   ========================================================================== */
+.branch-kannur {
+  /* Header styling - Subtle neutral base with light accent tints */
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%) !important;
+  border-bottom: 3px solid var(--kannur-primary) !important;
+  box-shadow: 0 4px 20px rgba(244, 63, 94, 0.08) !important;
+}
+
+.branch-kannur .banner-greeting {
+  color: #1f2937 !important;
+}
+
+.branch-kannur .banner-status {
+  color: #6b7280 !important;
+}
+
+.branch-kannur .banner-location {
+  color: #374151 !important;
+  background: rgba(244, 63, 94, 0.1) !important;
+  border: 1px solid rgba(244, 63, 94, 0.2) !important;
+}
+
+.branch-kannur .banner-user-info {
+  color: #374151 !important;
+}
+
+.branch-kannur .banner-icon-button {
+  color: #374151 !important;
+  background: rgba(244, 63, 94, 0.08) !important;
+  border: 1px solid rgba(244, 63, 94, 0.15) !important;
+}
+
+.branch-kannur .banner-icon-button:hover {
+  background: rgba(244, 63, 94, 0.15) !important;
+  transform: translateY(-1px);
+}
+
+/* Widget accent colors */
+.branch-kannur .modern-card {
+  border-color: var(--kannur-border);
+}
+
+.branch-kannur .activity-card:hover {
+  box-shadow: 0 8px 25px var(--kannur-glow);
+}
+
+.branch-kannur .btn-primary {
+  background: linear-gradient(135deg, var(--kannur-primary) 0%, var(--kannur-secondary) 100%);
+  border-color: var(--kannur-primary);
+}
+
+.branch-kannur .status-indicator.positive {
+  background: var(--kannur-primary);
+}
+
+/* ==========================================================================
    GLOBAL MODE THEME
    ========================================================================== */
 .branch-global {
@@ -238,6 +302,10 @@
   background: linear-gradient(135deg, var(--cochin-primary) 0%, var(--cochin-secondary) 100%);
 }
 
+.branch-indicator.kannur {
+  background: linear-gradient(135deg, var(--kannur-primary) 0%, var(--kannur-secondary) 100%);
+}
+
 .branch-indicator.global {
   background: linear-gradient(135deg, var(--global-primary) 0%, var(--global-secondary) 100%);
 }
@@ -323,6 +391,11 @@
   box-shadow: 0 4px 20px var(--cochin-glow);
 }
 
+.dual-view-panel.kannur {
+  border-color: var(--kannur-border);
+  box-shadow: 0 4px 20px var(--kannur-glow);
+}
+
 .dual-view-header {
   padding: 16px 20px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
@@ -337,6 +410,10 @@
 
 .dual-view-header.cochin {
   background: linear-gradient(135deg, var(--cochin-light) 0%, rgba(74, 222, 128, 0.1) 100%);
+}
+
+.dual-view-header.kannur {
+  background: linear-gradient(135deg, var(--kannur-light) 0%, rgba(244, 63, 94, 0.1) 100%);
 }
 
 .dual-view-content {
@@ -401,10 +478,13 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
+
   50% {
     opacity: 0.7;
     transform: scale(1.2);
@@ -419,12 +499,12 @@
     grid-template-columns: 1fr;
     gap: 16px;
   }
-  
+
   .branch-toggle-button {
     padding: 6px 12px;
     font-size: 0.8rem;
   }
-  
+
   .branch-dropdown {
     width: 180px;
   }
@@ -434,22 +514,22 @@
   .branch-status-bar {
     padding: 8px 16px;
   }
-  
+
   .status-indicator-group {
     gap: 12px;
     flex-wrap: wrap;
   }
-  
+
   .status-item {
     font-size: 0.8rem;
     gap: 6px;
   }
-  
+
   .branch-toggle-button {
     padding: 4px 8px;
     gap: 6px;
   }
-  
+
   .branch-indicator {
     width: 10px;
     height: 10px;
@@ -519,6 +599,7 @@
   0% {
     background-position: 200% 0;
   }
+
   100% {
     background-position: -200% 0;
   }

@@ -3,7 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Brain, Zap, Search, Newspaper, Activity,
   User, LogOut, ArrowRight, X, Sparkles,
-  Maximize2, UserCog, Shield
+  Maximize2, UserCog, Shield, Building2,
+  LayoutDashboard, Menu, ChevronRight,
+  Terminal, Database, Radio, Bell
 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
@@ -12,20 +14,11 @@ import { askGemini } from '../lib/gemini'
 
 // Feature Components
 import { NewsManager } from './NewsManager'
-import { ProfilePictureUpload } from './ProfilePictureUpload'
 import { UserManagement } from './UserManagement'
+import IncidentManager from './IncidentManager'
+import { ClientControl } from './ClientControl'
 
 // --- Interfaces ---
-
-interface TileProps {
-  id: string
-  title: string
-  icon: React.ElementType
-  color?: string
-  children: React.ReactNode
-  onExpand?: () => void
-  colSpan?: 1 | 2
-}
 
 interface ChatMessage {
   id: string
@@ -34,83 +27,96 @@ interface ChatMessage {
   timestamp: Date
 }
 
-// ... (Rest of interfaces can stay or be omitted if not replacing)
-
-// --- Live Tile Component (Darker Neumorphism) ---
-const LiveTile = ({ id, title, icon: Icon, color = "indigo", children, onExpand, colSpan = 1 }: TileProps) => {
+// --- Sidebar Button Component ---
+const SidebarButton = ({
+  icon: Icon,
+  label,
+  isActive,
+  onClick,
+  color = "amber"
+}: {
+  icon: React.ElementType,
+  label: string,
+  isActive: boolean,
+  onClick: () => void,
+  color?: string
+}) => {
   return (
-    <motion.div
-      layoutId={`tile-container-${id}`}
-      className={`relative group overflow-hidden flex flex-col justify-between cursor-pointer 
-                 bg-[#E6E8EC] rounded-[2.5rem] p-8
-                 shadow-[12px_12px_24px_rgba(163,177,198,0.6),-12px_-12px_24px_rgba(255,255,255,0.8)]
-                 hover:shadow-[18px_18px_36px_rgba(163,177,198,0.7),-18px_-18px_36px_rgba(255,255,255,0.9)]
-                 transition-all duration-500 border border-white/40
-                 ${colSpan === 2 ? 'md:col-span-2' : ''}`}
-      onClick={onExpand}
-      whileHover={{ y: -8 }}
+    <motion.button
+      onClick={onClick}
+      whileHover={{ x: 8, backgroundColor: 'rgba(255, 255, 255, 0.4)' }}
+      whileTap={{ scale: 0.98 }}
+      className={`
+        relative w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-500 group
+        ${isActive
+          ? `bg-white shadow-[10px_10px_20px_rgba(163,177,198,0.3),-10px_-10px_20px_rgba(255,255,255,0.7)] border border-white`
+          : 'bg-white/40 backdrop-blur-md border border-white/40 hover:border-white/80'
+        }
+      `}
     >
-      <div className="relative z-10 flex flex-col h-full">
-        <div className="flex items-start justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <div className={`p-4 rounded-2xl bg-${color}-500/10 text-${color}-600 shadow-[4px_4px_8px_rgba(163,177,198,0.4),-4px_-4px_8px_rgba(255,255,255,0.8)]`}>
-              <Icon size={28} />
-            </div>
-            <h3 className="text-xl font-black text-slate-800 tracking-tight uppercase">{title}</h3>
-          </div>
-          <div className="p-2 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Maximize2 size={20} />
-          </div>
-        </div>
-        <div className="flex-1">
-          {children}
-        </div>
+      {/* Active Glow */}
+      {isActive && (
+        <motion.div
+          layoutId="active-glow"
+          className={`absolute inset-0 rounded-2xl opacity-20 bg-gradient-to-r from-${color}-400 to-${color}-600 blur-2xl`}
+        />
+      )}
+
+      <div className={`
+        p-3 rounded-xl transition-all duration-700
+        ${isActive
+          ? `bg-gradient-to-br from-${color}-500 to-${color}-700 text-white shadow-lg rotate-[360deg]`
+          : `bg-white shadow-sm text-slate-400 group-hover:text-${color}-600 group-hover:shadow-md`
+        }
+      `}>
+        <Icon size={20} />
       </div>
 
-      {/* Decorative Gradient Line */}
-      <div className={`absolute bottom-0 left-0 h-2 w-0 group-hover:w-full bg-gradient-to-r from-${color}-400 to-${color}-600 transition-all duration-700`} />
-    </motion.div>
+      <span className={`
+        text-sm font-black uppercase tracking-[0.2em] transition-all font-['Rajdhani']
+        ${isActive ? 'text-slate-800 translate-x-1' : 'text-slate-500 group-hover:text-slate-700'}
+      `}>
+        {label}
+      </span>
+
+      {isActive && (
+        <motion.div
+          layoutId="active-indicator"
+          className={`ml-auto w-1.5 h-1.5 rounded-full bg-${color}-500 shadow-[0_0_15px_rgba(245,158,11,0.8)]`}
+        />
+      )}
+    </motion.button>
   )
 }
 
-// --- Expanded Panel Component ---
-const ExpandedPanel = ({ id, title, children, onClose }: { id: string, title: string, children: React.ReactNode, onClose: () => void }) => {
+// --- Main Content Wrapper ---
+const ContentPanel = ({ id, icon: Icon, title, subtitle, children, color = "indigo" }: { id: string, icon: any, title: string, subtitle: string, children: React.ReactNode, color?: string }) => {
   return (
     <motion.div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-12 bg-slate-900/40 backdrop-blur-xl"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={onClose}
+      key={id}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className="flex-1 flex flex-col h-full overflow-hidden"
     >
-      <motion.div
-        layoutId={`tile-container-${id}`}
-        className="w-full max-w-6xl h-full max-h-[90vh] bg-[#E6E8EC] rounded-[3rem] 
-                   shadow-[30px_30px_60px_rgba(0,0,0,0.1),-10px_-10px_30px_rgba(255,255,255,0.8)] 
-                   overflow-hidden flex flex-col border border-white/60"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="p-8 md:p-10 flex items-center justify-between border-b border-white/40">
-          <div>
-            <h2 className="text-4xl font-black text-slate-800 tracking-tighter uppercase">{title}</h2>
-            <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.3em] mt-2 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              Intelligence Node Active
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-4 rounded-2xl bg-[#E6E8EC] shadow-[4px_4px_8px_rgba(163,177,198,0.4),-4px_-4px_8px_rgba(255,255,255,0.8)]
-                       hover:shadow-[inset_4px_4px_8px_rgba(163,177,198,0.4),inset_-4px_-4px_8px_rgba(255,255,255,0.8)]
-                       text-slate-500 transition-all active:scale-95"
-          >
-            <X size={28} />
-          </button>
+      <div className="flex items-center gap-6 mb-8 px-4">
+        <div className={`p-5 rounded-[2rem] bg-[#E6E8EC] shadow-[8px_8px_16px_rgba(163,177,198,0.5),-8px_-8px_16px_rgba(255,255,255,0.8)] border border-white/60 text-${color}-600`}>
+          <Icon size={32} />
         </div>
-        <div className="flex-1 overflow-y-auto p-8 md:p-10 custom-scrollbar">
+        <div>
+          <h2 className="text-4xl font-black text-slate-800 tracking-tighter uppercase">{title}</h2>
+          <div className="flex items-center gap-2 mt-1">
+            <div className={`w-2 h-2 rounded-full bg-${color}-500 animate-pulse`} />
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{subtitle}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 bg-[#E6E8EC] rounded-[3rem] shadow-[inset_12px_12px_24px_rgba(163,177,198,0.4),inset_-12px_-12px_24px_rgba(255,255,255,0.8)] border border-white/40 overflow-hidden relative">
+        <div className="h-full overflow-y-auto p-4 md:p-10 custom-scrollbar">
           {children}
         </div>
-      </motion.div>
+      </div>
     </motion.div>
   )
 }
@@ -118,14 +124,13 @@ const ExpandedPanel = ({ id, title, children, onClose }: { id: string, title: st
 // --- MAIN COMPONENT ---
 
 export function FetsIntelligence() {
-  const { profile, signOut } = useAuth()
-  const [activeTile, setActiveTile] = useState<string | null>(null)
+  const { profile } = useAuth()
+  const [activeSection, setActiveSection] = useState<string>('intelligence')
 
   // Intelligence States
   const [searchQuery, setSearchQuery] = useState('')
-  const [messages, setMessages] = useState<ChatMessage[]>([]) // Changed from setAiResponse
+  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isAiLoading, setIsAiLoading] = useState(false)
-
   const messagesEndRef = React.useRef<HTMLDivElement>(null)
 
   // Scroll to bottom of chat
@@ -141,7 +146,6 @@ export function FetsIntelligence() {
   const handleSendMessage = async (query: string) => {
     if (!query.trim()) return
 
-    // Add User Message
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
@@ -154,8 +158,6 @@ export function FetsIntelligence() {
 
     try {
       const response = await askGemini(query)
-
-      // Add AI Message
       const aiMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -165,331 +167,286 @@ export function FetsIntelligence() {
       setMessages(prev => [...prev, aiMsg])
     } catch (error) {
       toast.error('Intelligence Module Offline')
-      // Optional: Add error message to chat
     } finally {
       setIsAiLoading(false)
     }
   }
 
-  // Handle Initial Search from Tile
-  const handleAiSearch = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!searchQuery.trim()) return
-
-    setActiveTile('ai-core') // Open the modal
-    await handleSendMessage(searchQuery)
-    setSearchQuery('') // Clear input after sending
-  }
-
-  // Permission Check for User Management
   const isSuperAdmin = profile?.role === 'super_admin' || profile?.email === 'mithun@fets.in';
 
   return (
-    <div className="min-h-screen p-8 text-slate-800">
+    <div className="min-h-screen p-4 md:p-8 flex flex-col h-screen overflow-hidden gap-12">
 
-      {/* Header */}
-      <div className="flex items-end justify-between mb-12">
-        <div>
-          <h1 className="text-6xl font-black tracking-tighter text-slate-800 mb-2">
-            FETS INTEL
-            <span className="text-sky-500">.</span>
+      {/* --- PREMIUM HEADER --- */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 shrink-0">
+        <div className="animate-in fade-in slide-in-from-left duration-700">
+          <h1 className="text-6xl font-black tracking-tighter uppercase mb-2 italic">
+            FETS <span className="text-indigo-600">INTELLIGENCE</span>
           </h1>
-          <p className="text-xl font-medium text-slate-500">Advanced Operational Intelligence & Control</p>
+          <div className="flex items-center gap-3">
+            <div className="h-0.5 w-12 bg-indigo-500 rounded-full" />
+            <p className="text-slate-400 font-bold uppercase tracking-[0.3em] text-[10px]">Command & Control Neural Node</p>
+            <div className="h-1 w-1 rounded-full bg-slate-300" />
+            <span className="text-indigo-500 font-black uppercase text-[10px] tracking-widest px-2 py-0.5 bg-indigo-50 rounded-md border border-indigo-100">Live Grid</span>
+          </div>
         </div>
-        <div className="flex items-center gap-4">
-          {/* Profile Preview */}
-          <div className="flex items-center gap-4 px-6 py-3 rounded-2xl bg-[#E6E8EC] shadow-[inset_4px_4px_8px_rgba(163,177,198,0.5),inset_-4px_-4px_8px_rgba(255,255,255,0.8)]">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-            <span className="font-bold text-slate-600 uppercase tracking-wider text-sm">
-              SYSTEM SECURE
-            </span>
+
+        <div className="flex gap-4 animate-in fade-in slide-in-from-right duration-700">
+          <div className="bg-white/40 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/60 shadow-sm flex items-center gap-3">
+            <Activity size={18} className="text-emerald-500 animate-pulse" />
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black text-slate-400 uppercase leading-none mb-1">Neural Connection</span>
+              <span className="text-sm font-black text-emerald-600 tracking-tight uppercase font-['Rajdhani']">Stable Link</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Grid Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="flex-1 flex gap-8 min-h-0">
+        {/* Sidebar Navigation */}
+        <aside className="w-80 flex flex-col h-full bg-white/60 backdrop-blur-xl p-8 rounded-[3rem] shadow-[20px_20px_40px_rgba(163,177,198,0.2),-20px_-20px_40px_rgba(255,255,255,0.8)] border border-white/80">
 
-        {/* 1. AI Intelligence Core */}
-        <LiveTile
-          id="ai-core"
-          title="Intelligence Core"
-          icon={Brain}
-          color="indigo"
-          colSpan={2}
-          onExpand={() => setActiveTile('ai-core')}
-        >
-          <form onSubmit={handleAiSearch} className="relative z-20">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Ask FETS Intelligence..."
-                className="w-full bg-[#E6E8EC] border-none rounded-2xl py-4 pl-12 pr-4 
-                        shadow-[inset_6px_6px_12px_rgba(163,177,198,0.5),inset_-6px_-6px_12px_rgba(255,255,255,0.8)]
-                        focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-lg font-medium text-slate-700 placeholder:text-slate-400 transition-all"
-              />
-              <button
-                type="submit"
-                disabled={!searchQuery.trim()}
-                className="absolute right-2 top-2 p-2 bg-indigo-500 text-white rounded-xl shadow-lg hover:scale-105 transition-transform disabled:opacity-50"
-              >
-                <ArrowRight size={20} />
-              </button>
-            </div>
-          </form>
-
-          <div className="mt-4 px-2 flex items-center gap-2 text-xs font-bold text-indigo-400 uppercase tracking-wider opacity-60">
-            <Activity size={14} />
-            <span>System Online • Ready for Query</span>
-          </div>
-        </LiveTile>
-
-        {/* 2. News Room */}
-        <LiveTile
-          id="news-room"
-          title="News Room"
-          icon={Newspaper}
-          color="emerald"
-          onExpand={() => setActiveTile('news-room')}
-        >
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-xl bg-[#E6E8EC] border border-white/60">
-              <span className="text-xs font-bold text-emerald-600 uppercase">Latest</span>
-              <span className="text-xs text-slate-400">2m ago</span>
-            </div>
-            <div className="h-1 w-full bg-slate-200 rounded-full overflow-hidden">
-              <div className="h-full w-2/3 bg-emerald-500 rounded-full"></div>
-            </div>
-            <p className="text-sm text-slate-500 font-medium">Broadcast operational updates across channels.</p>
-          </div>
-        </LiveTile>
-
-        {/* 3. User Profile */}
-        <LiveTile
-          id="user-profile"
-          title="My Profile"
-          icon={User}
-          color="violet"
-          onExpand={() => setActiveTile('user-profile')}
-        >
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-slate-200 overflow-hidden shadow-inner">
-                <img
-                  src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${profile?.full_name}&background=random`}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
+          <nav className="flex-1 flex flex-col gap-10 overflow-y-auto no-scrollbar">
+            {/* Operational Group */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 px-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 font-['Rajdhani']">Operational</span>
+              </div>
+              <div className="space-y-3">
+                <SidebarButton
+                  icon={Brain}
+                  label="AI CORE"
+                  isActive={activeSection === 'intelligence'}
+                  onClick={() => setActiveSection('intelligence')}
+                  color="indigo"
+                />
+                <SidebarButton
+                  icon={Newspaper}
+                  label="NEWS ROOM"
+                  isActive={activeSection === 'news'}
+                  onClick={() => setActiveSection('news')}
+                  color="emerald"
+                />
+                <SidebarButton
+                  icon={Shield}
+                  label="INCIDENT COMMAND"
+                  isActive={activeSection === 'incidents'}
+                  onClick={() => setActiveSection('incidents')}
+                  color="rose"
                 />
               </div>
             </div>
-            <div>
-              <h3 className="text-lg font-bold text-slate-800">{profile?.first_name} {profile?.last_name}</h3>
-              <p className="text-xs font-bold text-violet-500 uppercase tracking-widest">{profile?.role}</p>
-            </div>
-          </div>
-          <button
-            onClick={(e) => { e.stopPropagation(); signOut(); }}
-            className="mt-6 w-full py-3 rounded-xl bg-[#E6E8EC] text-slate-500 font-bold text-sm uppercase tracking-wider
-                shadow-[4px_4px_8px_rgba(163,177,198,0.5),-4px_-4px_8px_rgba(255,255,255,0.8)]
-                hover:shadow-[2px_2px_4px_rgba(163,177,198,0.5),-2px_-2px_4px_rgba(255,255,255,0.8)] hover:text-red-500 transition-all border border-transparent hover:border-red-100"
-          >
-            Sign Out
-          </button>
-        </LiveTile>
 
-        {/* 4. System Health */}
-        <LiveTile
-          id="system-health"
-          title="System Status"
-          icon={Activity}
-          color="cyan"
-        >
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center p-3 rounded-2xl bg-[#E6E8EC] shadow-inner">
-              <div className="text-xs font-bold text-slate-400 uppercase mb-1">Uptime</div>
-              <div className="text-xl font-black text-cyan-600">99.9%</div>
-            </div>
-            <div className="text-center p-3 rounded-2xl bg-[#E6E8EC] shadow-inner">
-              <div className="text-xs font-bold text-slate-400 uppercase mb-1">Latency</div>
-              <div className="text-xl font-black text-emerald-500">12ms</div>
-            </div>
-          </div>
-        </LiveTile>
-
-        {/* 5. User Management (SUPER ADMIN ONLY) */}
-        {isSuperAdmin && (
-          <LiveTile
-            id="user-management"
-            title="User Control"
-            icon={UserCog}
-            color="rose"
-            colSpan={2}
-            onExpand={() => setActiveTile('user-management')}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col gap-2">
-                <p className="text-sm font-medium text-slate-600 max-w-sm">
-                  Manage staff roles, permissions, and system access levels.
-                  <span className="block text-xs text-rose-500 italic mt-1">*Super Admin Restricted Area</span>
-                </p>
-                <div className="flex items-center gap-2 mt-2">
-                  <Shield size={16} className="text-rose-500" />
-                  <span className="text-xs font-bold text-rose-600 uppercase tracking-wider">High Security Zone</span>
+            {/* Administration Group */}
+            {isSuperAdmin && (
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 px-2 pt-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 font-['Rajdhani']">Administration</span>
+                </div>
+                <div className="space-y-3">
+                  <SidebarButton
+                    icon={UserCog}
+                    label="USER CONTROL"
+                    isActive={activeSection === 'users'}
+                    onClick={() => setActiveSection('users')}
+                    color="blue"
+                  />
+                  <SidebarButton
+                    icon={Building2}
+                    label="CLIENT MASTER"
+                    isActive={activeSection === 'clients'}
+                    onClick={() => setActiveSection('clients')}
+                    color="purple"
+                  />
                 </div>
               </div>
-              <div className="h-12 w-12 rounded-full bg-[#E6E8EC] shadow-[4px_4px_8px_rgba(163,177,198,0.5),-4px_-4px_8px_rgba(255,255,255,0.8)] flex items-center justify-center text-rose-500">
-                <ArrowRight size={24} />
+            )}
+          </nav>
+
+          {/* System Health Footer */}
+          <div className="mt-auto pt-8 border-t border-slate-100">
+            <div className="flex items-center gap-4 p-5 rounded-2xl bg-slate-50 border border-slate-100 shadow-inner">
+              <div className="relative">
+                <Activity size={18} className="text-emerald-500" />
+                <div className="absolute inset-0 bg-emerald-400 blur-md opacity-20" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black text-slate-700 uppercase tracking-widest font-['Rajdhani']">System Integrity</span>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Lvl 4 Authorization</span>
               </div>
             </div>
-          </LiveTile>
-        )}
+          </div>
+        </aside>
 
-      </div>
+        {/* Main Content Area */}
+        <main className="flex-1 min-w-0 h-full">
+          <AnimatePresence mode="wait">
 
-      {/* --- EXPANDED MODALS --- */}
-      <AnimatePresence>
+            {/* Intelligence Core */}
+            {activeSection === 'intelligence' && (
+              <ContentPanel
+                id="intelligence"
+                icon={Brain}
+                title="Intelligence Core"
+                subtitle="Neural Processing & Data Analysis"
+                color="indigo"
+              >
+                <div className="flex flex-col h-full gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 shrink-0">
+                    {[
+                      { icon: Database, label: 'Data Latency', value: '14ms', color: 'emerald' },
+                      { icon: Radio, label: 'Network Pulse', value: 'Nominal', color: 'indigo' },
+                      { icon: Zap, label: 'Compute Load', value: '2.4 TFLOPs', color: 'amber' }
+                    ].map((stat, i) => (
+                      <div key={i} className="bg-[#E6E8EC] p-6 rounded-[2rem] shadow-[6px_6px_12px_rgba(163,177,198,0.4),-6px_-6px_12px_rgba(255,255,255,0.8)] border border-white/60">
+                        <div className={`p-2 rounded-lg bg-${stat.color}-500/10 text-${stat.color}-600 w-fit mb-3`}>
+                          <stat.icon size={16} />
+                        </div>
+                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</div>
+                        <div className="text-xl font-black text-slate-800">{stat.value}</div>
+                      </div>
+                    ))}
+                  </div>
 
-        {/* AI Core Modal */}
-        {activeTile === 'ai-core' && (
-          <ExpandedPanel id="ai-core" title="Operational Intelligence" onClose={() => setActiveTile(null)}>
-            <div className="flex flex-col h-full gap-6">
-              <div className="bg-indigo-50 p-6 rounded-2xl border border-indigo-100 flex items-start gap-4 shrink-0">
-                <Sparkles className="text-indigo-500 shrink-0 mt-1" />
-                <div>
-                  <h3 className="font-bold text-indigo-900 text-lg">AI Assistant Online</h3>
-                  <p className="text-indigo-700/80">
-                    I have full access to current FETS operational data. Ask me about candidate status, roster gaps, or incident summaries.
-                  </p>
-                </div>
-              </div>
-
-              {/* Chat Interface */}
-              <div className="flex-1 flex flex-col bg-[#E6E8EC] rounded-3xl shadow-[inset_6px_6px_12px_rgba(163,177,198,0.5),inset_-6px_-6px_12px_rgba(255,255,255,0.8)] border border-white/50 overflow-hidden relative">
-
-                {/* Messages Area */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
-                  {messages.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-60">
-                      <Brain size={64} className="mb-4" />
-                      <p className="font-medium">Ready to analyze operational data.</p>
-                    </div>
-                  ) : (
-                    messages.map((msg) => (
-                      <div
-                        key={msg.id}
-                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div
-                          className={`
-                            max-w-[80%] p-5 rounded-2xl text-sm font-medium leading-relaxed shadow-sm
-                            ${msg.role === 'user'
-                              ? 'bg-slate-800 text-white rounded-tr-none'
-                              : 'bg-[#E6E8EC] text-slate-700 rounded-tl-none border border-white/60 shadow-[4px_4px_8px_rgba(163,177,198,0.4),-4px_-4px_8px_rgba(255,255,255,0.8)]'
-                            }
-                          `}
-                        >
-                          {msg.content}
-                          <div className={`text-[10px] mt-2 opacity-60 ${msg.role === 'user' ? 'text-indigo-200' : 'text-slate-400'}`}>
-                            {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  <div className="flex-1 flex flex-col bg-[#E6E8EC] rounded-[2.5rem] shadow-[inset_6px_6px_12px_rgba(163,177,198,0.5),inset_-6px_-6px_12px_rgba(255,255,255,0.8)] border border-white/50 overflow-hidden relative min-h-0">
+                    {/* Messages Area */}
+                    <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
+                      {messages.length === 0 ? (
+                        <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-40">
+                          <Sparkles size={64} className="mb-4 animate-pulse" />
+                          <p className="font-black uppercase tracking-[0.3em] text-xs text-center">Neural Engine Synchronized<br />Waiting for Instruction</p>
+                        </div>
+                      ) : (
+                        messages.map((msg) => (
+                          <div
+                            key={msg.id}
+                            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                          >
+                            <div
+                              className={`
+                                            max-w-[80%] p-6 rounded-[2rem] text-sm font-medium leading-relaxed
+                                            ${msg.role === 'user'
+                                  ? 'bg-slate-800 text-white rounded-tr-none shadow-xl'
+                                  : 'bg-[#F0F2F5] text-slate-700 rounded-tl-none border border-white/80 shadow-[4px_4px_12px_rgba(163,177,198,0.5)]'
+                                }
+                                        `}
+                            >
+                              {msg.content}
+                              <div className={`text-[8px] font-black mt-3 opacity-60 uppercase tracking-widest ${msg.role === 'user' ? 'text-indigo-200' : 'text-slate-400'}`}>
+                                {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                      {isAiLoading && (
+                        <div className="flex justify-start">
+                          <div className="bg-[#F0F2F5] p-5 rounded-3xl rounded-tl-none border border-white/80 shadow-md flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                           </div>
                         </div>
-                      </div>
-                    ))
-                  )}
-                  {isAiLoading && (
-                    <div className="flex justify-start">
-                      <div className="bg-[#E6E8EC] p-4 rounded-2xl rounded-tl-none border border-white/60 shadow-[4px_4px_8px_rgba(163,177,198,0.4),-4px_-4px_8px_rgba(255,255,255,0.8)] flex items-center gap-2">
-                        <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                      </div>
+                      )}
+                      <div ref={messagesEndRef} />
                     </div>
-                  )}
-                  <div ref={messagesEndRef} />
+
+                    {/* Input Area */}
+                    <div className="p-6 bg-[#E6E8EC]/80 backdrop-blur-sm border-t border-white/40">
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault()
+                          handleSendMessage(searchQuery)
+                          setSearchQuery('')
+                        }}
+                        className="relative flex items-center gap-4"
+                      >
+                        <div className="flex-1 relative">
+                          <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Execute intelligence query..."
+                            className="w-full bg-[#E6E8EC] border-none rounded-2xl py-5 pl-8 pr-16
+                                                shadow-[inset_6px_6px_12px_rgba(163,177,198,0.5),inset_-6px_-6px_12px_rgba(255,255,255,0.8)]
+                                                focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-700 font-bold uppercase text-xs tracking-widest"
+                          />
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                            <div className="h-4 w-[1px] bg-slate-200 mx-2" />
+                            <span className="text-[10px] font-black text-slate-300 uppercase">CMD</span>
+                          </div>
+                        </div>
+                        <button
+                          type="submit"
+                          disabled={!searchQuery.trim() || isAiLoading}
+                          className="p-5 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white rounded-[1.5rem] shadow-xl 
+                                                disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 transition-all"
+                        >
+                          <ArrowRight size={24} />
+                        </button>
+                      </form>
+                    </div>
+                  </div>
                 </div>
+              </ContentPanel>
+            )}
 
-                {/* Input Area */}
-                <div className="p-4 bg-[#E6E8EC] border-t border-white/50">
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault()
-                      handleSendMessage(searchQuery)
-                      setSearchQuery('')
-                    }}
-                    className="relative"
-                  >
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Type your query here..."
-                      className="w-full bg-[#E6E8EC] border-none rounded-2xl py-4 pl-6 pr-14
-                                  shadow-[inset_4px_4px_8px_rgba(163,177,198,0.4),inset_-4px_-4px_8px_rgba(255,255,255,0.8)]
-                                  focus:outline-none focus:ring-2 focus:ring-indigo-500/30 text-slate-700 font-medium"
-                    />
-                    <button
-                      type="submit"
-                      disabled={!searchQuery.trim() || isAiLoading}
-                      className="absolute right-2 top-2 p-2 bg-indigo-600 text-white rounded-xl shadow-lg 
-                                 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 transition-transform"
-                    >
-                      <ArrowRight size={20} />
-                    </button>
-                  </form>
-                </div>
+            {/* News Room */}
+            {activeSection === 'news' && (
+              <ContentPanel
+                id="news"
+                icon={Newspaper}
+                title="News Room"
+                subtitle="Organizational Communication Terminal"
+                color="emerald"
+              >
+                <NewsManager />
+              </ContentPanel>
+            )}
 
-              </div>
-            </div>
-          </ExpandedPanel>
-        )}
+            {/* Incident Command */}
+            {activeSection === 'incidents' && (
+              <ContentPanel
+                id="incidents"
+                icon={Shield}
+                title="Incident Command"
+                subtitle="Operational Failure Tracking & Resolution"
+                color="rose"
+              >
+                <IncidentManager />
+              </ContentPanel>
+            )}
 
-        {/* News Room Modal */}
-        {activeTile === 'news-room' && (
-          <ExpandedPanel id="news-room" title="Global News Room" onClose={() => setActiveTile(null)}>
-            <NewsManager />
-          </ExpandedPanel>
-        )}
+            {/* User Management */}
+            {activeSection === 'users' && isSuperAdmin && (
+              <ContentPanel
+                id="users"
+                icon={UserCog}
+                title="User Control"
+                subtitle="Personnel Permissions & Access Hierarchies"
+                color="blue"
+              >
+                <UserManagement />
+              </ContentPanel>
+            )}
 
-        {/* User Profile Modal */}
-        {activeTile === 'user-profile' && (
-          <ExpandedPanel id="user-profile" title="My Profile Settings" onClose={() => setActiveTile(null)}>
-            <div className="max-w-2xl mx-auto space-y-8">
-              <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 text-center">
-                <ProfilePictureUpload
-                  staffId={profile?.id || ''}
-                  staffName={profile?.full_name || 'User'}
-                  currentAvatarUrl={profile?.avatar_url}
-                  onAvatarUpdate={(url) => {
-                    // Force refresh to show new avatar since we don't have a context updater yet
-                    window.location.reload()
-                  }}
-                />
-                <h2 className="text-2xl font-bold text-slate-800 mt-4">{profile?.full_name}</h2>
-                <p className="text-slate-500 font-medium">{profile?.email}</p>
-                <div className="mt-6 flex justify-center gap-3">
-                  <span className="px-4 py-1.5 rounded-full bg-violet-100 text-violet-700 font-bold text-xs uppercase tracking-wider border border-violet-200">
-                    {profile?.role}
-                  </span>
-                  <span className="px-4 py-1.5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-xs uppercase tracking-wider border border-emerald-200">
-                    Active
-                  </span>
-                </div>
-              </div>
-            </div>
-          </ExpandedPanel>
-        )}
-
-        {/* User Management Modal (Super Admin) */}
-        {activeTile === 'user-management' && isSuperAdmin && (
-          <ExpandedPanel id="user-management" title="User Administration" onClose={() => setActiveTile(null)}>
-            <UserManagement />
-          </ExpandedPanel>
-        )}
-
-      </AnimatePresence>
+            {/* Client Control */}
+            {activeSection === 'clients' && isSuperAdmin && (
+              <ContentPanel
+                id="clients"
+                icon={Building2}
+                title="Client Master"
+                subtitle="Global Client Protocols & Master Data"
+                color="purple"
+              >
+                <ClientControl />
+              </ContentPanel>
+            )}
+          </AnimatePresence>
+        </main>
+      </div>
     </div>
   )
 }

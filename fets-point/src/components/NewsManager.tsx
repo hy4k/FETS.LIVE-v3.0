@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useNews, useNewsMutations } from '../hooks/useNewsManager'
-import { Plus, Edit, Trash2, Bell, X } from 'lucide-react'
+import { Plus, Edit, Trash2, Bell, X, Calendar, MapPin, AlertCircle, Layout } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { toast } from 'react-hot-toast'
 import { format } from 'date-fns'
@@ -19,88 +19,128 @@ const NewsModal = ({ isOpen, onClose, newsItem, onSave }) => {
       toast.error('Content is required.')
       return
     }
-    await onSave({ ...formData, id: newsItem?.id })
+
+    const payload = {
+      ...formData,
+      id: newsItem?.id,
+      expires_at: formData.expires_at ? new Date(formData.expires_at).toISOString() : null
+    }
+
+    await onSave(payload)
     onClose()
   }
 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white rounded-2xl shadow-2xl max-w-lg w-full"
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="bg-[#e0e5ec] neomorphic-card w-full max-w-xl overflow-hidden shadow-2xl rounded-3xl border border-white/50"
       >
-        <div className="p-6 border-b flex justify-between items-center">
-          <h3 className="text-xl font-bold text-gray-900">{newsItem ? 'Edit News Item' : 'Create News Item'}</h3>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-5 h-5" /></button>
-        </div>
-        <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-200/50 bg-white/30 flex justify-between items-center">
           <div>
-            <label className="block font-semibold text-gray-700 mb-1">Content *</label>
+            <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight">{newsItem ? 'Edit Notice' : 'New Notice'}</h3>
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mt-1">Broadcast Communication</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-xl transition-colors text-gray-500"><X size={20} /></button>
+        </div>
+
+        <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+          <div className="space-y-3">
+            <label className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
+              <Layout size={14} /> Message Content
+            </label>
             <textarea
               value={formData.content}
               onChange={e => setFormData({ ...formData, content: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              rows={4}
-              placeholder="Enter news content..."
+              className="w-full p-4 bg-white/60 rounded-xl border-none shadow-[inset_2px_2px_4px_#d1d9e6,inset_-2px_-2px_4px_#ffffff] focus:ring-2 focus:ring-amber-500/20 outline-none text-gray-700 font-medium leading-relaxed"
+              rows={5}
+              placeholder="Type your notice message here..."
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block font-semibold text-gray-700 mb-1">Priority</label>
-              <select
-                value={formData.priority}
-                onChange={e => setFormData({ ...formData, priority: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="normal">Normal</option>
-                <option value="high">High</option>
-              </select>
+
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <AlertCircle size={14} /> Priority Level
+              </label>
+              <div className="relative">
+                <select
+                  value={formData.priority}
+                  onChange={e => setFormData({ ...formData, priority: e.target.value })}
+                  className="w-full p-3 bg-white/60 rounded-xl border-none shadow-sm focus:ring-2 focus:ring-amber-500/20 outline-none appearance-none font-bold text-gray-700"
+                >
+                  <option value="normal">Query / Normal</option>
+                  <option value="high">Critical / High</option>
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <div className={`w-2 h-2 rounded-full ${formData.priority === 'high' ? 'bg-red-500' : 'bg-blue-500'}`} />
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="block font-semibold text-gray-700 mb-1">Branch</label>
+
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <MapPin size={14} /> Target Branch
+              </label>
               <select
                 value={formData.branch_location}
                 onChange={e => setFormData({ ...formData, branch_location: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full p-3 bg-white/60 rounded-xl border-none shadow-sm focus:ring-2 focus:ring-amber-500/20 outline-none font-bold text-gray-700"
               >
                 <option value="global">Global (All Branches)</option>
                 <option value="calicut">Calicut</option>
                 <option value="cochin">Cochin</option>
+                <option value="kannur">Kannur</option>
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block font-semibold text-gray-700 mb-1">Expires At</label>
+
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <Calendar size={14} /> Auto-Expiry Date
+              </label>
               <input
                 type="date"
                 value={formData.expires_at}
                 onChange={e => setFormData({ ...formData, expires_at: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full p-3 bg-white/60 rounded-xl border-none shadow-sm focus:ring-2 focus:ring-amber-500/20 outline-none font-medium text-gray-700"
               />
-              <p className="text-xs text-gray-500 mt-1">Leave empty for no expiration</p>
+              <p className="text-[10px] text-gray-400 font-medium ml-1">Optional: Auto-remove after date</p>
             </div>
-            <div>
-              <label className="block font-semibold text-gray-700 mb-1">Status</label>
+
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <Bell size={14} /> Publication Status
+              </label>
               <select
                 value={String(formData.is_active)}
                 onChange={e => setFormData({ ...formData, is_active: e.target.value === 'true' })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full p-3 bg-white/60 rounded-xl border-none shadow-sm focus:ring-2 focus:ring-amber-500/20 outline-none font-bold text-gray-700"
               >
-                <option value="true">✅ Active</option>
-                <option value="false">⭕ Inactive</option>
+                <option value="true">Live / Published</option>
+                <option value="false">Draft / Hidden</option>
               </select>
             </div>
           </div>
         </div>
-        <div className="p-6 border-t flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded-md font-semibold">Cancel</button>
-          <button onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded-md font-semibold">
-            {newsItem ? 'Update Item' : 'Create Item'}
+
+        <div className="p-6 border-t border-gray-200/50 bg-white/30 flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-6 py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-200 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-8 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"
+          >
+            {newsItem ? 'Update Notice' : 'Post Notice'}
           </button>
         </div>
       </motion.div>
@@ -125,84 +165,102 @@ export function NewsManager() {
   }
 
   const handleSave = async (itemData) => {
-    if (itemData.id) {
-      await updateNewsItem(itemData)
-    } else {
-      await addNewsItem(itemData)
+    try {
+      if (itemData.id) {
+        await updateNewsItem(itemData)
+        toast.success('Notice updated successfully')
+      } else {
+        await addNewsItem(itemData)
+        toast.success('Notice posted successfully')
+      }
+    } catch (error) {
+      // Error handling matches the hook's toast
+      console.error("Failed to save notice", error)
     }
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-6 space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">News Manager</h1>
-          <p className="text-gray-600 mt-1">Create and manage announcements for the FETS News scroller.</p>
+          <h1 className="text-4xl font-black text-gray-800 tracking-tighter uppercase relative z-10">
+            Notice <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-yellow-500">Board</span>
+          </h1>
+          <p className="text-gray-500 font-medium mt-2 text-lg">
+            Manage global announcements and branch-specific alerts.
+          </p>
         </div>
         <button
           onClick={() => openModal()}
-          className="inline-flex items-center space-x-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-sm"
+          className="px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-black transition-all font-bold shadow-lg hover:shadow-xl flex items-center gap-2"
         >
-          <Plus className="w-4 h-4" />
-          <span>Create News</span>
+          <Plus className="w-5 h-5" />
+          <span>New Notice</span>
         </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Content</th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Status</th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Branch</th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Expires At</th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {isLoading ? (
-                <tr><td colSpan={5} className="p-12 text-center text-gray-500">Loading news...</td></tr>
-              ) : newsItems.length === 0 ? (
-                <tr><td colSpan={5} className="p-12 text-center text-gray-500">No news items found. Create your first news item!</td></tr>
-              ) : newsItems.map(item => (
-                <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 max-w-md">
-                    <p className="text-sm text-gray-800 line-clamp-2">{item.content}</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${item.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
-                      {item.is_active ? '✅ Active' : '⭕ Inactive'}
+      <div className="grid grid-cols-1 gap-6">
+        {isLoading ? (
+          Array(3).fill(0).map((_, i) => (
+            <div key={i} className="h-32 bg-gray-200 rounded-3xl animate-pulse" />
+          ))
+        ) : newsItems.length === 0 ? (
+          <div className="text-center py-20 bg-gray-100 rounded-3xl border-2 border-dashed border-gray-300">
+            <Bell size={48} className="text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-gray-400">No active notices</h3>
+            <p className="text-gray-400">Create your first announcement to get started.</p>
+          </div>
+        ) : (
+          newsItems.map(item => (
+            <motion.div
+              key={item.id}
+              layoutId={`notice-${item.id}`}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="group sm:flex items-start gap-6 bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-all relative overflow-hidden"
+            >
+              {/* Status Indicator Bar */}
+              <div className={`absolute top-0 left-0 bottom-0 w-2 ${item.is_active ? (item.priority === 'high' ? 'bg-red-500' : 'bg-blue-500') : 'bg-gray-300'}`} />
+
+              <div className="flex-1 pl-4">
+                <div className="flex flex-wrap items-center gap-3 mb-3">
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${item.is_active ? (item.priority === 'high' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600') : 'bg-gray-100 text-gray-500'}`}>
+                    {item.is_active ? (item.priority === 'high' ? 'High Priority' : 'Normal Priority') : 'Archived / Draft'}
+                  </span>
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-50 px-2 py-1 rounded">
+                    <MapPin size={10} /> {item.branch_location || 'Global'}
+                  </span>
+                  {item.expires_at && (
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-50 px-2 py-1 rounded">
+                      <Calendar size={10} /> Expires: {format(new Date(item.expires_at), 'dd MMM')}
                     </span>
-                    {item.priority === 'high' && (
-                      <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">
-                        Urgent
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700 capitalize">
-                      {item.branch_location}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    {item.expires_at ? (
-                      <span className="text-sm text-gray-700">{format(new Date(item.expires_at), 'dd MMM yyyy')}</span>
-                    ) : (
-                      <span className="text-sm text-gray-400">No expiry</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => openModal(item)} className="p-2 hover:bg-gray-100 rounded-md transition-colors"><Edit className="w-4 h-4 text-gray-600" /></button>
-                      <button onClick={() => deleteNewsItem(item.id)} className="p-2 hover:bg-red-50 rounded-md transition-colors"><Trash2 className="w-4 h-4 text-red-600" /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  )}
+                </div>
+
+                <p className={`text-lg font-medium leading-relaxed ${item.is_active ? 'text-gray-800' : 'text-gray-400'}`}>
+                  {item.content}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 mt-4 sm:mt-0 pl-4 sm:pl-0 sm:self-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={() => openModal(item)}
+                  className="p-3 bg-gray-50 text-gray-600 rounded-xl hover:bg-amber-100 hover:text-amber-600 transition-colors shadow-sm"
+                  title="Edit Notice"
+                >
+                  <Edit size={18} />
+                </button>
+                <button
+                  onClick={() => deleteNewsItem(item.id)}
+                  className="p-3 bg-gray-50 text-gray-600 rounded-xl hover:bg-red-100 hover:text-red-500 transition-colors shadow-sm"
+                  title="Delete"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
+            </motion.div>
+          ))
+        )}
       </div>
 
       <AnimatePresence>

@@ -100,8 +100,9 @@ export async function askGemini(userPrompt: string) {
 
         // FALLBACK ENGINE: Attempt different models if one fails
         const models = [
-            { id: 'gemini-1.5-pro-latest', endpoint: 'v1beta' },
-            { id: 'gemini-1.5-flash-latest', endpoint: 'v1beta' },
+            { id: 'gemini-2.0-flash-exp', endpoint: 'v1beta' },
+            { id: 'gemini-1.5-flash', endpoint: 'v1beta' },
+            { id: 'gemini-1.5-pro', endpoint: 'v1beta' },
             { id: 'gemini-pro', endpoint: 'v1' }
         ];
 
@@ -109,8 +110,6 @@ export async function askGemini(userPrompt: string) {
 
         for (const model of models) {
             try {
-                console.log(`DEBUG: Attempting AI generation with model: ${model.id} (${model.endpoint})`);
-
                 const url = `https://generativelanguage.googleapis.com/${model.endpoint}/models/${model.id}:generateContent?key=${apiKey}`;
 
                 const response = await fetch(url, {
@@ -126,14 +125,14 @@ export async function askGemini(userPrompt: string) {
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.warn(`WARN: Model ${model.id} failed:`, errorText);
-                    continue; // Try next model
+                    lastError = new Error(`API Error ${response.status}: ${errorText}`);
+                    continue;
                 }
 
                 const data = await response.json();
                 const aiResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
                 if (aiResponse) {
-                    console.log(`SUCCESS: Response generated via ${model.id}`);
                     return aiResponse;
                 }
             } catch (err) {
@@ -142,7 +141,7 @@ export async function askGemini(userPrompt: string) {
             }
         }
 
-        throw new Error("All AI models failed or returned empty responses. Last error: " + (lastError?.message || "Unknown"));
+        throw lastError || new Error("All AI models failed to respond.");
 
     } catch (error: any) {
         console.error("CRITICAL: FETS Intelligence Neural Failure:", error);

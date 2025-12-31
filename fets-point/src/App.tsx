@@ -15,6 +15,7 @@ import { DatabaseSetup } from './components/DatabaseSetup';
 import { PageLoadingFallback } from './components/LoadingFallback';
 import { Login } from './components/Login';
 import { Header } from './components/Header';
+import { UpdatePassword } from './components/UpdatePassword';
 
 import { supabase } from './lib/supabase';
 import { useIsMobile, useScreenSize } from './hooks/use-mobile';
@@ -29,7 +30,7 @@ const FetsVault = lazy(() => import('./components/FetsVault').then(module => ({ 
 const FetsIntelligence = lazy(() => import('./components/FetsIntelligence').then(module => ({ default: module.FetsIntelligence })))
 const FetsRoster = lazy(() => import('./components/FetsRosterPremium'))
 const FetsCalendar = lazy(() => import('./components/FetsCalendarPremium'))
-const IncidentManager = lazy(() => import('./components/IncidentManager').then(module => ({ default: module.default })))
+const SystemManager = lazy(() => import('./components/SystemManager').then(module => ({ default: module.default })))
 const ChecklistManagement = lazy(() => import('./components/checklist/ChecklistManager').then(module => ({ default: module.ChecklistManager })))
 const NewsManager = lazy(() => import('./components/NewsManager').then(module => ({ default: module.NewsManager })))
 const UserManagement = lazy(() => import('./components/UserManagement').then(module => ({ default: module.UserManagement })))
@@ -105,7 +106,13 @@ function AppContent() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const isMobile = useIsMobile()
   const screenSize = useScreenSize()
+  const [isRecovering, setIsRecovering] = useState(false)
 
+  useEffect(() => {
+    if (window.location.hash.includes('type=recovery')) {
+      setIsRecovering(true)
+    }
+  }, [])
 
   // Log app initialization
   console.log('🚀 FETS POINT App initialized')
@@ -149,6 +156,13 @@ function AppContent() {
         <ConnectionStatus />
       </div>
     )
+  }
+
+  if (isRecovering) {
+    return <UpdatePassword onComplete={() => {
+      setIsRecovering(false)
+      window.location.hash = ''
+    }} />
   }
 
   if (!user) {
@@ -195,9 +209,9 @@ function AppContent() {
         component: <FetsIntelligence />,
         name: 'FETS Intelligence'
       },
-      'incident-manager': {
-        component: <IncidentManager />,
-        name: 'Incident Manager'
+      'system-manager': {
+        component: <SystemManager />,
+        name: 'System Manager'
       },
       'news-manager': {
         component: <NewsManager />,

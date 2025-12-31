@@ -1,6 +1,6 @@
 import { createContext } from 'react';
 
-export type BranchType = 'calicut' | 'cochin' | 'global';
+export type BranchType = 'calicut' | 'cochin' | 'kannur' | 'global';
 export type ViewMode = 'single' | 'dual';
 
 interface BranchStatus {
@@ -28,7 +28,7 @@ interface BranchContextType {
   setViewMode: (mode: ViewMode) => void;
 
   // Branch access permissions
-  userBranchAccess: 'calicut' | 'cochin' | 'both';
+  userBranchAccess: 'calicut' | 'cochin' | 'kannur' | 'both';
   userAccessLevel: 'staff' | 'admin' | 'super_admin';
 
   // Branch status data

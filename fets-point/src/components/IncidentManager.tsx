@@ -71,7 +71,11 @@ const STATUS_CONFIG = {
   closed: { color: 'bg-green-100 text-green-800', label: 'Closed', icon: CheckCircle }
 }
 
-export default function IncidentManager() {
+interface IncidentManagerProps {
+  embedded?: boolean
+}
+
+export default function IncidentManager({ embedded = false }: IncidentManagerProps) {
   const { profile } = useAuth()
   const { activeBranch } = useBranch()
 
@@ -221,112 +225,116 @@ export default function IncidentManager() {
   }
 
   return (
-    <div className="min-h-screen -mt-32 pt-48 bg-[#e0e5ec]" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+    <div className={`min-h-screen ${embedded ? 'p-0' : '-mt-32 pt-48 bg-[#e0e5ec]'}`} style={{ fontFamily: "'Montserrat', sans-serif" }}>
       {/* Functional Notification Banner */}
-      <div className="h-6 -mx-8 -mt-12 mb-8"></div>
+      {!embedded && <div className="h-6 -mx-8 -mt-12 mb-8"></div>}
 
-      <div className="max-w-[1800px] mx-auto px-6">
+      <div className={`${embedded ? 'w-full' : 'max-w-[1800px] mx-auto px-6'}`}>
         {/* Executive Header - Neumorphic */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-8 mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4"
-        >
-          <div>
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gold-gradient mb-2 uppercase">
-              Incident Manager
-            </h1>
-            <p className="text-lg text-gray-600 font-medium">
-              {activeBranch && activeBranch !== 'global' ? `${activeBranch.charAt(0).toUpperCase() + activeBranch.slice(1)} · ` : ''}Track, manage, and resolve operational incidents
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-gray-500 font-semibold uppercase tracking-wider text-sm">
-              {new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            </p>
-          </div>
-        </motion.div>
+        {!embedded && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-8 mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4"
+          >
+            <div>
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gold-gradient mb-2 uppercase">
+                Incident Manager
+              </h1>
+              <p className="text-lg text-gray-600 font-medium">
+                {activeBranch && activeBranch !== 'global' ? `${activeBranch.charAt(0).toUpperCase() + activeBranch.slice(1)} · ` : ''}Track, manage, and resolve operational incidents
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-gray-500 font-semibold uppercase tracking-wider text-sm">
+                {new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              </p>
+            </div>
+          </motion.div>
+        )}
 
         {/* Stats Dashboard - Neumorphic */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-            className="neomorphic-card p-5 group hover:text-blue-600"
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-[#e0e5ec] shadow-[inset_2px_2px_4px_#bec3c9,inset_-2px_-2px_4px_#ffffff] flex items-center justify-center">
-                <Circle className="w-4 h-4 text-blue-600" />
+        {!embedded && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+              className="neomorphic-card p-5 group hover:text-blue-600"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-full bg-[#e0e5ec] shadow-[inset_2px_2px_4px_#bec3c9,inset_-2px_-2px_4px_#ffffff] flex items-center justify-center">
+                  <Circle className="w-4 h-4 text-blue-600" />
+                </div>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Open</p>
               </div>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Open</p>
-            </div>
-            <p className="text-3xl font-bold text-gray-700 group-hover:text-blue-600 transition-colors">{stats.total_open}</p>
-          </motion.div>
+              <p className="text-3xl font-bold text-gray-700 group-hover:text-blue-600 transition-colors">{stats.total_open}</p>
+            </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-            className="neomorphic-card p-5 group hover:text-green-600"
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-[#e0e5ec] shadow-[inset_2px_2px_4px_#bec3c9,inset_-2px_-2px_4px_#ffffff] flex items-center justify-center">
-                <CheckCircle className="w-4 h-4 text-green-600" />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+              className="neomorphic-card p-5 group hover:text-green-600"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-full bg-[#e0e5ec] shadow-[inset_2px_2px_4px_#bec3c9,inset_-2px_-2px_4px_#ffffff] flex items-center justify-center">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                </div>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Closed</p>
               </div>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Closed</p>
-            </div>
-            <p className="text-3xl font-bold text-gray-700 group-hover:text-green-600 transition-colors">{stats.total_closed}</p>
-          </motion.div>
+              <p className="text-3xl font-bold text-gray-700 group-hover:text-green-600 transition-colors">{stats.total_closed}</p>
+            </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-            className="neomorphic-card p-5 group hover:text-red-600"
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-[#e0e5ec] shadow-[inset_2px_2px_4px_#bec3c9,inset_-2px_-2px_4px_#ffffff] flex items-center justify-center">
-                <AlertTriangle className="w-4 h-4 text-red-600" />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+              className="neomorphic-card p-5 group hover:text-red-600"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-full bg-[#e0e5ec] shadow-[inset_2px_2px_4px_#bec3c9,inset_-2px_-2px_4px_#ffffff] flex items-center justify-center">
+                  <AlertTriangle className="w-4 h-4 text-red-600" />
+                </div>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Critical</p>
               </div>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Critical</p>
-            </div>
-            <p className="text-3xl font-bold text-gray-700 group-hover:text-red-600 transition-colors">{stats.critical_open}</p>
-          </motion.div>
+              <p className="text-3xl font-bold text-gray-700 group-hover:text-red-600 transition-colors">{stats.critical_open}</p>
+            </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-            className="neomorphic-card p-5 group hover:text-orange-600"
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-[#e0e5ec] shadow-[inset_2px_2px_4px_#bec3c9,inset_-2px_-2px_4px_#ffffff] flex items-center justify-center">
-                <AlertTriangle className="w-4 h-4 text-orange-600" />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+              className="neomorphic-card p-5 group hover:text-orange-600"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-full bg-[#e0e5ec] shadow-[inset_2px_2px_4px_#bec3c9,inset_-2px_-2px_4px_#ffffff] flex items-center justify-center">
+                  <AlertTriangle className="w-4 h-4 text-orange-600" />
+                </div>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Major</p>
               </div>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Major</p>
-            </div>
-            <p className="text-3xl font-bold text-gray-700 group-hover:text-orange-600 transition-colors">{stats.major_open}</p>
-          </motion.div>
+              <p className="text-3xl font-bold text-gray-700 group-hover:text-orange-600 transition-colors">{stats.major_open}</p>
+            </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-            className="neomorphic-card p-5 group hover:text-blue-500"
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-[#e0e5ec] shadow-[inset_2px_2px_4px_#bec3c9,inset_-2px_-2px_4px_#ffffff] flex items-center justify-center">
-                <Circle className="w-4 h-4 text-blue-500" />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+              className="neomorphic-card p-5 group hover:text-blue-500"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-full bg-[#e0e5ec] shadow-[inset_2px_2px_4px_#bec3c9,inset_-2px_-2px_4px_#ffffff] flex items-center justify-center">
+                  <Circle className="w-4 h-4 text-blue-500" />
+                </div>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Minor</p>
               </div>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Minor</p>
-            </div>
-            <p className="text-3xl font-bold text-gray-700 group-hover:text-blue-500 transition-colors">{stats.minor_open}</p>
-          </motion.div>
+              <p className="text-3xl font-bold text-gray-700 group-hover:text-blue-500 transition-colors">{stats.minor_open}</p>
+            </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-            className="neomorphic-card p-5 group hover:text-purple-600"
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-[#e0e5ec] shadow-[inset_2px_2px_4px_#bec3c9,inset_-2px_-2px_4px_#ffffff] flex items-center justify-center">
-                <Calendar className="w-4 h-4 text-purple-600" />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+              className="neomorphic-card p-5 group hover:text-purple-600"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-full bg-[#e0e5ec] shadow-[inset_2px_2px_4px_#bec3c9,inset_-2px_-2px_4px_#ffffff] flex items-center justify-center">
+                  <Calendar className="w-4 h-4 text-purple-600" />
+                </div>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">This Week</p>
               </div>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">This Week</p>
-            </div>
-            <p className="text-3xl font-bold text-gray-700 group-hover:text-purple-600 transition-colors">{stats.upcoming_this_week}</p>
-          </motion.div>
-        </div>
+              <p className="text-3xl font-bold text-gray-700 group-hover:text-purple-600 transition-colors">{stats.upcoming_this_week}</p>
+            </motion.div>
+          </div>
+        )}
 
         {/* Controls & Filters - Neumorphic */}
         <div className="mb-8 flex flex-col md:flex-row items-center justify-between gap-6">

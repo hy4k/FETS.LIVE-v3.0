@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { Calendar, Plus, ChevronLeft, ChevronRight, Edit, Trash2, X, Check, Clock, Users, Eye, MapPin, Building } from 'lucide-react'
+import { Calendar, Plus, ChevronLeft, ChevronRight, Edit, Trash2, X, Check, Clock, Users, Eye, MapPin, Building, TrendingUp, Target, Award, Shield, Activity } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { useAuth } from '../hooks/useAuth'
 import { useBranch } from '../hooks/useBranch'
@@ -19,17 +20,17 @@ interface Session {
   user_id: string
   created_at?: string
   updated_at?: string
-  branch_location?: 'calicut' | 'cochin'
+  branch_location?: 'calicut' | 'cochin' | 'kannur'
 }
 
 // Subtle client palette for elegant look (neutral background with accent border)
 const CLIENT_COLORS = {
-  'PEARSON': { bg: '#F8FAFC', text: '#111827', border: '#007AFF', tint: '#EFF6FF' },
-  'VUE': { bg: '#F8FAFC', text: '#111827', border: '#34C759', tint: '#ECFDF5' },
-  'ETS': { bg: '#F8FAFC', text: '#111827', border: '#FF9500', tint: '#FFF7ED' },
-  'PSI': { bg: '#F8FAFC', text: '#111827', border: '#AF52DE', tint: '#F5F3FF' },
-  'PROMETRIC': { bg: '#F8FAFC', text: '#111827', border: '#FF3B30', tint: '#FEF2F2' },
-  'OTHER': { bg: '#F8FAFC', text: '#111827', border: '#8E8E93', tint: '#F3F4F6' }
+  'PEARSON': { bg: '#F8FAFC', text: '#1E40AF', border: '#3B82F6', tint: 'rgba(59, 130, 246, 0.1)', shadow: '0 4px 12px rgba(59, 130, 246, 0.2)' },
+  'VUE': { bg: '#F8FAFC', text: '#065F46', border: '#10B981', tint: 'rgba(16, 185, 129, 0.1)', shadow: '0 4px 12px rgba(16, 185, 129, 0.2)' },
+  'ETS': { bg: '#F8FAFC', text: '#92400E', border: '#F59E0B', tint: 'rgba(245, 158, 11, 0.1)', shadow: '0 4px 12px rgba(245, 158, 11, 0.2)' },
+  'PSI': { bg: '#F8FAFC', text: '#5B21B6', border: '#8B5CF6', tint: 'rgba(139, 92, 246, 0.1)', shadow: '0 4px 12px rgba(139, 92, 246, 0.2)' },
+  'PROMETRIC': { bg: '#F8FAFC', text: '#991B1B', border: '#EF4444', tint: 'rgba(239, 68, 68, 0.1)', shadow: '0 4px 12px rgba(239, 68, 68, 0.2)' },
+  'OTHER': { bg: '#F8FAFC', text: '#374151', border: '#6B7280', tint: 'rgba(107, 114, 128, 0.1)', shadow: '0 4px 12px rgba(107, 114, 128, 0.2)' }
 }
 
 type ClientType = keyof typeof CLIENT_COLORS
@@ -116,6 +117,34 @@ export function FetsCalendar() {
     return Math.max(0, maxCapacity - candidateCount)
   }
 
+  const getShortClient = (name: string) => {
+    const n = name.toUpperCase();
+    if (n.includes('PEARSON')) return 'PV';
+    if (n.includes('PROMETRIC')) return 'PROM';
+    if (n.includes('VUE')) return 'VUE';
+    if (n.includes('ETS')) return 'ETS';
+    if (n.includes('PSI')) return 'PSI';
+    return n.slice(0, 4);
+  }
+
+  const getShortTime = (time: string) => {
+    const [h, m] = time.split(':');
+    const hour = parseInt(h);
+    const suffix = hour >= 12 ? 'P' : 'A';
+    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+    return `${displayHour}${suffix}`;
+  }
+
+  const getShortExam = (name: string) => {
+    return name
+      .replace(/EXAM/gi, '')
+      .replace(/SIMULATION/gi, 'SIM')
+      .replace(/INTERNATIONAL/gi, 'INTL')
+      .replace(/CERTIFIED/gi, 'CERT')
+      .replace(/PROFESSIONAL/gi, 'PRO')
+      .trim()
+  }
+
   const formatTimeRange = (startTime: string, endTime: string) => {
     const formatTime = (time: string) => {
       const [hours, minutes] = time.split(':')
@@ -197,7 +226,7 @@ export function FetsCalendar() {
     try {
       // Prevent creating/updating sessions without a specific centre
       if (activeBranch === 'global') {
-        toast.error('Please select a centre (Calicut or Cochin) to add or edit sessions.')
+        toast.error('Please select a centre (Calicut, Cochin or Kannur) to add or edit sessions.')
         return
       }
 
@@ -364,236 +393,278 @@ export function FetsCalendar() {
               }
 
               const daySessions = getSessionsForDate(date)
-              const clientCounts = getClientCounts(date)
               const isCurrentDay = isToday(date)
               const isSelectedMonth = date.getMonth() === currentDate.getMonth()
 
               // Only dim dates from other months slightly to keep layout consistent
-              const opacityClass = isSelectedMonth ? 'opacity-100' : 'opacity-40 grayscale'
+              const opacityClass = isSelectedMonth ? 'opacity-100' : 'opacity-30 grayscale'
+
+              const totalCandidates = daySessions.reduce((sum, s) => sum + s.candidate_count, 0)
 
               return (
-                <div
+                <motion.div
                   key={index}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  whileHover={{ y: -5, scale: 1.02 }}
                   onClick={() => openDetailsModal(date)}
                   className={`
-                    h-44 p-5 cursor-pointer transition-all duration-300 rounded-[2rem] group flex flex-col justify-between relative overflow-hidden
+                    h-52 p-4 cursor-pointer transition-all duration-300 rounded-[2.5rem] group flex flex-col relative overflow-hidden
                     ${opacityClass}
                     ${isCurrentDay
-                      ? 'bg-[#E6E8EC] shadow-[inset_5px_5px_10px_rgba(163,177,198,0.6),inset_-5px_-5px_10px_rgba(255,255,255,0.9)] border border-blue-500/20'
-                      : 'bg-[#E6E8EC] shadow-[8px_8px_16px_rgba(163,177,198,0.5),-8px_-8px_16px_rgba(255,255,255,0.8)] border border-white/40 hover:-translate-y-1 hover:shadow-[12px_12px_24px_rgba(163,177,198,0.6),-12px_-12px_24px_rgba(255,255,255,0.9)]'
+                      ? 'bg-[#EEF2F9] shadow-[inset_9px_9px_16px_#bec3c9,inset_-9px_-9px_16px_#ffffff] border-2 border-amber-400/30'
+                      : 'bg-[#EEF2F9] shadow-[9px_9px_16px_#bec3c9,-9px_-9px_16px_#ffffff] border border-white/60 hover:shadow-[14px_14px_28px_#bec3c9,-14px_-14px_28px_#ffffff]'
                     }
                   `}
                 >
+                  <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none" />
+
                   <div className="h-full flex flex-col relative z-10">
-                    {/* Date Header */}
-                    <div className="flex items-start justify-between mb-2">
-                      <span className={`text-2xl font-black ${isCurrentDay ? 'text-blue-600' : 'text-slate-700'}`}>
-                        {date.getDate()}
-                      </span>
-                      {daySessions.length > 0 && (
-                        <span className="flex h-3 w-3 relative">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                    {/* Date Header - MASTERPIECE STYLE */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex flex-col">
+                        <span className={`text-4xl font-medium leading-none tracking-tighter ${isCurrentDay ? 'text-amber-600' : 'text-slate-500'}`}>
+                          {date.getDate()}
                         </span>
+                        {totalCandidates > 0 && (
+                          <span className="text-[12px] font-black text-slate-900 uppercase tracking-tight mt-1">
+                            {totalCandidates} CAND
+                          </span>
+                        )}
+                      </div>
+
+                      {daySessions.length > 0 ? (
+                        <div className="flex -space-x-2">
+                          {Array.from({ length: Math.min(daySessions.length, 3) }).map((_, i) => (
+                            <div key={i} className={`w-3 h-3 rounded-full border-2 border-[#EEF2F9] ${isCurrentDay ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+                          ))}
+                        </div>
+                      ) : (
+                        <Plus className="w-5 h-5 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
                       )}
                     </div>
 
-                    {/* Sessions List */}
-                    <div className="flex-1 flex flex-col gap-2 justify-end">
-                      {Object.entries(clientCounts).slice(0, 3).map(([client, count]) => (
-                        <div key={client} className={`
-                                px-3 py-1.5 rounded-xl flex items-center justify-between text-[10px] font-bold uppercase tracking-wide
-                                ${isCurrentDay
-                            ? 'bg-blue-500/10 text-blue-900 border border-blue-500/20'
-                            : 'bg-[#E6E8EC] shadow-[2px_2px_4px_rgba(163,177,198,0.4),-2px_-2px_4px_rgba(255,255,255,0.8)] text-slate-600'
-                          }
-                            `}>
-                          <span>{client}</span>
-                          <span className="bg-slate-200/50 px-1.5 rounded text-slate-900">{count}</span>
-                        </div>
-                      ))}
-                      {Object.keys(clientCounts).length > 3 && (
-                        <div className="text-[10px] text-center font-bold text-slate-400">
-                          + {Object.keys(clientCounts).length - 3} more
+                    {/* Sessions List - GLASSMORPHIC CARDS */}
+                    <div className="flex-1 flex flex-col gap-2 overflow-y-auto no-scrollbar py-1">
+                      {daySessions.slice(0, 3).map((session, sIdx) => {
+                        const clientColor = CLIENT_COLORS[getClientType(session.client_name)] || CLIENT_COLORS['OTHER']
+                        return (
+                          <motion.div
+                            key={session.id || sIdx}
+                            initial={{ x: -10, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            transition={{ delay: sIdx * 0.1 }}
+                            className="flex-shrink-0 relative overflow-hidden rounded-xl border border-white/40 shadow-sm transition-all hover:shadow-md"
+                            style={{
+                              background: `linear-gradient(135deg, ${clientColor.bg} 0%, ${clientColor.tint} 100%)`,
+                              borderLeft: `3px solid ${clientColor.border}`
+                            }}
+                          >
+                            <div className="px-2 py-2.5 backdrop-blur-sm">
+                              <div className="flex justify-between items-center gap-1 mb-1">
+                                <span className="text-[11px] font-black uppercase tracking-tight" style={{ color: clientColor.text }}>
+                                  {getShortClient(session.client_name)}
+                                </span>
+                                <span className="text-[10px] font-black text-slate-700">{getShortTime(session.start_time)}</span>
+                              </div>
+                              <p className="text-[12px] font-black text-slate-900 leading-none line-clamp-1">{getShortExam(session.exam_name)}</p>
+                            </div>
+                          </motion.div>
+                        )
+                      })}
+                      {daySessions.length > 3 && (
+                        <div className="text-[9px] font-black text-slate-400 py-1 text-center bg-white/30 rounded-lg border border-white/20">
+                          + {daySessions.length - 3} MORE EXAMS
                         </div>
                       )}
                     </div>
                   </div>
-                </div>
+
+                  {/* Tactile Highlight for Today */}
+                  {isCurrentDay && (
+                    <div className="absolute bottom-2 right-4 flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
+                      <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest">Active</span>
+                    </div>
+                  )}
+                </motion.div>
               )
             })}
           </div>
         </div>
       </div>
 
-      {/* Premium Apple-style Session Details Modal */}
-      {showDetailsModal && selectedDate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-          <div className="absolute inset-0 backdrop-blur-2xl bg-black/30" onClick={closeModal} />
+      {/* Premium Neumorphic Daily Details Modal */}
+      <AnimatePresence>
+        {showDetailsModal && selectedDate && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 backdrop-blur-xl bg-slate-900/40"
+              onClick={closeModal}
+            />
 
-          <div className="relative w-full max-w-6xl bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden max-h-[85vh] overflow-y-auto">
-            <div className="px-8 py-6 border-b border-gray-200 bg-gray-50">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-2xl font-bold text-gray-900 flex items-center mb-1">
-                    <Calendar className="h-6 w-6 mr-3 text-gray-700" />
-                    {selectedDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                  </h3>
-                  <div className="flex items-center space-x-6 text-gray-600">
-                    <div className="flex items-center space-x-2">
-                      <Building className="h-5 w-5" />
-                      <span className="font-semibold">{getSessionsForDate(selectedDate).length} Sessions</span>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-5xl bg-[#EEF2F9] rounded-[3rem] shadow-[25px_25px_50px_#bec3c9,-25px_-25px_50px_#ffffff] border border-white/60 overflow-hidden max-h-[90vh] flex flex-col"
+            >
+              {/* Premium Modal Header */}
+              <div className="px-12 py-10 border-b border-slate-200 bg-white/30 backdrop-blur-md relative overflow-hidden">
+                <div className="absolute right-0 top-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl -mr-32 -mt-32" />
+
+                <div className="flex items-center justify-between relative z-10">
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 rounded-2xl bg-slate-800 flex items-center justify-center text-amber-500 shadow-xl">
+                        <Calendar size={20} />
+                      </div>
+                      <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em]">Daily Operations Overview</span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Users className="h-5 w-5" />
-                      <span className="font-semibold">{getSessionsForDate(selectedDate).reduce((sum, s) => sum + s.candidate_count, 0)} Total Candidates</span>
+                    <h3 className="text-4xl font-black text-slate-800 tracking-tighter uppercase leading-none">
+                      {selectedDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    </h3>
+                  </div>
+                  <button onClick={closeModal} className="w-12 h-12 rounded-2xl bg-white shadow-lg flex items-center justify-center text-slate-400 hover:text-rose-500 transition-colors border border-slate-100">
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+
+                {/* HIGH-END STATS TILES */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
+                  <div className="bg-[#EEF2F9] rounded-3xl p-6 shadow-[8px_8px_16px_#bec3c9,-8px_-8px_16px_#ffffff] border border-white/50 flex items-center gap-5">
+                    <div className="w-14 h-14 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center shadow-inner">
+                      <Building size={24} />
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Clock className="h-5 w-5" />
-                      <span className="font-semibold">{getRemainingSeats(getSessionsForDate(selectedDate).reduce((sum, s) => sum + s.candidate_count, 0))} Seats Available</span>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Sessions</p>
+                      <p className="text-2xl font-black text-slate-800">{getSessionsForDate(selectedDate).length}</p>
+                    </div>
+                  </div>
+                  <div className="bg-[#EEF2F9] rounded-3xl p-6 shadow-[8px_8px_16px_#bec3c9,-8px_-8px_16px_#ffffff] border border-white/50 flex items-center gap-5">
+                    <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-inner">
+                      <Users size={24} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Candidates</p>
+                      <p className="text-2xl font-black text-slate-800">{getSessionsForDate(selectedDate).reduce((sum, s) => sum + s.candidate_count, 0)}</p>
+                    </div>
+                  </div>
+                  <div className="bg-[#EEF2F9] rounded-3xl p-6 shadow-[8px_8px_16px_#bec3c9,-8px_-8px_16px_#ffffff] border border-white/50 flex items-center gap-5">
+                    <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-inner">
+                      <Shield size={24} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">System Load</p>
+                      <p className="text-2xl font-black text-slate-800">
+                        {Math.round((getSessionsForDate(selectedDate).reduce((sum, s) => sum + s.candidate_count, 0) / (getBranchCapacity(activeBranch) * 3)) * 100)}%
+                      </p>
                     </div>
                   </div>
                 </div>
-                <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-lg">
-                  <X className="h-6 w-6 text-gray-700" />
-                </button>
               </div>
-            </div>
 
-            {/* Client-wise Sessions Display */}
-            <div className="p-8">
-              {Object.entries(getClientCounts(selectedDate)).length > 0 ? (
-                <div className="space-y-8">
-                  {Object.entries(getClientCounts(selectedDate)).map(([client, totalCount]) => {
+              {/* TICKET-STYLE SESSION LIST */}
+              <div className="flex-1 overflow-y-auto p-12 custom-scrollbar space-y-8">
+                {Object.entries(getClientCounts(selectedDate)).length > 0 ? (
+                  Object.entries(getClientCounts(selectedDate)).map(([client, totalCount]) => {
                     const clientSessions = getSessionsForDate(selectedDate).filter(s => s.client_name === client)
                     const clientType = getClientType(client)
-                    const clientColor = CLIENT_COLORS[clientType]
-                    const remainingSeats = getRemainingSeats(totalCount)
+                    const clientColor = CLIENT_COLORS[clientType] || CLIENT_COLORS['OTHER']
 
                     return (
-                      <div key={client} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                        {/* Client Header */}
-                        <div
-                          className="p-5 relative"
-                          style={{ borderLeft: `4px solid ${clientColor.border}`, background: clientColor.tint }}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h4 className="text-xl font-bold text-gray-900 flex items-center mb-1">
-                                <Building className="h-5 w-5 mr-3 text-gray-700" />
-                                {client}
-                              </h4>
-                              <div className="flex items-center space-x-4 text-gray-600">
-                                <span className="font-semibold">{clientSessions.length} Sessions</span>
-                                <span>•</span>
-                                <span className="font-semibold">{totalCount} Candidates</span>
-                              </div>
-                            </div>
-                            <div className="text-center bg-gray-50 rounded-xl px-5 py-3 border border-gray-200">
-                              <div className="text-gray-600 text-sm font-medium mb-1">Remaining Seats</div>
-                              <div className={`text-2xl font-bold ${remainingSeats > 20 ? 'text-green-600' :
-                                  remainingSeats > 10 ? 'text-yellow-600' :
-                                    'text-red-600'
-                                }`}>
-                                {remainingSeats}
-                              </div>
-                            </div>
-                          </div>
+                      <div key={client} className="space-y-4">
+                        <div className="flex items-center gap-4 px-4">
+                          <div className="w-2 h-8 rounded-full" style={{ backgroundColor: clientColor.border }} />
+                          <h4 className="text-xl font-black text-slate-800 uppercase tracking-tight">{client} Intelligence</h4>
+                          <div className="h-px flex-1 bg-slate-200" />
                         </div>
 
-                        {/* Client Sessions */}
-                        <div className="p-6">
-                          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                            {clientSessions.map(session => (
-                              <div key={session.id} className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-md transition-all duration-200 group">
-                                <div className="flex items-start justify-between mb-4">
-                                  <div className="flex-1">
-                                    <h5 className="font-bold text-gray-900 text-lg mb-3 line-clamp-2">{session.exam_name}</h5>
-                                    <div className="space-y-3 text-sm">
-                                      <div className="flex items-center text-gray-600">
-                                        <Clock className="h-4 w-4 mr-3 text-gray-500" />
-                                        <span className="font-semibold">{formatTimeRange(session.start_time, session.end_time)}</span>
-                                      </div>
-                                      <div className="flex items-center text-gray-600">
-                                        <Users className="h-4 w-4 mr-3 text-gray-500" />
-                                        <span className="font-semibold">{session.candidate_count} Candidates</span>
-                                      </div>
-                                      <div className="flex items-center text-gray-600">
-                                        <MapPin className="h-4 w-4 mr-3 text-gray-500" />
-                                        <span className="font-semibold">{getRemainingSeats(session.candidate_count)} Seats Available</span>
-                                      </div>
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                          {clientSessions.map((session, sIdx) => (
+                            <motion.div
+                              key={session.id || sIdx}
+                              whileHover={{ y: -5 }}
+                              className="bg-[#EEF2F9] rounded-[2rem] shadow-[12px_12px_24px_#bec3c9,-12px_-12px_24px_#ffffff] border border-white/60 overflow-hidden flex flex-col"
+                            >
+                              <div className="p-8 flex-1">
+                                <div className="flex justify-between items-start mb-6">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{ backgroundColor: clientColor.tint, color: clientColor.text }}>
+                                      <Award size={20} />
+                                    </div>
+                                    <div>
+                                      <h5 className="font-black text-slate-800 uppercase tracking-tight leading-none">{session.exam_name}</h5>
+                                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Industrial Phase Verification</p>
                                     </div>
                                   </div>
                                 </div>
 
-                                {/* Action Buttons */}
-                                <div className="flex space-x-3 pt-4 border-t border-gray-200/50">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      openModal(selectedDate, session)
-                                    }}
-                                    className="flex-1 p-3 bg-gray-900 hover:bg-black text-white rounded-xl transition-colors duration-200 flex items-center justify-center font-medium shadow-sm"
-                                  >
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      if (session.id) {
-                                        handleDelete(session.id)
-                                      }
-                                    }}
-                                    className="flex-1 p-3 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors duration-200 flex items-center justify-center font-medium shadow-sm"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </button>
+                                <div className="grid grid-cols-2 gap-6">
+                                  <div className="bg-[#EEF2F9] rounded-2xl p-4 shadow-[inset_4px_4px_8px_#bec3c9,inset_-4px_-4px_8px_#ffffff]">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <Clock size={12} className="text-slate-400" />
+                                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Time Slot</span>
+                                    </div>
+                                    <p className="text-xs font-black text-slate-700">{formatTimeRange(session.start_time, session.end_time)}</p>
+                                  </div>
+                                  <div className="bg-[#EEF2F9] rounded-2xl p-4 shadow-[inset_4px_4px_8px_#bec3c9,inset_-4px_-4px_8px_#ffffff]">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <Users size={12} className="text-slate-400" />
+                                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Capacity</span>
+                                    </div>
+                                    <p className="text-xs font-black text-slate-700">{session.candidate_count} CAND</p>
+                                  </div>
                                 </div>
                               </div>
-                            ))}
-                          </div>
+
+                              {/* Premium Reveal Actions */}
+                              <div className="p-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-end gap-3 px-8">
+                                <button
+                                  onClick={() => openModal(selectedDate, session)}
+                                  className="p-3 rounded-xl bg-[#EEF2F9] shadow-[4px_4px_8px_#bec3c9,-4px_-4px_8px_#ffffff] text-slate-600 hover:text-amber-500 transition-all border border-white active:shadow-inner"
+                                >
+                                  <Edit size={16} />
+                                </button>
+                                <button
+                                  onClick={() => session.id && handleDelete(session.id)}
+                                  className="p-3 rounded-xl bg-[#EEF2F9] shadow-[4px_4px_8px_#bec3c9,-4px_-4px_8px_#ffffff] text-slate-600 hover:text-rose-500 transition-all border border-white active:shadow-inner"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </motion.div>
+                          ))}
                         </div>
                       </div>
                     )
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-20">
-                  <div className="bg-gray-100 rounded-full p-8 w-28 h-28 mx-auto mb-6 flex items-center justify-center">
-                    <Calendar className="h-12 w-12 text-gray-400" />
+                  })
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-24 opacity-60">
+                    <div className="w-24 h-24 rounded-[2rem] bg-[#EEF2F9] shadow-[12px_12px_24px_#bec3c9,-12px_-12px_24px_#ffffff] flex items-center justify-center text-slate-300 mb-6">
+                      <Calendar size={40} />
+                    </div>
+                    <p className="text-xl font-black text-slate-400 uppercase tracking-widest">No Strategic Sessions</p>
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">No sessions scheduled</h3>
-                  <p className="text-gray-600 text-sm mb-6 max-w-md mx-auto">No sessions found for this date. Create your first session to get started.</p>
-                  <button
-                    onClick={() => openModal(selectedDate)}
-                    className="px-6 py-3 bg-gray-900 hover:bg-black text-white font-semibold rounded-xl transition-colors duration-200 shadow-sm flex items-center mx-auto"
-                  >
-                    <Plus className="h-6 w-6 mr-3" />
-                    Create session
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Bottom Action Bar */}
-            {getSessionsForDate(selectedDate).length > 0 && (
-              <div className="px-8 py-6 bg-gray-50/80 backdrop-blur-xl border-t border-gray-200/30">
-                <div className="flex items-center justify-center">
-                  <button
-                    onClick={() => openModal(selectedDate)}
-                    className="px-6 py-3 bg-gray-900 hover:bg-black text-white font-semibold rounded-xl transition-colors duration-200 shadow-sm flex items-center"
-                  >
-                    <Plus className="h-6 w-6 mr-3" />
-                    Add Another Session
-                  </button>
-                </div>
+                )}
               </div>
-            )}
+
+              {/* Bottom Action Deck */}
+              <div className="p-10 border-t border-slate-200 bg-white/30 backdrop-blur-md flex justify-center">
+                <button
+                  onClick={() => openModal(selectedDate)}
+                  className="px-12 py-5 rounded-2xl bg-slate-800 text-white font-black uppercase tracking-[0.2em] shadow-2xl hover:bg-black hover:scale-105 transition-all text-xs flex items-center gap-4"
+                >
+                  <Plus size={18} /> Add Strategic Session
+                </button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* Premium Apple-style Add/Edit Session Modal */}
       {showModal && (
@@ -738,8 +809,8 @@ export function FetsCalendar() {
                     <div className="text-center bg-white rounded-2xl px-6 py-4 border border-blue-200/50 shadow-lg">
                       <div className="text-gray-800 text-sm font-medium mb-1">Seats Remaining</div>
                       <div className={`text-4xl font-bold ${getRemainingSeats(formData.candidate_count) > 20 ? 'text-green-600' :
-                          getRemainingSeats(formData.candidate_count) > 10 ? 'text-yellow-600' :
-                            'text-red-600'
+                        getRemainingSeats(formData.candidate_count) > 10 ? 'text-yellow-600' :
+                          'text-red-600'
                         }`}>
                         {getRemainingSeats(formData.candidate_count)}
                       </div>

@@ -1,373 +1,742 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Activity,
-  CheckSquare,
-  MessageSquare,
-  Users,
-  TrendingUp,
-  Zap,
-  Maximize2,
-  X,
-  Plus,
-  QrCode,
-  Search,
-  FilePlus,
-  Clock,
-  ChevronRight,
-  AlertCircle,
-  MoreHorizontal
+  User, Lock, LogOut, Clock, Calendar,
+  CheckCircle2, AlertCircle, Plus, Trash2,
+  ExternalLink, FileText, Target, Zap,
+  Settings, Camera, ShieldCheck, Mail,
+  ChevronRight, Brain, Briefcase, Bookmark,
+  StickyNote, CheckSquare, GraduationCap, MapPin,
+  Award, Info, List, X
 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
-import { useDashboardStats } from '../hooks/useCommandCentre'
 import { useBranch } from '../hooks/useBranch'
+import { supabase } from '../lib/supabase'
+import { toast } from 'react-hot-toast'
 import { format } from 'date-fns'
+import { ProfilePictureUpload } from './ProfilePictureUpload'
 
 // --- Interfaces ---
 
-interface TileProps {
+interface WorkLog {
+  id: string
+  log_date: string
+  achievements: string
+  roadblocks: string
+  hours_worked: number
+}
+
+interface Shortcut {
   id: string
   title: string
-  icon: React.ElementType
-  color?: string
-  children: React.ReactNode
-  onExpand: () => void
-  colSpan?: 1 | 2
+  url: string
+  category: string
+  icon?: string
 }
 
-interface QuickActionProps {
-  icon: React.ElementType
-  label: string
-  onClick: () => void
-}
+// --- Sub-Components ---
 
-// --- Live Tile Component ---
-
-const LiveTile = ({ id, title, icon: Icon, color = "amber", children, onExpand, colSpan = 1 }: TileProps) => {
-  return (
-    <motion.div
-      layoutId={`tile-container-${id}`}
-      className={`neomorphic-card relative group overflow-hidden flex flex-col justify-between cursor-pointer transition-shadow hover:shadow-[8px_8px_16px_#bec3c9,-8px_-8px_16px_#ffffff] ${colSpan === 2 ? 'md:col-span-2' : ''}`}
-      onClick={onExpand}
-      whileHover={{ y: -4 }}
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.3 }}
-    >
-      {/* Background Decor */}
-      <div className={`absolute -right-6 -bottom-6 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-500 text-${color}-900 rotate-12`}>
-        <Icon size={200} />
-      </div>
-
-      <div className="p-6 h-full flex flex-col relative z-10">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className={`p-3 rounded-xl bg-${color}-50 text-${color}-600 shadow-sm border border-${color}-100 group-hover:scale-110 transition-transform duration-300`}>
-              <Icon size={24} />
-            </div>
-            <h3 className="text-lg font-bold text-gray-700 tracking-tight">{title}</h3>
-          </div>
-          <button className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-gray-400 hover:text-gray-600">
-            <Maximize2 size={16} />
-          </button>
-        </div>
-
-        {/* Content Area */}
-        <div className="flex-1 flex flex-col justify-center">
-          {children}
-        </div>
-      </div>
-
-      {/* Visual Indicator Bar */}
-      <div className={`h-1 w-0 group-hover:w-full bg-gradient-to-r from-${color}-400 to-${color}-600 transition-all duration-500 rounded-b-2xl`} />
-    </motion.div>
-  )
-}
-
-// --- Expanded Panel Component ---
-
-const ExpandedPanel = ({ id, title, children, onClose }: { id: string, title: string, children: React.ReactNode, onClose: () => void }) => {
-  return (
-    <motion.div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8 bg-black/20 backdrop-blur-sm"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={onClose}
-    >
-      <motion.div
-        layoutId={`tile-container-${id}`}
-        className="w-full max-w-4xl max-h-[90vh] bg-[#e0e5ec] rounded-3xl shadow-[20px_20px_60px_#bec3c9,-20px_-20px_60px_#ffffff] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="p-6 md:p-8 border-b border-gray-200 flex items-center justify-between bg-white/50 backdrop-blur-xl sticky top-0 z-20">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-800 tracking-tight">{title}</h2>
-            <p className="text-gray-500 mt-1">Detailed View & Management</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-3 rounded-xl hover:bg-black/5 text-gray-500 transition-colors"
-          >
-            <X size={24} />
-          </button>
-        </div>
-        <div className="p-6 md:p-8 overflow-y-auto">
-          {children}
-        </div>
-      </motion.div>
-    </motion.div>
-  )
-}
-
-// --- sub-components for Tile Content ---
-
-const StatRow = ({ label, value, subtext }: { label: string, value: string | number, subtext?: string }) => (
-  <div className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0 hover:bg-white/40 px-2 -mx-2 rounded-lg transition-colors">
-    <span className="text-gray-500 font-medium text-sm">{label}</span>
-    <div className="text-right">
-      <span className="block text-lg font-bold text-gray-800 leading-none">{value}</span>
-      {subtext && <span className="text-xs text-gray-400 font-medium">{subtext}</span>}
-    </div>
+const NeumorphicCard = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
+  <div className={`bg-[#e0e5ec] shadow-[9px_9px_16px_rgb(163,177,198,0.6),-9px_-9px_16px_rgba(255,255,255,0.5)] rounded-3xl border border-white/20 ${className}`}>
+    {children}
   </div>
 )
 
-const TaskItem = ({ title, priority }: { title: string, priority: 'high' | 'medium' | 'low' }) => (
-  <div className="flex items-center gap-3 py-2 px-2 hover:bg-white/50 rounded-lg cursor-pointer transition-colors group">
-    <div className={`w-2 h-2 rounded-full ${priority === 'high' ? 'bg-red-500' : priority === 'medium' ? 'bg-amber-500' : 'bg-emerald-500'} ring-4 ring-opacity-20 ring-${priority === 'high' ? 'red' : priority === 'medium' ? 'amber' : 'emerald'}-500`} />
-    <span className="text-sm font-medium text-gray-700 flex-1 truncate">{title}</span>
-    <ChevronRight size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+const NeumorphicInset = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
+  <div className={`bg-[#e0e5ec] shadow-[inset_6px_6px_10px_0_rgba(163,177,198,0.7),inset_-6px_-6px_10px_0_rgba(255,255,255,0.8)] rounded-2xl border-none ${className}`}>
+    {children}
   </div>
 )
 
-const QuickActionButton = ({ icon: Icon, label, onClick }: QuickActionProps) => (
-  <button
-    onClick={(e) => { e.stopPropagation(); onClick(); }}
-    className="flex flex-col items-center justify-center p-3 rounded-xl bg-[#e0e5ec] shadow-[5px_5px_10px_#bec3c9,-5px_-5px_10px_#ffffff] hover:shadow-[inset_5px_5px_10px_#bec3c9,inset_-5px_-5px_10px_#ffffff] active:scale-95 transition-all duration-200 group w-full"
-  >
-    <Icon size={20} className="text-amber-600 mb-2 group-hover:scale-110 transition-transform" />
-    <span className="text-xs font-bold text-gray-600">{label}</span>
-  </button>
-)
+const NeumorphicButton = ({ children, onClick, className = "", variant = "default", disabled = false }: { children: React.ReactNode, onClick?: () => void, className?: string, variant?: "default" | "danger" | "success" | "warning", disabled?: boolean }) => {
+  const baseStyle = "px-6 py-3 rounded-2xl font-bold transition-all active:scale-95 shadow-[6px_6px_12px_rgba(163,177,198,0.6),-6px_-6px_12px_rgba(255,255,255,0.5)] active:shadow-[inset_4px_4px_8px_rgba(163,177,198,0.6),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] flex items-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+  const variants = {
+    default: "bg-[#e0e5ec] text-gray-600 hover:text-blue-600",
+    danger: "bg-[#e0e5ec] text-red-500 hover:text-red-700",
+    success: "bg-[#e0e5ec] text-green-600 hover:text-green-700",
+    warning: "bg-[#e0e5ec] text-amber-600 hover:text-amber-700"
+  }
+  return (
+    <button onClick={onClick} disabled={disabled} className={`${baseStyle} ${variants[variant]} ${className}`}>
+      {children}
+    </button>
+  )
+}
 
-// --- Main Desk Component ---
+// --- Feature Panels ---
 
-export function MyDeskNew() {
-  const { profile } = useAuth()
-  const { activeBranch } = useBranch()
-  const { data: stats } = useDashboardStats()
-  const [expandedId, setExpandedId] = useState<string | null>(null)
-
-  // Tasks Setup (Mock + LocalStorage Logic reuse)
-  const [tasks, setTasks] = useState<any[]>([])
-
-  useEffect(() => {
-    const saved = localStorage.getItem('fets-tasks')
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        // Flatten tasks from columns for preview
-        const allTasks = parsed.flatMap((col: any) => col.tasks)
-        setTasks(allTasks.slice(0, 3))
-      } catch (e) { console.error(e) }
-    } else {
-      // Mock initial
-      setTasks([
-        { id: '1', title: 'Review candidates', priority: 'high' },
-        { id: '2', title: 'Approve rosters', priority: 'medium' },
-        { id: '3', title: 'Briefing notes', priority: 'low' },
-      ])
-    }
-  }, [])
-
-  // Derived Data
-  const sessionCount = stats?.todaysExams?.length || 0
-  const candidateCount = stats?.todayCandidates || 0
-  const incidentCount = stats?.pendingIncidents || 0
-
-  // rosterStaff fallback is critical if data is missing
-  const rosterStaff: string[] = stats?.todaysRoster?.staff || ['Mithun', 'Niyas', 'Adithyan']
-
-  // Handlers
-  const handleExpand = (id: string) => setExpandedId(id)
-  const handleClose = () => setExpandedId(null)
+const ProfilePanel = ({ profile, onSignOut }: { profile: any, onSignOut: () => void }) => {
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
 
   return (
-    <div className="min-h-screen bg-[#e0e5ec] pt-28 pb-12 px-4 md:px-8">
-
-      {/* Dynamic Header */}
-      <div className="max-w-[1600px] mx-auto mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-[900] tracking-tight text-gray-800">
-            <span className="text-gold-gradient">MY DESK</span>
-          </h1>
-          <p className="text-gray-500 font-medium mt-1 ml-1 flex items-center gap-2">
-            <span className={`w-2 h-2 rounded-full ${activeBranch === 'calicut' ? 'bg-amber-500' : 'bg-blue-500'}`}></span>
-            {activeBranch.toUpperCase()} OPERATIONS CENTER
-          </p>
-        </div>
-
-        {/* Real-time Clock Pill */}
-        <div className="neomorphic-card px-6 py-3 rounded-full flex items-center gap-3 text-gray-600">
-          <Clock size={16} className="text-amber-500" />
-          <span className="font-mono font-bold tracking-widest text-sm">
-            {format(new Date(), 'HH:mm:ss')}
-          </span>
-        </div>
-      </div>
-
-      {/* Tiles Grid */}
-      <div className="max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-
-        {/* 1. Today Ops Tile */}
-        <LiveTile id="ops" title="Today Ops" icon={Activity} onExpand={() => handleExpand('ops')} color="amber">
-          <div className="space-y-1">
-            <StatRow
-              label="Active Sessions"
-              value={sessionCount}
-              subtext={`${stats?.todaysExams?.reduce((acc: number, s: any) => acc + (s.candidate_count || 0), 0) || 0} Seats`}
+    <div className="space-y-8">
+      <NeumorphicCard className="p-8">
+        <div className="flex flex-col items-center text-center">
+          <div className="relative mb-6">
+            <ProfilePictureUpload
+              staffId={profile?.id || ''}
+              staffName={profile?.full_name || 'User'}
+              currentAvatarUrl={profile?.avatar_url}
+              onAvatarUpdate={() => window.location.reload()}
             />
-            <StatRow label="Pending Incidents" value={incidentCount} subtext="Requires Attention" />
-            <div className="mt-4 pt-3 border-t border-gray-200/50 flex items-center justify-between">
-              <span className="text-xs font-bold text-gray-400 uppercase">System Status</span>
-              <span className="text-xs font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">OPERATIONAL</span>
-            </div>
           </div>
-        </LiveTile>
 
-        {/* 2. Task Queue Tile */}
-        <LiveTile id="tasks" title="Task Queue" icon={CheckSquare} onExpand={() => handleExpand('tasks')} color="emerald">
-          <div className="space-y-2 mb-2">
-            {tasks.map(task => (
-              <TaskItem key={task.id} title={task.title} priority={task.priority} />
-            ))}
-          </div>
-          <button className="w-full mt-auto py-2 flex items-center justify-center gap-2 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors font-semibold text-sm">
-            <Plus size={16} /> Add New Task
-          </button>
-        </LiveTile>
-
-        {/* 3. Messages Tile */}
-        <LiveTile id="messages" title="Messages" icon={MessageSquare} onExpand={() => handleExpand('messages')} color="blue">
-          <div className="flex flex-col items-center justify-center py-4">
-            <div className="relative">
-              <div className="absolute inset-0 bg-blue-400 blur-xl opacity-20 rounded-full animate-pulse"></div>
-              <MessageSquare size={48} className="text-blue-500 relative z-10" />
-              {stats?.newMessages > 0 && (
-                <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full border-2 border-[#e0e5ec] flex items-center justify-center">
-                  <span className="text-[10px] font-bold text-white">{stats.newMessages}</span>
-                </div>
-              )}
+          <h2 className="text-3xl font-black text-gray-800 tracking-tight mb-2 uppercase">{profile?.full_name}</h2>
+          <div className="flex flex-col gap-1 mb-6">
+            <div className="flex items-center justify-center gap-2 text-gray-500 font-bold text-xs uppercase tracking-[0.2em]">
+              <Mail size={14} className="text-blue-500" />
+              {profile?.email}
             </div>
-            <h4 className="mt-4 text-2xl font-bold text-gray-800">{stats?.newMessages || 0} Unread</h4>
-            <p className="text-sm text-gray-500 font-medium">Staff Notes & Alerts</p>
-          </div>
-        </LiveTile>
-
-        {/* 4. Roster Snapshot Tile */}
-        <LiveTile id="roster" title="Roster Snapshot" icon={Users} onExpand={() => handleExpand('roster')} color="purple">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-              <span>On Duty Now</span>
-              <span>{rosterStaff.length} Active</span>
-            </div>
-            <div className="flex -space-x-3 overflow-hidden py-2 px-1">
-              {rosterStaff.slice(0, 5).map((staff: string, i: number) => (
-                <div key={i} className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 border-2 border-white shadow-sm flex items-center justify-center text-xs font-bold text-purple-800" title={staff}>
-                  {staff.charAt(0)}
-                </div>
-              ))}
-              {rosterStaff.length > 5 && (
-                <div className="w-10 h-10 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-xs font-bold text-gray-500">
-                  +{rosterStaff.length - 5}
-                </div>
-              )}
-            </div>
-            {rosterStaff.length > 0 && (
-              <div className="bg-purple-50 p-3 rounded-lg border border-purple-100">
-                <p className="text-xs text-purple-800 font-medium"><span className="font-bold">{rosterStaff[0]}</span> is Shift Mgr.</p>
+            {profile?.branch_assigned && (
+              <div className="flex items-center justify-center gap-2 text-gray-400 font-bold text-[10px] uppercase tracking-widest mt-1">
+                <MapPin size={12} className="text-amber-500" />
+                {profile?.branch_assigned}
               </div>
             )}
           </div>
-        </LiveTile>
 
-        {/* 5. Candidate Flow Tile (Capacity) */}
-        <LiveTile id="candidates" title="Candidate Flow" icon={TrendingUp} onExpand={() => handleExpand('candidates')} color="rose">
-          <div className="flex items-center justify-between h-full">
-            <div className="relative w-24 h-24">
-              {/* Circular Progress Mock */}
-              <svg className="w-full h-full transform -rotate-90">
-                <circle cx="48" cy="48" r="40" stroke="#fecdd3" strokeWidth="8" fill="transparent" />
-                <circle cx="48" cy="48" r="40" stroke="#e11d48" strokeWidth="8" fill="transparent" strokeDasharray={`${(candidateCount / 100) * 251} 251`} strokeLinecap="round" />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-rose-900">
-                <span className="text-xl font-bold">{candidateCount}</span>
-              </div>
-            </div>
-            <div className="text-right flex-1 pl-4">
-              <p className="text-3xl font-bold text-gray-800">{Math.round((candidateCount / 50) * 100)}%</p>
-              <p className="text-xs font-bold text-gray-400 uppercase">Capacity Usage</p>
-              <p className="text-xs text-rose-600 font-medium mt-1">+12% vs last hour</p>
-            </div>
+          <div className="grid grid-cols-2 gap-4 w-full mb-8">
+            <NeumorphicInset className="p-4 flex flex-col items-center">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Role</span>
+              <span className="text-blue-600 font-black uppercase text-xs">{profile?.role?.replace('_', ' ')}</span>
+            </NeumorphicInset>
+            <NeumorphicInset className="p-4 flex flex-col items-center">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Status</span>
+              <span className="text-green-600 font-black uppercase text-xs">{profile?.status || 'Active'}</span>
+            </NeumorphicInset>
           </div>
-        </LiveTile>
 
-        {/* 6. Quick Tools Tile */}
-        <LiveTile id="tools" title="Quick Tools" icon={Zap} onExpand={() => { }} color="indigo" colSpan={1}>
-          <div className="grid grid-cols-2 gap-3 h-full">
-            <QuickActionButton icon={QrCode} label="Scan QR" onClick={() => console.log('Scan')} />
-            <QuickActionButton icon={Search} label="ID Lookup" onClick={() => console.log('Lookup')} />
-            <QuickActionButton icon={FilePlus} label="New Incident" onClick={() => console.log('Incident')} />
-            <QuickActionButton icon={MoreHorizontal} label="More" onClick={() => console.log('More')} />
+          <div className="flex flex-col gap-4 w-full">
+            <NeumorphicButton onClick={() => setShowPasswordModal(true)} className="w-full justify-center">
+              <Lock size={18} /> Credentials
+            </NeumorphicButton>
+            <NeumorphicButton onClick={onSignOut} variant="danger" className="w-full justify-center">
+              <LogOut size={18} /> Logout
+            </NeumorphicButton>
           </div>
-        </LiveTile>
+        </div>
 
-      </div>
+        <AnimatePresence>
+          {showPasswordModal && (
+            <PasswordModal onClose={() => setShowPasswordModal(false)} />
+          )}
+        </AnimatePresence>
+      </NeumorphicCard>
 
-      {/* Expanded Overlay Manager */}
-      <AnimatePresence>
-        {expandedId === 'ops' && (
-          <ExpandedPanel id="ops" title="Operations Overview" onClose={handleClose}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
-                <h3 className="text-xl font-bold mb-4">Live Session Data</h3>
-                {/* Placeholder for detailed Ops View */}
-                <div className="h-64 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400">Detailed Graphs & Session Lists would go here</div>
+      {/* READ ONLY DETAILS FROM SUPER ADMIN */}
+      <NeumorphicCard className="p-6">
+        <h3 className="text-sm font-black text-gray-700 uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
+          <Info size={16} className="text-blue-500" /> Personal Dossier
+        </h3>
+
+        <div className="space-y-6">
+          {/* Employment */}
+          <section>
+            <div className="flex items-center gap-2 mb-3">
+              <Briefcase size={12} className="text-gray-400" />
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Employment</span>
+            </div>
+            <div className="space-y-2">
+              <DetailRow label="Department" value={profile?.department} />
+              <DetailRow label="Position" value={profile?.position} />
+              <DetailRow label="Joined" value={profile?.joining_date || profile?.hire_date} />
+            </div>
+          </section>
+
+          {/* Training */}
+          <section>
+            <div className="flex items-center gap-2 mb-3">
+              <GraduationCap size={12} className="text-gray-400" />
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Growth & Training</span>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <span className="text-[9px] font-bold text-gray-400 uppercase">Skills</span>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {profile?.skills?.map((s: string) => (
+                    <span key={s} className="px-2 py-0.5 bg-white shadow-sm rounded-md text-[9px] font-black text-blue-600 uppercase border border-blue-50">{s}</span>
+                  )) || <span className="text-[10px] text-gray-400 italic">None logged</span>}
+                </div>
               </div>
-              <div className="p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
-                <h3 className="text-xl font-bold mb-4">Incident Log</h3>
-                <div className="h-64 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400">Critical Incidents List</div>
-              </div>
+              {profile?.trainings_attended && (
+                <div className="p-2 bg-slate-100/50 rounded-xl border border-white/40">
+                  <span className="text-[9px] font-bold text-gray-400 uppercase">Recent Training</span>
+                  <div className="text-[10px] font-bold text-gray-600 mt-1">
+                    {Array.isArray(profile.trainings_attended) ? profile.trainings_attended.slice(0, 1).map((t: any) => t.name || t) : 'View history in HR'}
+                  </div>
+                </div>
+              )}
             </div>
-          </ExpandedPanel>
-        )}
+          </section>
 
-        {expandedId === 'tasks' && (
-          <ExpandedPanel id="tasks" title="Task Management" onClose={handleClose}>
-            <div className="flex flex-col items-center justify-center py-20 text-gray-400 bg-white/50 rounded-3xl border-2 border-dashed border-gray-300">
-              <CheckSquare size={64} className="mb-4 opacity-50" />
-              <p className="text-xl font-semibold">Full Kanban Board Loading...</p>
-              <p className="text-sm">This would load the full FetsTaskWidget here.</p>
+          {/* Permissions */}
+          <section>
+            <div className="flex items-center gap-2 mb-3">
+              <ShieldCheck size={12} className="text-gray-400" />
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Active Licenses</span>
             </div>
-          </ExpandedPanel>
-        )}
-
-        {expandedId === 'messages' && (
-          <ExpandedPanel id="messages" title="Communication Hub" onClose={handleClose}>
-            {/* Could load FetsConnectNew here */}
-            <div className="h-96 w-full bg-white rounded-xl shadow-sm flex items-center justify-center">
-              Message Center Placeholder
+            <div className="grid grid-cols-2 gap-2">
+              {profile?.permissions ? Object.entries(profile.permissions).filter(([_, val]) => val === true).slice(0, 4).map(([key]) => (
+                <NeumorphicInset key={key} className="p-2 flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span className="text-[8px] font-black text-gray-700 uppercase tracking-tight truncate">{key.replace('_', ' ')}</span>
+                </NeumorphicInset>
+              )) : <p className="text-[10px] text-gray-400 italic">Standard Access</p>}
             </div>
-          </ExpandedPanel>
-        )}
-
-        {/* Add cases for other tiles... */}
-
-      </AnimatePresence>
-
+          </section>
+        </div>
+      </NeumorphicCard>
     </div>
   )
 }
+
+const DetailRow = ({ label, value }: { label: string, value: string }) => (
+  <div className="flex justify-between items-center text-[11px]">
+    <span className="font-bold text-gray-500 uppercase tracking-wider">{label}</span>
+    <span className="font-black text-gray-800 uppercase text-right">{value || '---'}</span>
+  </div>
+)
+
+const PasswordModal = ({ onClose }: { onClose: () => void }) => {
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (password !== confirm) return toast.error('Passwords do not match')
+    if (password.length < 6) return toast.error('Minimum 6 characters required')
+
+    setLoading(true)
+    try {
+      const { error } = await supabase.auth.updateUser({ password })
+      if (error) throw error
+      toast.success('Security Credentials Updated')
+      onClose()
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        className="w-full max-w-md"
+      >
+        <NeumorphicCard className="p-8">
+          <div className="flex justify-between items-center mb-8">
+            <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight flex items-center gap-2">
+              <Lock size={20} className="text-amber-500" />
+              Reset Security
+            </h3>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+              <X size={24} />
+            </button>
+          </div>
+
+          <form onSubmit={handleUpdate} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-2">New Password</label>
+              <NeumorphicInset>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="w-full bg-transparent p-4 outline-none text-gray-700 font-bold"
+                  placeholder="••••••••"
+                  required
+                />
+              </NeumorphicInset>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-2">Confirm Credentials</label>
+              <NeumorphicInset>
+                <input
+                  type="password"
+                  value={confirm}
+                  onChange={e => setConfirm(e.target.value)}
+                  className="w-full bg-transparent p-4 outline-none text-gray-700 font-bold"
+                  placeholder="••••••••"
+                  required
+                />
+              </NeumorphicInset>
+            </div>
+            <NeumorphicButton className="w-full justify-center bg-blue-600 text-white hover:text-white" onClick={() => { }} variant="default">
+              {loading ? 'Securing...' : 'Verify & Update'}
+            </NeumorphicButton>
+          </form>
+        </NeumorphicCard>
+      </motion.div>
+    </div>
+  )
+}
+
+const PersonalWorkLog = () => {
+  const { user } = useAuth()
+  const [logs, setLogs] = useState<WorkLog[]>([])
+  const [showAdd, setShowAdd] = useState(false)
+  const [newLog, setNewLog] = useState({ achievements: '', roadblocks: '', hours: 8 })
+  const [loading, setLoading] = useState(false)
+
+  // Shift Notes State
+  const [shiftNote, setShiftNote] = useState('')
+  const [isSavingNote, setIsSavingNote] = useState(false)
+
+  // Tasks State
+  const [tasks, setTasks] = useState<any[]>([])
+  const [newTask, setNewTask] = useState('')
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchLogs()
+      fetchShiftNote()
+      fetchTasks()
+    }
+  }, [user?.id])
+
+  const fetchLogs = async () => {
+    const { data } = await supabase
+      .from('user_work_logs')
+      .select('*')
+      .eq('user_id', user?.id)
+      .order('log_date', { ascending: false })
+      .limit(5)
+    if (data) setLogs(data)
+  }
+
+  const fetchShiftNote = async () => {
+    const { data } = await supabase
+      .from('user_shift_notes')
+      .select('content')
+      .eq('user_id', user?.id)
+      .single()
+    if (data) setShiftNote(data.content)
+  }
+
+  const saveShiftNote = async () => {
+    if (!user?.id) return
+    setIsSavingNote(true)
+    const { error } = await supabase
+      .from('user_shift_notes')
+      .upsert({ user_id: user?.id, content: shiftNote, updated_at: new Date() })
+    if (!error) toast.success('Shift note recorded')
+    else toast.error('Failed to sync note')
+    setIsSavingNote(false)
+  }
+
+  const fetchTasks = async () => {
+    const { data } = await supabase
+      .from('user_focus_tasks')
+      .select('*')
+      .eq('user_id', user?.id)
+      .order('created_at', { ascending: false })
+    if (data) setTasks(data)
+  }
+
+  const addTask = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newTask.trim()) return
+    const { error } = await supabase
+      .from('user_focus_tasks')
+      .insert([{ user_id: user?.id, content: newTask, is_completed: false }])
+    if (!error) {
+      setNewTask('')
+      fetchTasks()
+    }
+  }
+
+  const toggleTask = async (id: string, currentStatus: boolean) => {
+    await supabase
+      .from('user_focus_tasks')
+      .update({ is_completed: !currentStatus })
+      .eq('id', id)
+    fetchTasks()
+  }
+
+  const deleteTask = async (id: string) => {
+    await supabase.from('user_focus_tasks').delete().eq('id', id)
+    fetchTasks()
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    const { error } = await supabase.from('user_work_logs').insert([{
+      user_id: user?.id,
+      achievements: newLog.achievements,
+      roadblocks: newLog.roadblocks,
+      hours_worked: newLog.hours
+    }])
+
+    if (!error) {
+      toast.success('Work entry recorded')
+      setNewLog({ achievements: '', roadblocks: '', hours: 8 })
+      setShowAdd(false)
+      fetchLogs()
+    }
+    setLoading(false)
+  }
+
+  return (
+    <div className="space-y-8 h-full flex flex-col">
+      {/* SHIFT NOTES - SKETCHBOOK STYLE */}
+      <NeumorphicCard className="p-8">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight flex items-center gap-3">
+            <StickyNote size={24} className="text-amber-500" /> Shift Directives
+          </h3>
+          <NeumorphicButton
+            onClick={saveShiftNote}
+            disabled={isSavingNote}
+            variant="warning"
+            className="!p-3 !rounded-xl"
+          >
+            {isSavingNote ? <Zap size={18} className="animate-spin" /> : <ShieldCheck size={18} />}
+          </NeumorphicButton>
+        </div>
+        <NeumorphicInset className="p-5">
+          <textarea
+            value={shiftNote}
+            onChange={e => setShiftNote(e.target.value)}
+            placeholder="Brief operational notes for current shift..."
+            className="w-full bg-transparent outline-none text-gray-700 font-bold text-sm min-h-[120px] resize-none"
+          />
+        </NeumorphicInset>
+      </NeumorphicCard>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 flex-1">
+        {/* FOCUS TASKS */}
+        <NeumorphicCard className="p-8 flex flex-col">
+          <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight flex items-center gap-3 mb-6">
+            <Target size={24} className="text-rose-500" /> Focus Tasks
+          </h3>
+          <form onSubmit={addTask} className="mb-6">
+            <NeumorphicInset className="flex items-center pr-2">
+              <input
+                type="text"
+                value={newTask}
+                onChange={e => setNewTask(e.target.value)}
+                placeholder="Add secondary focus..."
+                className="flex-1 bg-transparent p-4 outline-none text-sm font-bold text-gray-700"
+              />
+              <button type="submit" className="p-2 text-rose-500 hover:scale-110 transition-transform">
+                <Plus size={20} />
+              </button>
+            </NeumorphicInset>
+          </form>
+          <div className="flex-1 space-y-3 overflow-y-auto custom-scrollbar pr-2 max-h-[300px]">
+            {tasks.map(task => (
+              <div key={task.id} className="flex items-center gap-4 group">
+                <button
+                  onClick={() => toggleTask(task.id, task.is_completed)}
+                  className={`p-1.5 rounded-lg transition-all ${task.is_completed ? 'bg-emerald-500 text-white' : 'bg-white shadow-sm text-gray-400'}`}
+                >
+                  <CheckCircle2 size={16} />
+                </button>
+                <span className={`text-sm font-bold flex-1 uppercase tracking-tight ${task.is_completed ? 'text-gray-400 line-through' : 'text-gray-700'}`}>
+                  {task.content}
+                </span>
+                <button onClick={() => deleteTask(task.id)} className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-rose-500">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+            {tasks.length === 0 && <p className="text-center text-xs font-bold text-gray-400 uppercase tracking-widest py-10">No Tasks set</p>}
+          </div>
+        </NeumorphicCard>
+
+        {/* MISSION JOURNAL */}
+        <NeumorphicCard className="p-8 flex flex-col">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight flex items-center gap-3">
+              <Briefcase size={24} className="text-blue-500" /> Mission Log
+            </h3>
+            <NeumorphicButton onClick={() => setShowAdd(!showAdd)} className="!p-3 !rounded-xl">
+              {showAdd ? <X size={18} /> : <Plus size={18} />}
+            </NeumorphicButton>
+          </div>
+
+          <div className="flex-1 space-y-4 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
+            {showAdd ? (
+              <form onSubmit={handleSubmit} className="space-y-4 p-2">
+                <NeumorphicInset className="p-4">
+                  <textarea
+                    placeholder="Key Results..."
+                    value={newLog.achievements}
+                    onChange={e => setNewLog({ ...newLog, achievements: e.target.value })}
+                    className="w-full bg-transparent outline-none text-sm font-medium text-gray-700 min-h-[80px] resize-none"
+                    required
+                  />
+                </NeumorphicInset>
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <NeumorphicInset className="p-3">
+                      <input
+                        type="number"
+                        value={newLog.hours}
+                        onChange={e => setNewLog({ ...newLog, hours: parseFloat(e.target.value) })}
+                        className="w-full bg-transparent outline-none text-sm font-bold text-gray-700"
+                      />
+                    </NeumorphicInset>
+                  </div>
+                  <NeumorphicButton className="flex-1 justify-center bg-blue-600 text-white" variant="default" onClick={() => { }}>
+                    Lock Entry
+                  </NeumorphicButton>
+                </div>
+              </form>
+            ) : (
+              logs.map(log => (
+                <NeumorphicInset key={log.id} className="p-4 border-l-4 border-l-blue-500">
+                  <div className="flex justify-between items-start mb-1">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{format(new Date(log.log_date), 'MMM dd')}</span>
+                    <span className="text-[9px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded-lg">{log.hours_worked}h</span>
+                  </div>
+                  <p className="text-[11px] font-bold text-gray-700 line-clamp-2 uppercase tracking-tight">{log.achievements}</p>
+                </NeumorphicInset>
+              ))
+            )}
+            {!showAdd && logs.length === 0 && (
+              <div className="text-center py-10 opacity-30">
+                <p className="font-bold uppercase text-xs tracking-widest">No history</p>
+              </div>
+            )}
+          </div>
+        </NeumorphicCard>
+      </div>
+    </div>
+  )
+}
+
+const ShortcutPanel = () => {
+  const { user } = useAuth()
+  const [shortcuts, setShortcuts] = useState<Shortcut[]>([])
+  const [showAdd, setShowAdd] = useState(false)
+  const [newLink, setNewLink] = useState({ title: '', url: '', category: 'General' })
+
+  useEffect(() => {
+    fetchShortcuts()
+  }, [])
+
+  const fetchShortcuts = async () => {
+    const { data } = await supabase
+      .from('user_shortcuts')
+      .select('*')
+      .eq('user_id', user?.id)
+      .order('created_at', { ascending: false })
+    if (data) setShortcuts(data)
+  }
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault()
+    let url = newLink.url
+    if (!url.startsWith('http')) url = 'https://' + url
+
+    const { error } = await supabase.from('user_shortcuts').insert([{
+      user_id: user?.id,
+      title: newLink.title,
+      url: url,
+      category: newLink.category
+    }])
+
+    if (!error) {
+      toast.success('Shortcut Locked')
+      setNewLink({ title: '', url: '', category: 'General' })
+      setShowAdd(false)
+      fetchShortcuts()
+    }
+  }
+
+  const deleteLink = async (id: string) => {
+    await supabase.from('user_shortcuts').delete().eq('id', id)
+    fetchShortcuts()
+  }
+
+  return (
+    <NeumorphicCard className="p-8 h-full flex flex-col">
+      <div className="flex justify-between items-center mb-8">
+        <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight flex items-center gap-3">
+          <Bookmark size={24} className="text-amber-500" />
+          Neural Links
+        </h3>
+        <NeumorphicButton onClick={() => setShowAdd(!showAdd)} className="!p-3 !rounded-xl">
+          {showAdd ? <X size={18} /> : <Plus size={18} />}
+        </NeumorphicButton>
+      </div>
+
+      <div className="flex-1 space-y-3 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
+        {showAdd && (
+          <form onSubmit={handleAdd} className="space-y-4 p-2 mb-4">
+            <NeumorphicInset className="p-3">
+              <input
+                placeholder="Link Title (e.g. Exam SOP)"
+                value={newLink.title}
+                onChange={e => setNewLink({ ...newLink, title: e.target.value })}
+                className="w-full bg-transparent outline-none text-sm font-bold text-gray-700"
+                required
+              />
+            </NeumorphicInset>
+            <NeumorphicInset className="p-3">
+              <input
+                placeholder="URL (e.g. google.com)"
+                value={newLink.url}
+                onChange={e => setNewLink({ ...newLink, url: e.target.value })}
+                className="w-full bg-transparent outline-none text-sm font-bold text-gray-700"
+                required
+              />
+            </NeumorphicInset>
+            <NeumorphicButton className="w-full justify-center bg-amber-500 text-white" onClick={() => { }} variant="default">
+              Add Link
+            </NeumorphicButton>
+          </form>
+        )}
+
+        <div className="grid grid-cols-1 gap-4">
+          {shortcuts.map(link => (
+            <motion.div
+              layout
+              key={link.id}
+              className="group flex items-center gap-4 bg-[#e0e5ec] p-4 rounded-2xl shadow-[4px_4px_8px_rgba(163,177,198,0.5),-4px_-4px_8px_rgba(255,255,255,0.8)] hover:shadow-[inset_4px_4px_8px_rgba(163,177,198,0.5),inset_-4px_-4px_8px_rgba(255,255,255,0.8)] transition-all"
+            >
+              <div className="p-3 rounded-xl bg-amber-50 text-amber-600">
+                <ExternalLink size={18} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-sm font-black text-gray-700 truncate hover:text-blue-600 transition-colors uppercase tracking-tight"
+                >
+                  {link.title}
+                </a>
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{link.category}</span>
+              </div>
+              <button
+                onClick={() => deleteLink(link.id)}
+                className="p-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+              >
+                <Trash2 size={16} />
+              </button>
+            </motion.div>
+          ))}
+        </div>
+
+        {!showAdd && shortcuts.length === 0 && (
+          <div className="text-center py-12 opacity-30">
+            <Zap size={48} className="mx-auto mb-4" />
+            <p className="font-bold uppercase text-xs tracking-widest">No shortcuts available</p>
+          </div>
+        )}
+      </div>
+    </NeumorphicCard>
+  )
+}
+
+// --- Main Page ---
+
+export function MyDeskNew() {
+  const { profile, signOut } = useAuth()
+  const { activeBranch } = useBranch()
+
+  return (
+    <div className="min-h-screen p-8" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+
+      {/* Page Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12"
+      >
+        <div className="flex items-center gap-6">
+          <div className="p-5 rounded-2xl bg-[#e0e5ec] shadow-[9px_9px_16px_rgb(163,177,198,0.6),-9px_-9px_16px_rgba(255,255,255,0.5)] text-blue-600">
+            <ShieldCheck size={42} strokeWidth={1.5} />
+          </div>
+          <div>
+            <h1 className="text-4xl md:text-5xl font-black tracking-tight text-gray-700 mb-2 uppercase">
+              Operational <span className="text-gold-gradient">Command</span>
+            </h1>
+            <div className="flex items-center gap-3">
+              <p className="text-lg text-gray-500 font-medium tracking-tight">Personal Workspace Control</p>
+              <div className="h-1 w-1 rounded-full bg-gray-300" />
+              <div className="flex items-center gap-2 px-3 py-1 bg-white/40 rounded-full border border-white/60">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{activeBranch} Branch</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col items-end">
+            <span className="text-xs font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Grid Version</span>
+            <span className="text-xl font-black text-gray-700 tracking-tighter">v4.0.1</span>
+          </div>
+          <div className="w-[1px] h-10 bg-gray-300/50" />
+          <div className="flex flex-col items-end">
+            <span className="text-xs font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Local Time</span>
+            <span className="text-xl font-black text-gray-700 tracking-tighter uppercase">{format(new Date(), 'HH:mm')}</span>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-[1800px] mx-auto">
+
+        {/* Profile Section */}
+        <div className="lg:col-span-4 xl:col-span-3">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <ProfilePanel profile={profile} onSignOut={signOut} />
+          </motion.div>
+        </div>
+
+        {/* Action Center - Work Logs */}
+        <div className="lg:col-span-8 xl:col-span-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="h-full"
+          >
+            <PersonalWorkLog />
+          </motion.div>
+        </div>
+
+        {/* Utility - Shortcuts */}
+        <div className="lg:col-span-12 xl:col-span-3">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="h-full"
+          >
+            <ShortcutPanel />
+          </motion.div>
+        </div>
+
+      </div>
+
+      {/* Footer Branding */}
+      <div className="mt-16 flex justify-center opacity-20 pointer-events-none">
+        <FetsBranding />
+      </div>
+    </div>
+  )
+}
+
+const FetsBranding = () => (
+  <div className="flex items-center gap-4 grayscale">
+    <Brain size={24} />
+    <span className="font-black text-sm uppercase tracking-[0.5em]">FETS PLATFORM SYSTEMS</span>
+  </div>
+)
 
 export default MyDeskNew

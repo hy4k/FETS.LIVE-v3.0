@@ -1,9 +1,10 @@
 import { FetsLogo } from './FetsLogo';
 import './HeaderTheme.css'; // Import the new theme
 import {
-  Bell, ChevronDown, MapPin, LayoutDashboard, Briefcase,
+  Bell, ChevronDown, MapPin, LayoutDashboard,
   Brain, ShieldAlert, MessageSquare, ClipboardList,
-  CalendarDays, UserSearch, UserCheck, Menu
+  CalendarDays, UserSearch, UserCheck, Menu, LogOut,
+  Server, Cpu, Shield
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -21,8 +22,27 @@ interface HeaderProps {
   activeTab?: string;
 }
 
+/**
+ * Helper to wrap each character in a span with a CSS variable for animation delay
+ */
+const AnimatedLabel = ({ label }: { label: string }) => {
+  return (
+    <span className="flex gap-[0.05em]">
+      {label.split('').map((char, index) => (
+        <span
+          key={index}
+          style={{ '--char-index': index } as React.CSSProperties}
+          className="inline-block"
+        >
+          {char === ' ' ? '\u00A0' : char}
+        </span>
+      ))}
+    </span>
+  );
+};
+
 export function Header({ isMobile = false, sidebarOpen = false, setSidebarOpen, setActiveTab, activeTab }: HeaderProps = {}) {
-  const { profile } = useAuth();
+  const { profile, signOut } = useAuth();
   const { activeBranch, setActiveBranch } = useBranch();
   const unreadCount = useUnreadCount();
   const [showNotificationPanel, setShowNotificationPanel] = useState(false);
@@ -47,7 +67,6 @@ export function Header({ isMobile = false, sidebarOpen = false, setSidebarOpen, 
   }, [isBranchDropdownOpen]);
 
   const currentBranchName = activeBranch === 'calicut' ? 'Calicut' : activeBranch === 'cochin' ? 'Cochin' : 'Global View';
-  const headerBtn = "fets-header-btn";
 
   // --- TOP ROW NAVIGATION (Core Modules) ---
   const topNavItems = [
@@ -61,18 +80,21 @@ export function Header({ isMobile = false, sidebarOpen = false, setSidebarOpen, 
   const secondRowItems = [
     { id: 'checklist-management', label: 'CHECKLIST', icon: ClipboardList },
     { id: 'my-desk', label: 'MY DESK', icon: MessageSquare },
-    { id: 'incident-manager', label: 'INCIDENT MANAGER', icon: ShieldAlert },
+    { id: 'system-manager', label: 'SYSTEM MANAGER', icon: Server },
     { id: 'fets-intelligence', label: 'FETS INTELLIGENCE', icon: Brain },
   ];
 
+  const handleSignOut = async () => {
+    if (window.confirm('Are you sure you want to sign out?')) {
+      await signOut();
+    }
+  };
+
   return (
     <>
-      <div className="fixed top-0 left-0 right-0 z-40 bg-[#FFD700] shadow-md transition-all duration-300">
-        <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(circle, #000 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none"></div>
-
-        {/* --- ROW 1: CORE MODULES --- */}
-        <div className="max-w-[1920px] mx-auto px-6 h-20 relative z-20 flex items-center justify-between gap-8 border-b border-black/5">
+      <div className="fixed top-0 left-0 right-0 z-40 fets-command-deck transition-all duration-300">
+        {/* --- ROW 1: CORE MODULES (The Command Deck) --- */}
+        <div className="max-w-[1920px] mx-auto px-6 h-20 relative z-20 flex items-center justify-between gap-8">
 
           {/* LEFT: Branding */}
           <div className="flex items-center gap-6 shrink-0">
@@ -84,39 +106,34 @@ export function Header({ isMobile = false, sidebarOpen = false, setSidebarOpen, 
             </div>
           </div>
 
-          {/* CENTER: CORE NAVIGATION */}
-          <div className="hidden lg:flex flex-1 max-w-2xl mx-auto justify-center">
-            <div className="flex items-center gap-2">
+          {/* CENTER: CORE NAVIGATION (Neumorphic Buttons) */}
+          <div className="hidden lg:flex flex-1 max-w-5xl mx-auto justify-center">
+            <div className="flex items-center gap-6">
               {topNavItems.map((item) => (
                 <button
                   key={item.id}
                   onClick={() => setActiveTab && setActiveTab(item.id)}
-                  className={`relative px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center gap-2 transition-all duration-300 transform ${activeTab === item.id
-                      ? 'text-yellow-950 bg-white shadow-lg scale-105 z-10 border border-white/50'
-                      : 'text-yellow-900/40 hover:text-yellow-900 hover:bg-black/5 hover:-translate-y-0.5'
-                    }`}
+                  className={`module-btn ${activeTab === item.id ? 'active' : ''}`}
                 >
-                  <item.icon size={14} className={activeTab === item.id ? 'text-yellow-600' : 'opacity-50'} />
-                  {item.label}
+                  <item.icon size={18} className={activeTab === item.id ? 'opacity-100' : 'opacity-40'} />
+                  <AnimatedLabel label={item.label} />
                 </button>
               ))}
             </div>
           </div>
 
-          {/* RIGHT: GLOBAL ACTIONS */}
-          <div className="flex items-center gap-3 shrink-0">
-            {/* Branch */}
+          {/* RIGHT: COMMAND CONTROLS (Pills) */}
+          <div className="flex items-center gap-4 shrink-0">
+            {/* Branch Switcher */}
             <div ref={dropdownRef} className="relative hidden md:block">
-              <motion.button
-                className={headerBtn}
+              <button
+                className="fets-pill-control"
                 onClick={() => canSwitch && setIsBranchDropdownOpen(!isBranchDropdownOpen)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
               >
-                <MapPin className="w-4 h-4 text-yellow-400" />
-                <span>{currentBranchName}</span>
-                {canSwitch && <ChevronDown className="w-3 h-3 text-white/50 ml-1" />}
-              </motion.button>
+                <MapPin className="w-4 h-4 opacity-70" />
+                <span className="text-xs uppercase tracking-wider">{currentBranchName}</span>
+                {canSwitch && <ChevronDown className="w-3 h-3 opacity-40 ml-1" />}
+              </button>
 
               <AnimatePresence>
                 {isBranchDropdownOpen && canSwitch && (
@@ -130,7 +147,7 @@ export function Header({ isMobile = false, sidebarOpen = false, setSidebarOpen, 
                       <button
                         key={branch}
                         onClick={() => { setActiveBranch(branch as any); setIsBranchDropdownOpen(false); }}
-                        className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${activeBranch === branch ? 'bg-yellow-100 text-yellow-900' : 'hover:bg-gray-100'}`}
+                        className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${activeBranch === branch ? 'bg-amber-100 text-amber-900' : 'hover:bg-gray-100'}`}
                       >
                         <span className="font-semibold text-sm">{formatBranchName(branch)}</span>
                       </button>
@@ -141,40 +158,40 @@ export function Header({ isMobile = false, sidebarOpen = false, setSidebarOpen, 
             </div>
 
             {/* Notifications */}
-            <motion.button
+            <button
               onClick={() => setShowNotificationPanel(!showNotificationPanel)}
-              className={headerBtn}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              className="fets-pill-control relative"
             >
               <div className="relative">
-                <Bell className="w-4 h-4 text-yellow-400" />
+                <Bell className="w-4 h-4 opacity-70" />
                 {unreadCount > 0 && <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>}
               </div>
-              <span>Notifications</span>
-            </motion.button>
+              <span className="text-xs uppercase tracking-wider hidden sm:inline">Alerts</span>
+            </button>
+
+            {/* EXIT Button */}
+            <button
+              onClick={handleSignOut}
+              className="fets-pill-control exit-btn"
+              title="Sign Out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
-        {/* --- ROW 2: TACTICAL / UTILITY BAR --- */}
-        <div className="h-14 bg-white/20 backdrop-blur-md border-t border-white/30 flex items-center shadow-lg relative z-10">
+        {/* --- ROW 2: UTILITY DECK (Recessed Utility Bar) --- */}
+        <div className="h-14 utility-deck flex items-center relative z-10 border-t border-black/5">
           <div className="max-w-[1920px] mx-auto px-6 w-full flex items-center justify-center gap-6 overflow-x-auto no-scrollbar">
-
             {secondRowItems.map((item) => {
               const isActive = activeTab === item.id;
               return (
                 <button
                   key={item.id}
                   onClick={() => setActiveTab && setActiveTab(item.id)}
-                  className={`
-                                group relative flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold transition-all duration-200 uppercase tracking-wide
-                                ${isActive
-                      ? 'bg-black text-white shadow-lg shadow-black/20 ring-1 ring-white/20 scale-105'
-                      : 'bg-white/40 text-yellow-950 hover:bg-white hover:text-black hover:shadow-md hover:-translate-y-0.5'
-                    }
-                            `}
+                  className={`utility-btn ${isActive ? 'active' : ''}`}
                 >
-                  <item.icon size={14} className={`${isActive ? 'text-yellow-400' : 'text-yellow-900/50 group-hover:text-yellow-600'}`} />
+                  <item.icon size={14} className={`${isActive ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'}`} />
                   <span>{item.label}</span>
                 </button>
               )

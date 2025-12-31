@@ -298,6 +298,10 @@ export function BranchProvider({ children }: BranchProviderProps) {
 
         return 'branch-cochin';
 
+      case 'kannur':
+
+        return 'branch-kannur';
+
       case 'global':
 
         return 'branch-global';

@@ -1,6 +1,14 @@
 import { Database } from './database.types';
 
-export type StaffProfile = Database['public']['Tables']['staff_profiles']['Row'];
+export type StaffProfile = Database['public']['Tables']['staff_profiles']['Row'] & {
+  contact_number?: string;
+  position?: string;
+  joining_date?: string;
+  certificates?: any[];
+  trainings_attended?: any[];
+  future_trainings?: any[];
+  remarks?: string;
+};
 export type RosterSchedule = Database['public']['Tables']['roster_schedules']['Row'];
 export type LeaveRequest = Database['public']['Tables']['leave_requests']['Row'] & { requestor_name?: string; target_name?: string; };
 export type Notification = any; // Database['public']['Tables']['notifications']['Row'];

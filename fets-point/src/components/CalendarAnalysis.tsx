@@ -56,7 +56,7 @@ export const CalendarAnalysis: React.FC<CalendarAnalysisProps> = ({ onClose, act
         try {
             // Calculate date filter
             const now = new Date();
-            let startDate = new Date();
+            const startDate = new Date();
             if (dateRange === 'week') startDate.setDate(now.getDate() - 7);
             if (dateRange === 'month') startDate.setMonth(now.getMonth() - 1);
             if (dateRange === 'quarter') startDate.setMonth(now.getMonth() - 3);

@@ -8,10 +8,11 @@ import toast from 'react-hot-toast';
 interface ChecklistFormModalProps {
     template: ChecklistTemplate;
     onClose: () => void;
+    onSuccess?: () => void;
     currentUser: any;
 }
 
-export const ChecklistFormModal: React.FC<ChecklistFormModalProps> = ({ template, onClose, currentUser }) => {
+export const ChecklistFormModal: React.FC<ChecklistFormModalProps> = ({ template, onClose, onSuccess, currentUser }) => {
     const { register, control, handleSubmit, formState: { errors } } = useForm();
     const [submitting, setSubmitting] = useState(false);
 
@@ -27,20 +28,21 @@ export const ChecklistFormModal: React.FC<ChecklistFormModalProps> = ({ template
 
             const submission: Partial<ChecklistSubmission> = {
                 template_id: template.id,
-                submitted_by: currentUser.id,
-                branch_id: currentUser.branch_id || null, // Assuming branch_id is on user profile
+                submitted_by: currentUser.user_id || currentUser.id,
+                branch_id: currentUser.branch_assigned || currentUser.branch_id || null,
                 submitted_at: new Date().toISOString(),
                 answers: data,
                 status: 'submitted'
             };
 
             const { error } = await supabase
-                .from('checklist_submissions' as any)
+                .from('checklist_submissions')
                 .insert(submission);
 
             if (error) throw error;
 
             toast.success('Checklist submitted successfully!');
+            if (onSuccess) onSuccess();
             onClose();
         } catch (error) {
             console.error('Error submitting checklist:', error);

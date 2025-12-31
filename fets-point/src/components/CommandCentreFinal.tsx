@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
     Users, Activity, CheckCircle, Play, Sparkles, ListChecks,
     Settings, ChevronRight, Bell, AlertTriangle, Shield, ClipboardCheck,
-    CheckCircle2, AlertCircle, Quote, Star, MessageSquare
+    CheckCircle2, AlertCircle, Quote, Star, MessageSquare,
+    Pause, RotateCcw, Coffee
 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useBranch } from '../hooks/useBranch'
@@ -38,65 +39,82 @@ export default function CommandCentre({ onNavigate }: { onNavigate?: (tab: strin
     // Filter Active News for Notice Board
     const notices = useMemo(() => {
         return newsItems
-            .filter((item: any) => item.is_active)
+            .filter((item: any) => {
+                if (!item.is_active) return false;
+                // Show if global OR if matches active branch
+                return (item.branch_location === 'global' || !item.branch_location) || (item.branch_location === activeBranch);
+            })
             .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) // Newest first
             .slice(0, 5) // Show top 5
-    }, [newsItems])
+    }, [newsItems, activeBranch])
+    const fetchAnalysis = async () => {
+        try {
+            const today = new Date().toISOString().split('T')[0]
+            const startOfMonth = new Date(); startOfMonth.setDate(1);
+
+            // --- Operational Events ---
+            const { data: events } = await (supabase as any)
+                .from('events')
+                .select('*')
+                .gte('created_at', startOfMonth.toISOString())
+
+            const openEvents = events?.filter((e: any) => e.status !== 'closed') || []
+            const critical = openEvents.filter((e: any) => e.priority === 'critical').length
+            const major = openEvents.filter((e: any) => e.priority === 'major').length
+            const eventPenalty = (critical * 15) + (major * 5) + (openEvents.length * 1)
+
+            // --- Infrastructure Health ---
+            const { data: systems } = await supabase
+                .from('systems')
+                .select('status')
+                .eq('branch_location', activeBranch !== 'global' ? activeBranch : undefined);
+
+            const systemsFault = systems?.filter(s => s.status === 'fault').length || 0;
+            const systemsMaintenance = systems?.filter(s => s.status === 'maintenance').length || 0;
+            const systemPenalty = (systemsFault * 20) + (systemsMaintenance * 5);
+
+            const combinedPenalty = eventPenalty + systemPenalty;
+            const health = Math.max(0, 100 - combinedPenalty);
+
+            const categories: Record<string, number> = {}
+            events?.forEach((e: any) => { categories[e.category || 'Other'] = (categories[e.category || 'Other'] || 0) + 1 })
+            const topCat = Object.entries(categories).sort((a, b) => b[1] - a[1])[0]
+
+            setOpsMetrics({
+                healthScore: health,
+                critical: critical + systemsFault,
+                open: openEvents.length,
+                topIssue: systemsFault > 0 ? 'Hardware Fault' : (topCat ? topCat[0] : 'Stable')
+            })
+
+            // --- Checklist Metrics ---
+            const { data: checklists } = await (supabase as any)
+                .from('checklist_submissions')
+                .select('answers')
+                .gte('created_at', `${today}T00:00:00`)
+
+            let issues = 0
+            checklists?.forEach((Sub: any) => {
+                const ans = Sub.answers?.responses || Sub.answers || {}
+                Object.values(ans).forEach((val: any) => {
+                    if (val === false || val === 'No' || val === 'Incomplete') issues++
+                })
+            })
+
+            setChecklistMetrics({
+                total: checklists?.length || 0,
+                issues,
+                perfect: (checklists?.length || 0) - (issues > 0 ? 1 : 0)
+            })
+
+            setLoadingAnalysis(false)
+        } catch (e) {
+            console.error("Analysis load failed", e)
+            setLoadingAnalysis(false)
+        }
+    }
 
     useEffect(() => {
-        // ... (No logic changes, just fetching metrics)
-        const fetchAnalysis = async () => {
-            try {
-                const today = new Date().toISOString().split('T')[0]
-                const startOfMonth = new Date(); startOfMonth.setDate(1);
-
-                const { data: events } = await (supabase as any)
-                    .from('events')
-                    .select('*')
-                    .gte('created_at', startOfMonth.toISOString())
-
-                const openEvents = events?.filter((e: any) => e.status !== 'closed') || []
-                const critical = openEvents.filter((e: any) => e.priority === 'critical').length
-                const major = openEvents.filter((e: any) => e.priority === 'major').length
-                const penalty = (critical * 15) + (major * 5) + (openEvents.length * 1)
-                const health = Math.max(0, 100 - penalty)
-
-                const categories: Record<string, number> = {}
-                events?.forEach((e: any) => { categories[e.category || 'Other'] = (categories[e.category || 'Other'] || 0) + 1 })
-                const topCat = Object.entries(categories).sort((a, b) => b[1] - a[1])[0]
-
-                setOpsMetrics({
-                    healthScore: health,
-                    critical,
-                    open: openEvents.length,
-                    topIssue: topCat ? topCat[0] : 'Stable'
-                })
-
-                const { data: checklists } = await (supabase as any)
-                    .from('checklist_submissions')
-                    .select('answers')
-                    .gte('created_at', `${today}T00:00:00`)
-
-                let issues = 0
-                checklists?.forEach((Sub: any) => {
-                    const ans = Sub.answers?.responses || Sub.answers || {}
-                    Object.values(ans).forEach((val: any) => {
-                        if (val === false || val === 'No' || val === 'Incomplete') issues++
-                    })
-                })
-
-                setChecklistMetrics({
-                    total: checklists?.length || 0,
-                    issues,
-                    perfect: (checklists?.length || 0) - (issues > 0 ? 1 : 0)
-                })
-
-                setLoadingAnalysis(false)
-            } catch (e) {
-                console.error("Analysis load failed", e)
-                setLoadingAnalysis(false)
-            }
-        }
         fetchAnalysis()
     }, [])
 
@@ -126,6 +144,31 @@ export default function CommandCentre({ onNavigate }: { onNavigate?: (tab: strin
     };
 
 
+    // --- Playful Session Tracking (Countdown) ---
+    const SHIFT_SECONDS = 9 * 3600 // 9 Hours
+    const [timeLeft, setTimeLeft] = useState(SHIFT_SECONDS)
+    const [isTimerActive, setIsTimerActive] = useState(true)
+
+    useEffect(() => {
+        let timer: any
+        if (isTimerActive && timeLeft > 0) {
+            timer = setInterval(() => {
+                setTimeLeft(prev => prev - 1)
+            }, 1000)
+        }
+        return () => clearInterval(timer)
+    }, [isTimerActive, timeLeft])
+
+    const formatTime = (seconds: number) => {
+        const h = Math.floor(seconds / 3600).toString().padStart(2, '0')
+        const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0')
+        const s = (seconds % 60).toString().padStart(2, '0')
+        return `${h}:${m}:${s}`
+    }
+
+    const resetTimer = () => setTimeLeft(SHIFT_SECONDS)
+
+
     if (isLoadingStats || isLoadingSchedule) {
         return <div className="flex items-center justify-center h-screen bg-[#EEF2F9]"><div className="animate-spin rounded-full h-16 w-16 border-b-4 border-amber-500"></div></div>
     }
@@ -142,51 +185,104 @@ export default function CommandCentre({ onNavigate }: { onNavigate?: (tab: strin
 
             <div className="max-w-[1800px] mx-auto px-6 pt-8">
 
-                {/* Header Section */}
+                {/* --- PREMIUM COMMAND HEADER --- */}
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col xl:flex-row justify-between items-end mb-10 gap-8"
+                    className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-12 gap-10"
                 >
-                    <div>
-                        <div className="flex items-center gap-2 mb-2">
-                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
-                            <span className="text-slate-400 font-bold text-xs uppercase tracking-widest">
-                                Operational Intelligence {activeBranch !== 'global' && `· ${activeBranch.toUpperCase()}`}
+                    {/* Left: Command Branding */}
+                    <div className="flex flex-col">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="h-1 w-12 bg-amber-500 rounded-full" />
+                            <span className="text-slate-400 font-black text-[10px] uppercase tracking-[0.4em] font-['Rajdhani']">
+                                Operational Intelligence {activeBranch !== 'global' && `// Node ${activeBranch.toUpperCase()}`}
                             </span>
                         </div>
-                        <h1 className="text-5xl md:text-6xl font-black text-slate-800 tracking-tighter uppercase">
+                        <h1 className="text-6xl md:text-7xl font-black text-slate-800 tracking-tighter uppercase italic leading-none">
                             Command <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-amber-600 drop-shadow-sm">Centre</span>
                         </h1>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-6">
-                        <div className={`${neuCard} pl-6 pr-2 py-2 flex items-center gap-4 min-w-[280px]`}>
-                            <div className="flex-1 text-right">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Officer on Deck</div>
-                                <div className="text-sm font-black text-slate-800 truncate max-w-[150px]">{profile?.full_name || 'Guest User'}</div>
+                    {/* Right: Duty Officer Profile (Dominant Display) */}
+                    <div className="flex flex-wrap items-center gap-8 w-full lg:w-auto">
+
+                        {/* THE EXECUTIVE OFFICER PLATE */}
+                        <div className={`${neuCard} p-6 flex items-center gap-8 min-w-[450px] relative overflow-hidden group hover:scale-[1.01] transition-all cursor-default`}>
+                            {/* Animated Background Pulse */}
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-3xl -mr-10 -mt-10 group-hover:bg-amber-500/10 transition-all duration-700" />
+
+                            {/* Avatar with Status Ring */}
+                            <div className="relative shrink-0">
+                                <div className={`${neuCard} w-24 h-24 p-2 rounded-full relative z-10 shadow-[10px_10px_20px_rgb(209,217,230),-10px_-10px_20px_rgba(255,255,255,0.8)]`}>
+                                    <div className="w-full h-full rounded-full overflow-hidden border-2 border-white/80">
+                                        <img
+                                            src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.full_name || 'User')}&background=0F172A&color=EAB308&size=128`}
+                                            className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-110"
+                                            alt="Profile"
+                                        />
+                                    </div>
+                                </div>
+                                {/* Online Status Indicator */}
+                                <div className="absolute bottom-1 right-1 w-6 h-6 bg-green-500 rounded-full border-4 border-[#EEF2F9] z-20 shadow-lg" />
+                                <div className="absolute bottom-1 right-1 w-6 h-6 bg-green-400 rounded-full z-15 animate-ping opacity-60" />
                             </div>
-                            <div className="w-12 h-12 rounded-full p-1 bg-[#EEF2F9] shadow-[3px_3px_6px_rgb(209,217,230),-3px_-3px_6px_rgba(255,255,255,0.8)]">
-                                <img
-                                    src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.full_name || 'User')}&background=0F172A&color=EAB308`}
-                                    className="w-full h-full object-cover rounded-full"
-                                    alt="Profile"
-                                />
+
+                            {/* Officer Details */}
+                            <div className="flex flex-col flex-1 z-10">
+                                <span className="text-[10px] font-black text-amber-600 uppercase tracking-[0.3em] font-['Rajdhani'] mb-1">Duty Officer</span>
+                                <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tighter mb-3 leading-tight">
+                                    {profile?.full_name || 'System Operator'}
+                                </h2>
+
+                                <div className="flex items-center gap-6">
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Shift Ends In</span>
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setIsTimerActive(!isTimerActive); }}
+                                                    className="p-1 hover:bg-slate-200 rounded-md transition-colors text-slate-500"
+                                                >
+                                                    {isTimerActive ? <Pause size={10} /> : <Play size={10} />}
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); resetTimer(); }}
+                                                    className="p-1 hover:bg-slate-200 rounded-md transition-colors text-slate-500"
+                                                >
+                                                    <RotateCcw size={10} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <span className={`text-lg font-black tabular-nums font-['Rajdhani'] ${timeLeft < 3600 ? 'text-rose-500 animate-pulse' : 'text-slate-700'}`}>
+                                            {formatTime(timeLeft)}
+                                        </span>
+                                    </div>
+                                    <div className="w-px h-8 bg-slate-200" />
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Caffeine Index</span>
+                                        <span className="text-[10px] font-black text-amber-600 uppercase flex items-center gap-1.5">
+                                            <Coffee size={12} className={isTimerActive ? "animate-bounce" : ""} />
+                                            Optimal Level
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Decorative Button Action */}
+                            <div className={`${neuBtn} p-3 ml-4 self-center group-hover:bg-white group-hover:text-amber-600 transition-all`}>
+                                <Activity size={18} />
                             </div>
                         </div>
 
-                        <div className={`${neuCard} px-8 py-4 flex items-center gap-6 hidden md:flex`}>
-                            <div className="text-right border-r border-slate-300 pr-6">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date</div>
-                                <div className="text-md font-bold text-slate-700">
-                                    {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                </div>
+                        {/* Chronos Module (Time/Date) */}
+                        <div className={`${neuCard} px-10 py-6 flex flex-col items-end gap-1 min-w-[200px] border-r-8 border-r-slate-800`}>
+                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-['Rajdhani']">Standard Time</div>
+                            <div className="text-4xl font-black text-slate-800 tracking-tighter font-['Rajdhani']">
+                                {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
                             </div>
-                            <div className="text-right">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Time (IST)</div>
-                                <div className="text-lg font-black text-amber-600">
-                                    {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
-                                </div>
+                            <div className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">
+                                {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                             </div>
                         </div>
                     </div>
@@ -198,111 +294,159 @@ export default function CommandCentre({ onNavigate }: { onNavigate?: (tab: strin
                     {/* LEFT COLUMN: Checklists -> Metrics -> Calendar */}
                     <div className="xl:col-span-8 flex flex-col gap-8">
 
-                        {/* 1. CHECKLIST (PROTOCOLS) - MOVED TO TOP */}
+                        {/* 1. CHECKLIST (PROTOCOLS) - TITANIUM COMMAND PLATE */}
                         <motion.div
                             initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}
-                            className={`${neuCard} p-6`}
+                            className={`${neuCard} p-8 relative overflow-hidden`}
                         >
-                            <h3 className="text-lg font-black text-slate-700 mb-6 flex items-center gap-2 uppercase tracking-tight">
-                                <ListChecks className="text-amber-500" size={24} /> Daily Checklist
+                            {/* Decorative Screw Heads */}
+                            <div className="absolute top-4 left-4 w-3 h-3 rounded-full bg-slate-300 shadow-[inset_1px_1px_2px_rgba(0,0,0,0.1),1px_1px_1px_rgba(255,255,255,0.8)] flex items-center justify-center"><div className="w-1.5 h-0.5 bg-slate-400 rotate-45"></div></div>
+                            <div className="absolute top-4 right-4 w-3 h-3 rounded-full bg-slate-300 shadow-[inset_1px_1px_2px_rgba(0,0,0,0.1),1px_1px_1px_rgba(255,255,255,0.8)] flex items-center justify-center"><div className="w-1.5 h-0.5 bg-slate-400 rotate-45"></div></div>
+
+                            <h3 className="text-xl font-black text-slate-700 mb-8 flex items-center gap-3 uppercase tracking-tighter relative z-10">
+                                <div className={`${neuInset} p-2 text-amber-600`}>
+                                    <ListChecks size={20} />
+                                </div>
+                                <span className="bg-gradient-to-r from-slate-700 to-slate-500 bg-clip-text text-transparent">Protocol Command</span>
                             </h3>
 
                             {/* Horizontal Layout for Actions */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
                                 <button
                                     onClick={() => handleOpenChecklist('pre_exam')}
-                                    className={`${neuBtn} p-4 flex flex-col items-center justify-center gap-3 h-32 group`}
+                                    className={`${neuBtn} p-6 flex flex-col items-center justify-center gap-4 h-40 group hover:scale-[1.02] active:scale-[0.98] transition-all duration-300`}
                                 >
-                                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center font-bold shadow-inner group-hover:bg-blue-100 transition-colors">AM</div>
+                                    <div className="w-14 h-14 rounded-2xl bg-slate-200 text-slate-500 flex items-center justify-center font-bold shadow-inner group-hover:bg-amber-100 group-hover:text-amber-600 transition-colors duration-300">
+                                        <Play size={24} className="fill-current" />
+                                    </div>
                                     <div className="text-center">
-                                        <div className="text-[10px] font-bold text-slate-400 uppercase">Start Protocol</div>
-                                        <div className="text-lg font-black text-slate-700 group-hover:text-blue-600 transition-colors">Pre-Exam</div>
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Morning</div>
+                                        <div className="text-lg font-black text-slate-700 group-hover:text-amber-600 transition-colors">Start Shift</div>
                                     </div>
                                 </button>
 
                                 <button
                                     onClick={() => handleOpenChecklist('post_exam')}
-                                    className={`${neuBtn} p-4 flex flex-col items-center justify-center gap-3 h-32 group`}
+                                    className={`${neuBtn} p-6 flex flex-col items-center justify-center gap-4 h-40 group hover:scale-[1.02] active:scale-[0.98] transition-all duration-300`}
                                 >
-                                    <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-500 flex items-center justify-center font-bold shadow-inner group-hover:bg-purple-100 transition-colors">PM</div>
+                                    <div className="w-14 h-14 rounded-2xl bg-slate-200 text-slate-500 flex items-center justify-center font-bold shadow-inner group-hover:bg-amber-100 group-hover:text-amber-600 transition-colors duration-300">
+                                        <CheckCircle2 size={24} />
+                                    </div>
                                     <div className="text-center">
-                                        <div className="text-[10px] font-bold text-slate-400 uppercase">End Protocol</div>
-                                        <div className="text-lg font-black text-slate-700 group-hover:text-purple-600 transition-colors">Post-Exam</div>
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Evening</div>
+                                        <div className="text-lg font-black text-slate-700 group-hover:text-amber-600 transition-colors">End Shift</div>
                                     </div>
                                 </button>
 
-                                <button onClick={() => handleOpenChecklist('custom')} className={`${neuBtn} p-4 flex flex-col items-center justify-center gap-3 h-32 group`}>
-                                    <div className={`${neuInset} p-3 text-amber-500 rounded-xl`}>
+                                <button
+                                    onClick={() => handleOpenChecklist('custom')}
+                                    className={`${neuBtn} p-6 flex flex-col items-center justify-center gap-4 h-40 group hover:scale-[1.02] active:scale-[0.98] transition-all duration-300`}
+                                >
+                                    <div className={`${neuInset} p-4 text-amber-500 rounded-2xl group-hover:bg-amber-50 transition-colors`}>
                                         <Sparkles size={24} />
                                     </div>
                                     <div className="text-center">
-                                        <div className="text-[10px] font-bold text-slate-400 uppercase">Special</div>
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Ad-Hoc</div>
                                         <div className="text-lg font-black text-slate-700">Custom</div>
                                     </div>
                                 </button>
 
-                                <button className={`${neuBtn} p-4 flex flex-col items-center justify-center gap-3 h-32 group`}>
-                                    <div className={`${neuInset} p-3 text-slate-400 rounded-xl group-hover:text-slate-600`}>
+                                <button
+                                    onClick={() => onNavigate && onNavigate('system-manager')}
+                                    className={`${neuBtn} p-6 flex flex-col items-center justify-center gap-4 h-40 group hover:scale-[1.02] active:scale-[0.98] transition-all duration-300`}
+                                >
+                                    <div className={`${neuInset} p-4 text-slate-400 group-hover:text-blue-500 transition-colors`}>
                                         <Settings size={24} />
                                     </div>
                                     <div className="text-center">
-                                        <div className="text-[10px] font-bold text-slate-400 uppercase">System</div>
-                                        <div className="text-lg font-black text-slate-700">Manage</div>
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">System</div>
+                                        <div className="text-lg font-black text-slate-700 group-hover:text-blue-600 transition-colors">Manage</div>
                                     </div>
                                 </button>
                             </div>
                         </motion.div>
 
-                        {/* 2. KEY METRICS ROW - MOVED DOWN */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* 2. KEY METRICS ROW */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
 
-                            {/* Health Score */}
-                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className={`${neuCard} p-6 relative group overflow-hidden`}>
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className={`${neuInset} p-3 text-amber-600 rounded-xl`}>
-                                        <Shield size={20} />
+                            {/* Health Score - AMBER/GOLD JEWEL CASE */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                                onClick={() => onNavigate && onNavigate('system-manager')}
+                                className={`${neuCard} p-6 relative group overflow-hidden border-t-4 border-t-amber-500 cursor-pointer hover:scale-[1.02] transition-transform`}
+                            >
+                                <div className="absolute -right-6 -bottom-6 text-amber-500/5 rotate-[-15deg]">
+                                    <Shield size={120} />
+                                </div>
+                                <div className="flex justify-between items-start mb-4 relative z-10">
+                                    <div className={`${neuInset} p-3 text-amber-600 rounded-xl bg-amber-50/50`}>
+                                        <Activity size={20} />
                                     </div>
                                     {opsMetrics.critical > 0 && <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]"></span>}
                                 </div>
-                                <div className="text-3xl font-black text-slate-800 mb-1">{Math.round(opsMetrics.healthScore)}<span className="text-sm text-slate-400 font-bold">/100</span></div>
-                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">System Health</div>
+                                <div className="relative z-10">
+                                    <div className="text-4xl font-black text-slate-800 mb-1 tracking-tight">
+                                        {Math.round(opsMetrics.healthScore)}
+                                        <span className="text-lg text-slate-400 font-bold ml-1">/100</span>
+                                    </div>
+                                    <div className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">System Health</div>
+                                </div>
                             </motion.div>
 
-                            {/* Checklist Stats */}
-                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className={`${neuCard} p-6 relative group overflow-hidden`}>
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className={`${neuInset} p-3 text-blue-600 rounded-xl`}>
-                                        <ClipboardCheck size={20} />
+                            {/* Checklist Metrics - SLATE/SILVER BLUEPRINT */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+                                className={`${neuCard} p-6 relative group overflow-hidden border-t-4 border-t-slate-500`}
+                            >
+                                <div className="absolute -right-6 -bottom-6 text-slate-400/10 rotate-[-15deg]">
+                                    <ClipboardCheck size={120} />
+                                </div>
+                                <div className="flex justify-between items-start mb-4 relative z-10">
+                                    <div className={`${neuInset} p-3 text-slate-600 rounded-xl bg-slate-50/50`}>
+                                        <ListChecks size={20} />
                                     </div>
                                 </div>
-                                <div className="flex items-baseline gap-2 mb-1">
-                                    <span className="text-3xl font-black text-slate-800">{checklistMetrics.total}</span>
-                                    <span className="text-xs font-medium text-slate-500">Submissions</span>
+                                <div className="flex items-baseline gap-2 mb-1 relative z-10">
+                                    <span className="text-4xl font-black text-slate-800 tracking-tight">{checklistMetrics.total}</span>
+                                    <span className="text-xs font-bold text-slate-400 uppercase">Entries</span>
                                 </div>
-                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex gap-2">
-                                    Today's Activity
-                                    {checklistMetrics.issues > 0 && <span className="text-red-500 font-bold ml-auto">{checklistMetrics.issues} Issues</span>}
+                                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex gap-2 relative z-10">
+                                    Daily Logs
+                                    {checklistMetrics.issues > 0 && <span className="text-red-500 font-bold ml-auto">{checklistMetrics.issues} Flags</span>}
                                 </div>
                             </motion.div>
 
-                            {/* Candidates */}
-                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className={`${neuCard} p-6 relative group overflow-hidden`}>
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className={`${neuInset} p-3 text-green-600 rounded-xl`}>
+                            {/* Candidates - TEAL/CYAN LIVE TRACKER */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+                                className={`${neuCard} p-6 relative group overflow-hidden border-t-4 border-t-teal-500`}
+                            >
+                                <div className="absolute -right-6 -bottom-6 text-teal-500/5 rotate-[-15deg]">
+                                    <Users size={120} />
+                                </div>
+                                <div className="flex justify-between items-start mb-4 relative z-10">
+                                    <div className={`${neuInset} p-3 text-teal-600 rounded-xl bg-teal-50/50`}>
                                         <Users size={20} />
                                     </div>
+                                    <div className="w-2 h-2 rounded-full bg-teal-500 animate-pulse"></div>
                                 </div>
-                                <div className="text-3xl font-black text-slate-800 mb-1">{dashboardData?.todayCandidates || 0}</div>
-                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Candidates Scheduled</div>
+                                <div className="text-4xl font-black text-slate-800 mb-1 tracking-tight relative z-10">{dashboardData?.todayCandidates || 0}</div>
+                                <div className="text-[10px] font-bold text-teal-600 uppercase tracking-widest relative z-10">Active Candidates</div>
                             </motion.div>
                         </div>
 
-                        {/* 3. CALENDAR WIDGET */}
+                        {/* 3. CALENDAR WIDGET - EXECUTIVE PLANNER */}
                         <motion.div
                             initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }}
-                            className={`${neuCard} p-3 min-h-[400px]`}
+                            className={`${neuCard} p-1 min-h-[400px] relative overflow-hidden`}
                         >
-                            <ExamScheduleWidget onNavigate={onNavigate} />
+                            {/* Gold Gradient Spine */}
+                            <div className="h-2 w-full bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600"></div>
+                            <div className="p-2 bg-slate-100/50 h-full rounded-b-3xl">
+                                <div className="bg-[#EEF2F9] rounded-2xl shadow-sm border border-white/60 h-full p-2">
+                                    <ExamScheduleWidget onNavigate={onNavigate} />
+                                </div>
+                            </div>
                         </motion.div>
 
                     </div>
@@ -311,64 +455,111 @@ export default function CommandCentre({ onNavigate }: { onNavigate?: (tab: strin
                     {/* RIGHT COLUMN: Notice Board */}
                     <div className="xl:col-span-4 flex flex-col gap-10">
 
-                        {/* NOTICE BOARD */}
+                        {/* --- SKEUOMORPHIC HANGING NOTICE BOARD --- */}
                         <motion.div
-                            initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }}
-                            className={`${neuCard} p-8 flex-1 min-h-[500px] relative`}
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.6 }}
+                            className="xl:col-span-4 flex flex-col items-center relative py-12"
                         >
-                            <div className="flex items-center justify-between mb-8">
-                                <h3 className="text-xl font-black text-slate-800 flex items-center gap-3 uppercase tracking-tight">
-                                    <Quote className="text-amber-500 rotate-180 fill-current" size={24} /> Notice Board
-                                </h3>
-                                <div className="w-10 h-10 rounded-full bg-[#EEF2F9] shadow-[inset_3px_3px_6px_rgb(209,217,230),inset_-3px_-3px_6px_rgba(255,255,255,0.8)] flex items-center justify-center text-slate-400">
-                                    <Bell size={18} />
+                            {/* The Nail & String Hook */}
+                            <div className="absolute top-0 flex flex-col items-center z-10">
+                                <div className="w-4 h-4 rounded-full bg-slate-400 shadow-[inset_-1px_-1px_2px_rgba(0,0,0,0.3),1px_1px_2px_rgba(255,255,255,0.8)] border border-slate-500 relative">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-slate-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                                </div>
+                                <div className="w-32 h-20 -mt-2">
+                                    <svg viewBox="0 0 100 60" className="w-full h-full fill-none stroke-slate-400 stroke-[1.5] opacity-60">
+                                        <path d="M 50 2 L 2 58 M 50 2 L 98 58" />
+                                    </svg>
                                 </div>
                             </div>
 
-                            <div className="space-y-6 relative z-10">
-                                {notices.length > 0 ? (
-                                    notices.map((notice: any, idx: number) => (
-                                        <div key={notice.id || idx} className="group cursor-default">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <div className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${notice.priority === 'high' ? 'bg-red-100 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
-                                                    {notice.priority === 'high' ? 'Urgent' : 'General'}
-                                                </div>
-                                                <span className="text-[10px] font-bold text-slate-400">
-                                                    {new Date(notice.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                                                </span>
+                            {/* The Board Itself */}
+                            <div className="w-full bg-[#FFFBEB] rounded-3xl relative shadow-[0_30px_60px_-15px_rgba(0,0,0,0.15),0_15px_30px_-10px_rgba(0,0,0,0.1)] border-[12px] border-[#D6CAB0] min-h-[550px] flex flex-col items-center pt-16 pb-12 px-6">
+
+                                {/* Inner Shadow for Recessed Depth */}
+                                <div className="absolute inset-0 rounded-[1.2rem] shadow-[inset_0_10px_20px_rgba(0,0,0,0.04)] pointer-events-none" />
+
+                                {/* Section Header Strip */}
+                                <div className="absolute top-4 -translate-y-1/2 bg-white px-10 py-3 shadow-[0_4px_10px_rgba(0,0,0,0.1)] -rotate-1 border border-slate-100 flex items-center gap-3">
+                                    <div className="w-3 h-3 rounded-full bg-rose-500 shadow-md border-2 border-rose-600 absolute -top-1 left-1/2 -translate-x-1/2 scale-110" />
+                                    <h3 className="text-sm font-black text-slate-700 uppercase tracking-[0.3em] font-['Rajdhani']">
+                                        Notice Board
+                                    </h3>
+                                </div>
+
+                                {/* Notices Pins Area */}
+                                <div className="w-full space-y-8 mt-4">
+                                    {notices.length > 0 ? (
+                                        notices.map((notice: any, idx: number) => {
+                                            const rotations = ['rotate-1', 'rotate-[-1]', 'rotate-2', 'rotate-[-2]', 'rotate-0'];
+                                            const rotation = rotations[idx % rotations.length];
+
+                                            return (
+                                                <motion.div
+                                                    key={notice.id || idx}
+                                                    whileHover={{ scale: 1.03, rotate: 0, y: -4, zIndex: 20 }}
+                                                    className={`
+                                                        ${rotation} bg-white p-6 relative shadow-[0_10px_25px_-5px_rgba(0,0,0,0.08)] 
+                                                        border-l-4 ${notice.priority === 'high' ? 'border-l-rose-500' : 'border-l-amber-500'}
+                                                        group cursor-default transition-all duration-300
+                                                    `}
+                                                >
+                                                    {/* Pinned Pushpin */}
+                                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
+                                                        <div className="w-4 h-4 rounded-full bg-rose-500 shadow-lg border-2 border-rose-600 flex items-center justify-center">
+                                                            <div className="w-1 h-1 rounded-full bg-white/40" />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex justify-between items-start mb-3 opacity-60">
+                                                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                                                            {new Date(notice.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                                                        </span>
+                                                        <div className="flex gap-1">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                                                        </div>
+                                                    </div>
+
+                                                    <p className="text-sm font-bold text-slate-600 leading-relaxed font-['Rajdhani'] group-hover:text-slate-900 transition-colors">
+                                                        {notice.content}
+                                                    </p>
+
+                                                    {/* Subtle Paper Texture Line */}
+                                                    <div className="absolute bottom-2 right-4 opacity-5">
+                                                        <Quote size={40} className="rotate-180" />
+                                                    </div>
+                                                </motion.div>
+                                            )
+                                        })
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center py-20 opacity-30">
+                                            <div className="w-20 h-20 bg-slate-200/50 rounded-full flex items-center justify-center mb-4 shadow-inner">
+                                                <Bell size={40} className="text-slate-400" />
                                             </div>
-                                            <p className="text-sm font-medium text-slate-600 leading-relaxed group-hover:text-slate-800 transition-colors">
-                                                {notice.content}
-                                            </p>
-                                            <div className="h-px bg-slate-200 mt-4 w-full" />
+                                            <p className="text-sm font-black uppercase tracking-widest text-slate-500 font-['Rajdhani']">No Active Directives</p>
                                         </div>
-                                    ))
-                                ) : (
-                                    <div className="text-center py-12 flex flex-col items-center gap-3">
-                                        <div className={`${neuInset} p-4 rounded-full text-slate-300`}>
-                                            <MessageSquare size={32} />
-                                        </div>
-                                        <p className="text-slate-400 font-medium text-sm">No active notices available.</p>
-                                    </div>
-                                )}
+                                    )}
+                                </div>
+
+                                {/* Footer Navigation */}
+                                <div className="mt-auto w-full pt-8">
+                                    <button
+                                        onClick={() => onNavigate && onNavigate('intelligence')}
+                                        className="w-full py-4 bg-white/50 hover:bg-white text-[10px] font-black text-amber-700 uppercase tracking-[0.4em] transition-all border-y border-amber-900/5 flex items-center justify-center gap-3 group"
+                                    >
+                                        Intel Access <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                                    </button>
+                                </div>
                             </div>
 
-                            <div className="mt-8 pt-4">
-                                <button
-                                    onClick={() => onNavigate && onNavigate('intelligence')}
-                                    className="w-full py-3 text-xs font-bold text-amber-600 hover:text-amber-700 uppercase tracking-widest flex items-center justify-center gap-2 transition-all hover:gap-3"
-                                >
-                                    View Intel Feed <ChevronRight size={14} />
-                                </button>
-                            </div>
+                            {/* Decorative Loose Strings / Tapes (Optional Enhancement) */}
+                            <div className="absolute -bottom-4 left-10 w-8 h-12 bg-white/20 -rotate-12 backdrop-blur-sm border border-white/30 hidden xl:block" />
+                            <div className="absolute -bottom-2 right-12 w-6 h-10 bg-white/10 rotate-15 backdrop-blur-sm border border-white/20 hidden xl:block" />
                         </motion.div>
 
-                        {/* EMPTY SPACE filler or just let notice board expand? 
-                            The notice board is 'flex-1 min-h...', so it will take space. 
-                            Since we removed the Protocols from this column, it's just one tall card.
-                            This is clean.
-                        */}
-
+                        {/* Space filler / extra widget could go here if needed in future */}
                     </div>
 
                 </div>
@@ -380,6 +571,7 @@ export default function CommandCentre({ onNavigate }: { onNavigate?: (tab: strin
                     <ChecklistFormModal
                         template={activeTemplate}
                         onClose={() => setShowChecklistModal(false)}
+                        onSuccess={fetchAnalysis}
                         currentUser={profile}
                     />
                 )}

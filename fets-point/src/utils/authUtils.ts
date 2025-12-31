@@ -47,7 +47,7 @@ export function canSwitchBranches(email: string | null | undefined, role: string
  * @returns Array of branch options
  */
 export function getAvailableBranches(email: string | null | undefined, role: string | null | undefined): string[] {
-  const baseBranches = ['calicut', 'cochin']
+  const baseBranches = ['calicut', 'cochin', 'kannur']
 
   if (isSuperAdmin(email, role)) {
     return [...baseBranches, 'global']
@@ -75,6 +75,7 @@ export function formatBranchName(branch: string): string {
   const branchNames: Record<string, string> = {
     calicut: 'Calicut',
     cochin: 'Cochin',
+    kannur: 'Kannur',
     global: 'Global'
   }
 
@@ -90,6 +91,7 @@ export function getBranchColor(branch: string): string {
   const branchColors: Record<string, string> = {
     calicut: 'bg-blue-500',
     cochin: 'bg-green-500',
+    kannur: 'bg-red-500',
     global: 'bg-purple-500'
   }
 
