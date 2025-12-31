@@ -263,7 +263,7 @@ function AppContent() {
       {/* Release Version Footer */}
       <div className="max-w-[1920px] mx-auto mt-8 mb-4 flex justify-center opacity-30 pointer-events-none">
         <span className={"font-['Rajdhani'] font-bold text-[10px] uppercase tracking-[0.5em] text-slate-800"}>
-          F.E.T.S | GLOBAL OPERATIONAL GRID v4.0
+          F.E.T.S | GLOBAL OPERATIONAL GRID v4.0.1 - BUILD 2026.01
         </span>
       </div>
     </div>
