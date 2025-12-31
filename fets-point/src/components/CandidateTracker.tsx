@@ -191,7 +191,7 @@ export function CandidateTracker() {
 
     createCandidateMutation.mutate(candidateData, {
       onSuccess: () => {
-        setNewCandidate({ fullName: '', address: '', phone: '', examDate: new Date().toISOString().slice(0, 10), examName: '', notes: '', clientName: '' })
+        setNewCandidate({ fullName: '', address: '', phone: '', examDate: new Date().toISOString().slice(0, 10), examName: '', notes: '', clientName: '', confirmationNumber: '' })
         setShowNewCandidateModal(false)
       }
     })
@@ -268,7 +268,9 @@ export function CandidateTracker() {
       examDate: candidate.examDate ? candidate.examDate.toISOString().slice(0, 16) : '',
       examName: candidate.examName || '',
       notes: candidate.notes || '',
-      clientName: candidate.clientName || ''
+      clientName: candidate.clientName || '',
+      status: candidate.status,
+      confirmationNumber: candidate.confirmationNumber
     })
     setShowEditCandidateModal(true)
   }
