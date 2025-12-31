@@ -38,6 +38,7 @@ interface ChecklistSubmission {
     checklist_templates: {
         title: string;
         type: string;
+        questions?: any;
     };
     submitted_by_profile: {
         full_name: string;
@@ -503,7 +504,6 @@ export const ChecklistManager: React.FC<ChecklistManagerProps> = ({ currentUser 
                             )}
                         </div>
                     )}
-
                 </div>
 
                 {/* Submission Details Modal */}
@@ -525,7 +525,7 @@ export const ChecklistManager: React.FC<ChecklistManagerProps> = ({ currentUser 
                                     onClick={() => setSelectedSubmission(null)}
                                     className={neumorphicIconBtn}
                                 >
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                                    <X size={20} />
                                 </button>
                             </div>
                             <div className="p-6 overflow-y-auto flex-1 space-y-6">
@@ -544,8 +544,8 @@ export const ChecklistManager: React.FC<ChecklistManagerProps> = ({ currentUser 
                                 {/* Questions & Answers - Mapping through template questions to preserve order and text */}
                                 <div className="space-y-4">
                                     <h3 className="font-bold text-gray-600 uppercase text-xs tracking-widest mb-2">Response Data</h3>
-                                    {selectedSubmission.checklist_templates && (selectedSubmission.checklist_templates as any).questions ? (
-                                        ((selectedSubmission.checklist_templates as any).questions as any[]).map((question: any, idx: number) => {
+                                    {selectedSubmission.checklist_templates && selectedSubmission.checklist_templates.questions ? (
+                                        (selectedSubmission.checklist_templates.questions as any[]).map((question: any, idx: number) => {
                                             const responses = selectedSubmission.answers?.responses || selectedSubmission.answers || {};
                                             const answer = responses[question.id];
                                             return (
@@ -760,4 +760,3 @@ const HistoryItem = ({ submission, index, onSelect, onDelete }: {
         </motion.div>
     );
 };
-
