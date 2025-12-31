@@ -1,88 +1,151 @@
 import { supabase } from './supabase';
 
-const GEMINI_API_KEY = import.meta.env.VITE_AI_API_KEY;
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+/**
+ * FETS Intelligence v5.0
+ * Multi-Model Neural Fallback Engine
+ * 
+ * Automatically cycles through available models to bypass 404/Quota issues.
+ */
+
+const apiKey = import.meta.env.VITE_AI_API_KEY;
+
+// Secure Audit Log
+if (apiKey) {
+    console.log("DEBUG: AI Engine Initializing with Key [Len:" + apiKey.length + ", Prefix:" + apiKey.substring(0, 4) + "]");
+}
+
+if (!apiKey || apiKey === 'undefined' || apiKey.length < 10) {
+    console.error("Gemini API Key Check Failed. Value:", apiKey);
+    throw new Error("AI API Key is missing or invalid in environment variables.");
+}
 
 export async function askGemini(userPrompt: string) {
-    // Re-check key at runtime to be safe
-    const apiKey = import.meta.env.VITE_AI_API_KEY;
+    console.log("DEBUG: Gathering context from Supabase...");
 
-    // Strict validation
-    if (!apiKey || apiKey === 'undefined' || apiKey.length < 10) {
-        console.error("Gemini API Key Check Failed. Value:", apiKey);
-        throw new Error("AI API Key is missing or invalid in environment variables.");
-    }
-
-    console.log("Calling Gemini API with Key Prefix:", apiKey.substring(0, 5) + "...");
-
-    // 1. Gather Context from Supabase
-    // We fetch a summary of relevant data to feed the AI so it can answer grounded questions.
-
-    // A. Fetch today's/tomorrow's exams
+    // We fetch a comprehensive summary of the platform state to make the AI "Omniscient"
     const today = new Date().toISOString().split('T')[0];
-    const { data: events } = await (supabase as any)
-        .from('events')
-        .select('title, category, branch, priority, status, created_at')
-        .or(`status.eq.open,created_at.gte.${today}`)
-        .limit(10);
 
-    // B. Fetch System Health
-    const { data: health } = await (supabase as any).from('system_health_metrics').select('*');
+    try {
+        const [
+            eventsRes,
+            healthRes,
+            newsRes,
+            sessionsRes,
+            incidentsRes,
+            candidatesRes,
+            staffRes,
+            noticesRes,
+            postsRes,
+            branchRes
+        ] = await Promise.all([
+            supabase.from('events').select('title, category, branch_location, priority, status').or(`status.eq.open,created_at.gte.${today}`).limit(5),
+            supabase.from('system_health_metrics').select('*'),
+            supabase.from('news').select('content, priority').eq('is_active', true).limit(3),
+            supabase.from('sessions').select('client_name, candidate_count, start_time, branch_location').eq('date', today),
+            supabase.from('incidents').select('title, status, priority, branch_location').neq('status', 'closed').limit(5),
+            supabase.from('candidates').select('*', { count: 'exact', head: true }),
+            supabase.from('staff_profiles').select('full_name, role, department, is_online'),
+            supabase.from('notices').select('title, content').limit(3),
+            supabase.from('social_posts').select('content, user_id').order('created_at', { ascending: false }).limit(3),
+            supabase.from('branch_status').select('*')
+        ]);
 
-    // C. Fetch News
-    const { data: news } = await (supabase as any).from('news').select('content, priority').limit(5);
+        const events = eventsRes.data || [];
+        const health = healthRes.data || [];
+        const news = newsRes.data || [];
+        const sessions = sessionsRes.data || [];
+        const incidents = incidentsRes.data || [];
+        const totalCandidates = candidatesRes.count || 0;
+        const staff = staffRes.data || [];
+        const onlineStaff = staff.filter((s: any) => s.is_online).length;
+        const notices = noticesRes.data || [];
+        const recentPosts = postsRes.data || [];
+        const branchStatus = branchRes.data || [];
 
-    // Construct Context String
-    const context = `
-    You are FETS Intelligence, the AI brain of the FETS.LIVE exam operations platform.
-    Current System Time: ${new Date().toLocaleString()}
-    
-    [REAL-TIME DATA CONTEXT]
-    
-    1. Active Incidents/Events:
-    ${events && events.length > 0 ? JSON.stringify(events) : "No active incidents reported."}
+        console.log("DEBUG: Context check:", {
+            events: events.length,
+            health: health.length,
+            news: news.length,
+            sessions: sessions.length,
+            incidents: incidents.length,
+            totalCandidates,
+            onlineStaff,
+            branches: branchStatus.length
+        });
 
-    2. System Health Metrics:
-    ${health ? JSON.stringify(health) : "Metrics unavailable."}
+        const context = `
+            You are FETS Intelligence (v5.0), the elite operational backbone of the FETS.LIVE grid.
+            Persona: Highly professional, analytical, concise, and futuristic.
+            Current Time: ${new Date().toLocaleString()}
 
-    3. Latest News/Broadcasts:
-    ${news ? JSON.stringify(news) : "No news."}
+            [OPERATIONAL SNAPSHOT]
+            - Total Candidates in System: ${totalCandidates}
+            - Staff Online Now: ${onlineStaff}
+            - Branches Monitored: ${branchStatus.length}
+            
+            [LIVE DATA FEED]
+            1. ACTIVE EVENTS: ${JSON.stringify(events)}
+            2. PENDING INCIDENTS: ${JSON.stringify(incidents)}
+            3. TODAY'S EXAM SESSIONS: ${JSON.stringify(sessions)}
+            4. SYSTEM HEALTH: ${JSON.stringify(health)}
+            5. ACTIVE NOTICES: ${JSON.stringify(notices)}
+            6. RECENT STAFF ACTIVITY: ${JSON.stringify(recentPosts)}
+            7. BRANCH STATUS: ${JSON.stringify(branchStatus)}
 
-    4. General Knowledge:
-    - FETS operates in Calicut, Cochin, and Trivandrum.
-    - If asked about "exam schedule", and no specific data is in the 'Active Incidents' list above, you should say "I don't have access to the full exam roster right now, but I can check the Operations Log." OR generate a *realistic* simulation based on standard patterns if the user asks for a simulation (e.g., "Usually, Morning sessions start at 9 AM").
-    - Be professional, concise, and futuristic.
-  `;
+            INSTRUCTIONS:
+            - Provide data-driven answers using the snapshot above.
+            - If data is not present, use logical operational reasoning (e.g., "Current sessions are typically scheduled for 9AM and 2PM").
+            - Maintain an authoritative yet helpful tone.
+        `;
 
-    // 2. Call Gemini API (Using Header for Auth)
-    // Note: Removed ?key= param to rely on header
-    const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent";
+        // FALLBACK ENGINE: Attempt different models if one fails
+        const models = [
+            { id: 'gemini-1.5-pro-latest', endpoint: 'v1beta' },
+            { id: 'gemini-1.5-flash-latest', endpoint: 'v1beta' },
+            { id: 'gemini-pro', endpoint: 'v1' }
+        ];
 
-    const response = await fetch(url, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "x-goog-api-key": apiKey
-        },
-        body: JSON.stringify({
-            contents: [{
-                parts: [{
-                    text: `Context: ${context}\n\nUser Query: ${userPrompt}\n\nAnswer:`
-                }]
-            }]
-        }),
-    });
+        let lastError = null;
 
-    if (!response.ok) {
-        const err = await response.text();
-        console.error("Gemini API Error Response:", err);
+        for (const model of models) {
+            try {
+                console.log(`DEBUG: Attempting AI generation with model: ${model.id} (${model.endpoint})`);
 
-        if (response.status === 401) {
-            throw new Error("Authentication Failed. Please verify VITE_AI_API_KEY is set in Coolify Build Settings (and Redeploy).");
+                const url = `https://generativelanguage.googleapis.com/${model.endpoint}/models/${model.id}:generateContent?key=${apiKey}`;
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: `Context: ${context}\n\nUser Query: ${userPrompt}\n\nStrict Output Mode: Answer concisely and accurately based on context.` }]
+                        }]
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.warn(`WARN: Model ${model.id} failed:`, errorText);
+                    continue; // Try next model
+                }
+
+                const data = await response.json();
+                const aiResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (aiResponse) {
+                    console.log(`SUCCESS: Response generated via ${model.id}`);
+                    return aiResponse;
+                }
+            } catch (err) {
+                console.warn(`WARN: Error calling ${model.id}:`, err);
+                lastError = err;
+            }
         }
-        throw new Error(`Gemini API Error: ${err}`);
-    }
 
-    const data = await response.json();
-    return data?.candidates?.[0]?.content?.parts?.[0]?.text || "I processed the data but couldn't generate a clear response.";
+        throw new Error("All AI models failed or returned empty responses. Last error: " + (lastError?.message || "Unknown"));
+
+    } catch (error: any) {
+        console.error("CRITICAL: FETS Intelligence Neural Failure:", error);
+        throw error;
+    }
 }

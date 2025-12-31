@@ -37,9 +37,83 @@ interface ChatMessage {
 // ... (Rest of interfaces can stay or be omitted if not replacing)
 
 // --- Live Tile Component (Darker Neumorphism) ---
-// (Keep LiveTile and ExpandedPanel as is, assumed unchanged in this block)
+const LiveTile = ({ id, title, icon: Icon, color = "indigo", children, onExpand, colSpan = 1 }: TileProps) => {
+  return (
+    <motion.div
+      layoutId={`tile-container-${id}`}
+      className={`relative group overflow-hidden flex flex-col justify-between cursor-pointer 
+                 bg-[#E6E8EC] rounded-[2.5rem] p-8
+                 shadow-[12px_12px_24px_rgba(163,177,198,0.6),-12px_-12px_24px_rgba(255,255,255,0.8)]
+                 hover:shadow-[18px_18px_36px_rgba(163,177,198,0.7),-18px_-18px_36px_rgba(255,255,255,0.9)]
+                 transition-all duration-500 border border-white/40
+                 ${colSpan === 2 ? 'md:col-span-2' : ''}`}
+      onClick={onExpand}
+      whileHover={{ y: -8 }}
+    >
+      <div className="relative z-10 flex flex-col h-full">
+        <div className="flex items-start justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <div className={`p-4 rounded-2xl bg-${color}-500/10 text-${color}-600 shadow-[4px_4px_8px_rgba(163,177,198,0.4),-4px_-4px_8px_rgba(255,255,255,0.8)]`}>
+              <Icon size={28} />
+            </div>
+            <h3 className="text-xl font-black text-slate-800 tracking-tight uppercase">{title}</h3>
+          </div>
+          <div className="p-2 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Maximize2 size={20} />
+          </div>
+        </div>
+        <div className="flex-1">
+          {children}
+        </div>
+      </div>
 
-// ...
+      {/* Decorative Gradient Line */}
+      <div className={`absolute bottom-0 left-0 h-2 w-0 group-hover:w-full bg-gradient-to-r from-${color}-400 to-${color}-600 transition-all duration-700`} />
+    </motion.div>
+  )
+}
+
+// --- Expanded Panel Component ---
+const ExpandedPanel = ({ id, title, children, onClose }: { id: string, title: string, children: React.ReactNode, onClose: () => void }) => {
+  return (
+    <motion.div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-12 bg-slate-900/40 backdrop-blur-xl"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <motion.div
+        layoutId={`tile-container-${id}`}
+        className="w-full max-w-6xl h-full max-h-[90vh] bg-[#E6E8EC] rounded-[3rem] 
+                   shadow-[30px_30px_60px_rgba(0,0,0,0.1),-10px_-10px_30px_rgba(255,255,255,0.8)] 
+                   overflow-hidden flex flex-col border border-white/60"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-8 md:p-10 flex items-center justify-between border-b border-white/40">
+          <div>
+            <h2 className="text-4xl font-black text-slate-800 tracking-tighter uppercase">{title}</h2>
+            <p className="text-slate-500 font-bold text-xs uppercase tracking-[0.3em] mt-2 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Intelligence Node Active
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-4 rounded-2xl bg-[#E6E8EC] shadow-[4px_4px_8px_rgba(163,177,198,0.4),-4px_-4px_8px_rgba(255,255,255,0.8)]
+                       hover:shadow-[inset_4px_4px_8px_rgba(163,177,198,0.4),inset_-4px_-4px_8px_rgba(255,255,255,0.8)]
+                       text-slate-500 transition-all active:scale-95"
+          >
+            <X size={28} />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-8 md:p-10 custom-scrollbar">
+          {children}
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
 
 // --- MAIN COMPONENT ---
 
@@ -279,8 +353,6 @@ export function FetsIntelligence() {
       <AnimatePresence>
 
         {/* AI Core Modal */}
-        {activeTile === 'ai-core' && (
-          {/* AI Core Modal */ }
         {activeTile === 'ai-core' && (
           <ExpandedPanel id="ai-core" title="Operational Intelligence" onClose={() => setActiveTile(null)}>
             <div className="flex flex-col h-full gap-6">

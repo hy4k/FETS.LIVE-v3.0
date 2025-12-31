@@ -16,7 +16,6 @@ import { PageLoadingFallback } from './components/LoadingFallback';
 import { Login } from './components/Login';
 import { Header } from './components/Header';
 
-import { Sidebar } from './components/Sidebar';
 import { supabase } from './lib/supabase';
 import { useIsMobile, useScreenSize } from './hooks/use-mobile';
 
@@ -260,6 +259,13 @@ function AppContent() {
 
       <ConnectionStatus />
       {process.env.NODE_ENV === 'development' && <DatabaseSetup />}
+
+      {/* Release Version Footer */}
+      <div className="max-w-[1920px] mx-auto mt-8 mb-4 flex justify-center opacity-30 pointer-events-none">
+        <span className={"font-['Rajdhani'] font-bold text-[10px] uppercase tracking-[0.5em] text-slate-800"}>
+          F.E.T.S | GLOBAL OPERATIONAL GRID v4.0
+        </span>
+      </div>
     </div>
   )
 }
