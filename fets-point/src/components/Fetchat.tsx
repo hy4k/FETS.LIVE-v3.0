@@ -153,39 +153,11 @@ export const Fetchat: React.FC<FetchatProps> = ({ isDetached = false, onToggleDe
         updateChannelStatus()
     }, [userActivity, profile?.full_name, user?.id])
 
-    // Fetch unread counts
+    // Fetch unread counts - simplified since read_at doesn't exist
+    // For now, we'll skip unread tracking until we add the column
     useEffect(() => {
-        if (!user?.id || !staff.length) return
-
-        const fetchUnreads = async () => {
-            // For each staff member, check for unread messages in their conversation
-            const counts: Record<string, number> = {}
-
-            for (const s of staff) {
-                try {
-                    const { data: convId } = await supabase.rpc('get_or_create_conversation', {
-                        user_id_1: profile.id,
-                        user_id_2: s.id
-                    })
-
-                    if (convId) {
-                        const { count } = await supabase
-                            .from('messages')
-                            .select('*', { count: 'exact', head: true })
-                            .eq('conversation_id', convId)
-                            .neq('sender_id', profile.id)
-                            .is('read_at', null)
-
-                        counts[s.id] = count || 0
-                    }
-                } catch (e) {
-                    console.error('Error fetching unreads for', s.full_name, e)
-                }
-            }
-            setUnreadCounts(counts)
-        }
-
-        fetchUnreads()
+        // Unread tracking disabled - messages table doesn't have read_at column
+        // This can be re-enabled after adding read tracking to the database
     }, [staff, user?.id, profile?.id])
 
     // Load messages when selecting a user
@@ -272,10 +244,15 @@ export const Fetchat: React.FC<FetchatProps> = ({ isDetached = false, onToggleDe
         setNewMessage('')
 
         try {
-            const { data: convId } = await supabase.rpc('get_or_create_conversation', {
+            const { data: convId, error: convError } = await supabase.rpc('get_or_create_conversation', {
                 user_id_1: profile.id,
                 user_id_2: selectedUser.id
             })
+
+            if (convError) {
+                console.error('Conversation error:', convError)
+                throw convError
+            }
 
             const { error } = await supabase.from('messages').insert([{
                 conversation_id: convId,
@@ -290,6 +267,7 @@ export const Fetchat: React.FC<FetchatProps> = ({ isDetached = false, onToggleDe
             console.error(err)
         }
     }
+
 
     const getStatusColor = (userId: string) => {
         const userPresence = presence[userId]
