@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import { X, Save, Clock, User, Calendar } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { ChecklistTemplate, ChecklistSubmission } from '../../types/checklist';
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { X, Save, ClipboardCheck, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChecklistTemplate } from '../../types/checklist';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 
@@ -14,37 +14,21 @@ interface ChecklistFormModalProps {
 }
 
 export const ChecklistFormModal: React.FC<ChecklistFormModalProps> = ({ template, onClose, onSuccess, currentUser }) => {
-    const { register, handleSubmit, formState: { errors }, watch, trigger } = useForm();
+    const { register, handleSubmit, formState: { errors }, watch } = useForm();
     const [submitting, setSubmitting] = useState(false);
-    const [currentStep, setCurrentStep] = useState(0);
 
-    const questions = template.questions;
-    const totalSteps = questions.length;
-    const progress = ((currentStep + 1) / totalSteps) * 100;
+    const questions = template.questions || [];
 
-    const neumorphicClass = "bg-[#e0e5ec] shadow-[9px_9px_16px_rgb(163,177,198,0.6),-9px_-9px_16px_rgba(255,255,255,0.5)] rounded-3xl border border-white/20";
-    const neumorphicInset = "bg-[#e0e5ec] shadow-[inset_6px_6px_10px_0_rgba(163,177,198,0.7),inset_-6px_-6px_10px_0_rgba(255,255,255,0.8)] rounded-2xl border-none";
-    const neumorphicBtn = "px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all active:scale-95 active:shadow-[inset_4px_4px_8px_#bec3c9,inset_-4px_-4px_8px_#ffffff] shadow-[6px_6px_10px_#bec3c9,-6px_-6px_10px_#ffffff] bg-[#e0e5ec] text-gray-700 hover:text-blue-600";
-    const primaryBtn = "px-8 py-5 rounded-2xl font-black uppercase tracking-widest text-sm transition-all active:scale-95 shadow-[8px_8px_16px_rgba(37,99,235,0.2)] bg-blue-600 text-white hover:bg-blue-700";
-
-    const nextStep = async () => {
-        const currentQuestionId = questions[currentStep].id;
-        const isValid = await trigger(currentQuestionId);
-        if (isValid && currentStep < totalSteps - 1) {
-            setCurrentStep(prev => prev + 1);
-        }
-    };
-
-    const prevStep = () => {
-        if (currentStep > 0) {
-            setCurrentStep(prev => prev - 1);
-        }
-    };
+    // Modern Professional Styles
+    const cardStyle = "bg-white/80 backdrop-blur-md border border-slate-200 shadow-sm rounded-2xl overflow-hidden";
+    const inputStyle = "w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-slate-700 font-medium";
+    const labelStyle = "text-sm font-semibold text-slate-700 flex items-center gap-2";
+    const questionContainer = "p-6 border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors";
 
     const onSubmit = async (data: any) => {
         setSubmitting(true);
         try {
-            const submission: Partial<ChecklistSubmission> = {
+            const submission = {
                 template_id: template.id,
                 submitted_by: currentUser.user_id || currentUser.id,
                 branch_id: currentUser.branch_assigned || currentUser.branch_id || null,
@@ -59,184 +43,201 @@ export const ChecklistFormModal: React.FC<ChecklistFormModalProps> = ({ template
 
             if (error) throw error;
 
-            toast.success('Checklist submitted successfully!');
+            toast.success('Protocol execution recorded.');
             if (onSuccess) onSuccess();
             onClose();
-        } catch (error) {
-            console.error('Error submitting checklist:', error);
-            toast.error('Failed to submit checklist');
+        } catch (error: any) {
+            console.error('Submission error:', error);
+            toast.error(error.message || 'Failed to record protocol.');
         } finally {
             setSubmitting(false);
         }
     };
 
     return (
-        <div className="fixed inset-0 z-[110] flex flex-col bg-[#e0e5ec] md:bg-black/40 md:backdrop-blur-sm md:items-center md:justify-center p-0 md:p-4 overflow-hidden">
-            <div className={`w-full md:max-w-2xl h-full md:h-auto md:max-h-[90vh] flex flex-col ${neumorphicClass} bg-[#e0e5ec] relative animate-in slide-in-from-bottom duration-500`}>
-
-                {/* Progress Header */}
-                <div className="p-6 md:p-8 border-b border-white/20">
-                    <div className="flex justify-between items-center mb-6">
-                        <div className="flex-1">
-                            <h2 className="text-xl md:text-2xl font-black text-gray-800 uppercase tracking-tight">{template.title}</h2>
-                            <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-1">Operational Protocol · Step {currentStep + 1} of {totalSteps}</p>
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                className="w-full max-w-3xl max-h-[90vh] flex flex-col bg-slate-50 rounded-[2rem] shadow-2xl overflow-hidden border border-white"
+            >
+                {/* Fixed Header */}
+                <div className="p-8 bg-white border-b border-slate-200 flex items-start justify-between">
+                    <div className="flex gap-5">
+                        <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">
+                            <ClipboardCheck size={28} />
                         </div>
-                        <button onClick={onClose} className="p-4 bg-[#e0e5ec] shadow-[4px_4px_8px_#bec3c9,-4px_-4px_8px_#ffffff] rounded-2xl text-red-500 active:shadow-inner ml-4">
-                            <X size={24} />
-                        </button>
+                        <div>
+                            <h2 className="text-2xl font-bold text-slate-800 tracking-tight">{template.title}</h2>
+                            <p className="text-slate-500 text-sm mt-1 font-medium">{template.description || "System Verification Protocol"}</p>
+                        </div>
                     </div>
-
-                    <div className="h-4 w-full bg-[#e0e5ec] shadow-[inset_2px_2px_4px_#bec3c9,inset_-2px_-2px_4px_#ffffff] rounded-full overflow-hidden p-1">
-                        <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${progress}%` }}
-                            className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full shadow-lg"
-                        />
-                    </div>
+                    <button
+                        onClick={onClose}
+                        className="p-3 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all active:scale-95"
+                    >
+                        <X size={20} />
+                    </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-6 py-8 md:px-10 space-y-8">
-                    {/* Current Question Block */}
-                    <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                        {questions.map((q, idx) => (
-                            idx === currentStep && (
-                                <div key={q.id} className="space-y-8">
-                                    <div className="space-y-4 text-center md:text-left">
-                                        <span className="inline-block px-4 py-2 bg-white/50 rounded-full text-[10px] font-black tracking-[0.2em] text-gray-400 uppercase">Requirement Assessment</span>
-                                        <h3 className="text-2xl md:text-3xl font-black text-gray-800 leading-tight">
-                                            {q.text} {q.required && <span className="text-red-500">*</span>}
-                                        </h3>
-                                        {q.description && <p className="text-gray-500 text-sm font-medium leading-relaxed">{q.description}</p>}
-                                    </div>
-
-                                    <div className="py-2">
-                                        {q.type === 'text' && (
-                                            <textarea
-                                                {...register(q.id, { required: q.required })}
-                                                rows={4}
-                                                className={`w-full p-6 ${neumorphicInset} outline-none bg-transparent text-lg font-bold text-gray-700 placeholder:opacity-30`}
-                                                placeholder="Please provide a detailed response..."
-                                            />
-                                        )}
-
-                                        {q.type === 'number' && (
-                                            <input
-                                                type="number"
-                                                {...register(q.id, { required: q.required })}
-                                                className={`w-full p-6 ${neumorphicInset} outline-none bg-transparent text-3xl font-black text-center text-blue-600`}
-                                                placeholder="0.0"
-                                            />
-                                        )}
-
-                                        {q.type === 'checkbox' && (
-                                            <label className={`flex flex-col items-center justify-center p-12 transition-all cursor-pointer ${neumorphicClass} active:shadow-inner group`}>
-                                                <input
-                                                    type="checkbox"
-                                                    {...register(q.id, { required: q.required })}
-                                                    className="hidden peer"
-                                                />
-                                                <div className="w-24 h-24 mb-6 rounded-3xl bg-[#e0e5ec] shadow-[inset_4px_4px_8px_#bec3c9,inset_-4px_-4px_8px_#ffffff] flex items-center justify-center peer-checked:shadow-[4px_4px_8px_#bec3c9,-4px_-4px_8px_#ffffff] transition-all">
-                                                    <div className="w-12 h-12 rounded-xl bg-gray-200 peer-checked:bg-green-500 transition-all flex items-center justify-center">
-                                                        <Save className="text-white opacity-0 peer-checked:opacity-100 w-8 h-8" />
-                                                    </div>
-                                                </div>
-                                                <span className="text-xl font-black text-gray-800 uppercase tracking-widest">Verify & Confirm</span>
-                                                <span className="text-sm font-bold text-gray-400 mt-2">Tap to acknowledge completion</span>
-                                            </label>
-                                        )}
-
-                                        {(q.type === 'dropdown') && (
-                                            <select
-                                                {...register(q.id, { required: q.required })}
-                                                className={`w-full p-6 ${neumorphicInset} outline-none bg-transparent text-lg font-bold text-gray-700 appearance-none`}
-                                            >
-                                                <option value="">Choose standard response...</option>
-                                                {q.options?.map((opt, i) => (
-                                                    <option key={i} value={opt}>{opt}</option>
-                                                ))}
-                                            </select>
-                                        )}
-
-                                        {q.type === 'radio' && (
-                                            <div className="grid grid-cols-1 gap-4">
-                                                {q.options?.map((opt, i) => (
-                                                    <label key={i} className={`flex items-center p-6 cursor-pointer rounded-2xl transition-all ${watch(q.id) === opt ? 'bg-blue-600 text-white shadow-lg' : 'bg-[#e0e5ec] shadow-[4px_4px_8px_#bec3c9,-4px_-4px_8px_#ffffff] text-gray-700'}`}>
-                                                        <input
-                                                            type="radio"
-                                                            value={opt}
-                                                            {...register(q.id, { required: q.required })}
-                                                            className="hidden"
-                                                        />
-                                                        <span className="text-lg font-bold">{opt}</span>
-                                                    </label>
-                                                ))}
+                {/* Scrollable Form Content */}
+                <div className="flex-1 overflow-y-auto p-2 scrollbar-hide">
+                    <form id="checklist-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4 p-4">
+                        <div className={cardStyle}>
+                            {questions.map((q, idx) => (
+                                <div key={q.id || idx} className={questionContainer}>
+                                    <div className="flex gap-4">
+                                        <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 text-xs font-bold border border-slate-200">
+                                            {(idx + 1).toString().padStart(2, '0')}
+                                        </div>
+                                        <div className="flex-1 space-y-4">
+                                            <div>
+                                                <h3 className="text-base font-semibold text-slate-800 leading-snug">
+                                                    {q.text} {q.required && <span className="text-rose-500 ml-1 font-bold">*</span>}
+                                                </h3>
+                                                {q.description && (
+                                                    <p className="text-xs text-slate-500 mt-1.5 font-medium leading-relaxed italic">{q.description}</p>
+                                                )}
                                             </div>
-                                        )}
 
-                                        {q.type === 'date' && (
-                                            <input
-                                                type="date"
-                                                {...register(q.id, { required: q.required })}
-                                                className={`w-full p-6 ${neumorphicInset} outline-none bg-transparent text-lg font-bold`}
-                                            />
-                                        )}
+                                            {/* Input Controls */}
+                                            <div className="mt-4">
+                                                {q.type === 'text' && (
+                                                    <input
+                                                        type="text"
+                                                        {...register(q.id, { required: q.required })}
+                                                        className={inputStyle}
+                                                        placeholder="Enter your response..."
+                                                    />
+                                                )}
 
-                                        {errors[q.id] && (
-                                            <motion.span
-                                                initial={{ opacity: 0, y: -10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                className="text-red-500 text-xs font-black uppercase tracking-widest mt-4 block text-center"
-                                            >
-                                                Verification required before proceeding
-                                            </motion.span>
-                                        )}
+                                                {q.type === 'textarea' && (
+                                                    <textarea
+                                                        {...register(q.id, { required: q.required })}
+                                                        rows={3}
+                                                        className={inputStyle}
+                                                        placeholder="Provide detailed information..."
+                                                    />
+                                                )}
+
+                                                {q.type === 'number' && (
+                                                    <div className="max-w-[200px]">
+                                                        <input
+                                                            type="number"
+                                                            step="any"
+                                                            {...register(q.id, { required: q.required })}
+                                                            className={inputStyle}
+                                                            placeholder="0.00"
+                                                        />
+                                                    </div>
+                                                )}
+
+                                                {q.type === 'checkbox' && (
+                                                    <label className="flex items-center gap-3 cursor-pointer group">
+                                                        <div className="relative flex items-center">
+                                                            <input
+                                                                type="checkbox"
+                                                                {...register(q.id, { required: q.required })}
+                                                                className="w-6 h-6 rounded-lg border-2 border-slate-300 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 transition-all cursor-pointer"
+                                                            />
+                                                        </div>
+                                                        <span className="text-sm font-semibold text-slate-600 group-hover:text-slate-900 transition-colors">Confirmed and Verified</span>
+                                                    </label>
+                                                )}
+
+                                                {q.type === 'radio' && (
+                                                    <div className="flex flex-wrap gap-3">
+                                                        {q.options?.map((opt, i) => (
+                                                            <label key={i} className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl border-2 transition-all cursor-pointer ${watch(q.id) === opt ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>
+                                                                <input
+                                                                    type="radio"
+                                                                    value={opt}
+                                                                    {...register(q.id, { required: q.required })}
+                                                                    className="hidden"
+                                                                />
+                                                                {watch(q.id) === opt ? <CheckCircle2 size={16} /> : <div className="w-4 h-4 rounded-full border-2 border-slate-300" />}
+                                                                <span className="text-sm font-bold tracking-tight">{opt}</span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                {q.type === 'dropdown' && (
+                                                    <select
+                                                        {...register(q.id, { required: q.required })}
+                                                        className={inputStyle}
+                                                    >
+                                                        <option value="">Select an option...</option>
+                                                        {q.options?.map((opt, i) => (
+                                                            <option key={i} value={opt}>{opt}</option>
+                                                        ))}
+                                                    </select>
+                                                )}
+
+                                                {q.type === 'date' && (
+                                                    <input
+                                                        type="date"
+                                                        {...register(q.id, { required: q.required })}
+                                                        className={inputStyle}
+                                                    />
+                                                )}
+                                            </div>
+
+                                            <AnimatePresence>
+                                                {errors[q.id] && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, height: 0 }}
+                                                        animate={{ opacity: 1, height: 'auto' }}
+                                                        exit={{ opacity: 0, height: 0 }}
+                                                        className="flex items-center gap-1.5 text-rose-500 mt-2"
+                                                    >
+                                                        <AlertCircle size={14} />
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider">Required Field</span>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
                                     </div>
                                 </div>
-                            )
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    </form>
                 </div>
 
-                {/* Navigation Footer */}
-                <div className="p-8 md:p-10 bg-[#e0e5ec] border-t border-white/20 sticky bottom-0">
-                    <div className="flex gap-4">
-                        {currentStep > 0 && (
+                {/* Fixed Footer */}
+                <div className="p-8 bg-white border-t border-slate-200">
+                    <div className="flex items-center justify-between">
+                        <div className="hidden md:block">
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Operator Verification Required</p>
+                            <p className="text-slate-500 text-sm font-semibold">{currentUser.full_name || currentUser.username}</p>
+                        </div>
+                        <div className="flex gap-4 w-full md:w-auto">
                             <button
                                 type="button"
-                                onClick={prevStep}
-                                className={neumorphicBtn}
+                                onClick={onClose}
+                                className="flex-1 md:flex-none px-8 py-3.5 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-all border border-slate-200 active:scale-95"
                             >
-                                Back
+                                Cancel
                             </button>
-                        )}
-
-                        {currentStep < totalSteps - 1 ? (
                             <button
-                                type="button"
-                                onClick={nextStep}
-                                className={`${primaryBtn} flex-1 flex justify-center items-center gap-3`}
-                            >
-                                Next Step
-                                <Clock size={20} />
-                            </button>
-                        ) : (
-                            <button
-                                type="button"
-                                onClick={handleSubmit(onSubmit)}
+                                type="submit"
+                                form="checklist-form"
                                 disabled={submitting}
-                                className={`${primaryBtn} flex-1 flex justify-center items-center gap-3 bg-green-600 hover:bg-green-700 shadow-green-900/20`}
+                                className="flex-1 md:flex-none px-10 py-3.5 rounded-xl font-bold bg-indigo-600 text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                             >
-                                {submitting ? 'Authenticating...' : (
+                                {submitting ? (
+                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                ) : (
                                     <>
-                                        Finish & Execute
-                                        <Save size={20} />
+                                        <Save size={18} />
+                                        Complete Entry
                                     </>
                                 )}
                             </button>
-                        )}
+                        </div>
                     </div>
                 </div>
-            </div>
+            </motion.div>
         </div>
     );
 };

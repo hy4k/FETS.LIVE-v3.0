@@ -14,6 +14,8 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { FetsRoster } from './FetsRoster'
 import { FetsCalendar } from './FetsCalendar'
+import { DigitalNotebook } from './DigitalNotebook'
+import { BookText } from 'lucide-react'
 
 interface WallPost {
   id: string
@@ -282,6 +284,7 @@ export function MyDesk() {
         <div className="flex space-x-6 mb-6 border-b border-gray-200">
           {[
             { id: 'feed', name: 'Activity Feed', icon: User },
+            { id: 'notes', name: 'Notes', icon: BookText },
             { id: 'fets-roster', name: 'FETS Roster', icon: UserCheck },
             { id: 'fets-calendar', name: 'FETS Calendar', icon: Calendar }
           ].map((tab) => {
@@ -465,6 +468,12 @@ export function MyDesk() {
         {selectedTab === 'fets-calendar' && (
           <div>
             <FetsCalendar />
+          </div>
+        )}
+
+        {selectedTab === 'notes' && (
+          <div className="max-w-4xl mx-auto">
+            <DigitalNotebook />
           </div>
         )}
       </div>

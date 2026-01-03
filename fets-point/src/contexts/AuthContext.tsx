@@ -146,12 +146,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Super admins have all permissions by default
     if (profile.role === 'super_admin') return true;
 
-    // Check specific permissions in JSONB
-    const permissions = typeof profile.permissions === 'object' && profile.permissions !== null
-      ? (profile.permissions as Record<string, boolean>)
-      : {};
+    // These specific permissions are still restricted and must be explicitly granted
+    const restrictedPermissions = ['roster_edit', 'user_management_edit'];
 
-    return !!permissions[permission];
+    if (restrictedPermissions.includes(permission)) {
+      const permissions = typeof profile.permissions === 'object' && profile.permissions !== null
+        ? (profile.permissions as Record<string, boolean>)
+        : {};
+      return !!permissions[permission];
+    }
+
+    // All other features (calendar, news, checklists, etc.) are now open to everyone
+    // same as super_admin, as per user request.
+    return true;
   };
 
   return (

@@ -1,18 +1,28 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-    Server, Monitor, Cpu, Plus, X,
-    Activity, Shield, AlertTriangle,
-    Search, RefreshCw, MoreVertical,
+    Server, Monitor, Shield, Plus, X,
+    Activity, AlertTriangle,
+    Search, RefreshCw,
     CheckCircle2, Settings, Network,
-    Layers, Calendar, Building2, Terminal,
-    ExternalLink, Zap, Sparkles
+    Terminal,
+    Edit2, Trash2, ChevronDown, ChevronUp,
+    List, ArrowRightLeft,
+    Check, Printer, Headphones, Keyboard, MousePointer2, CalendarRange, Clock, Package
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useBranch } from '../hooks/useBranch'
 import { toast } from 'react-hot-toast'
 import { format } from 'date-fns'
+
+/*
+  COLOR PALETTE:
+  Coral/Pink: #FFB6B9
+  Parchment/Peach: #FAE3D9
+  Mint: #BBDED6
+  Teal: #61C0BF
+*/
 
 // --- Interfaces ---
 
@@ -26,18 +36,25 @@ interface Software {
 interface System {
     id: string
     branch_location: string
-    system_type: 'admin' | 'server' | 'workstation'
+    system_type: 'admin' | 'server' | 'workstation' | 'peripheral' | 'rented'
     name: string
     ip_address: string
     status: 'operational' | 'maintenance' | 'fault'
     specs: {
-        cpu?: string
-        ram?: string
-        os?: string
+        cpu: string
+        ram: string
+        os: string
+        serial_number: string
     }
+    last_os_update?: string
     installed_software: Software[]
     supported_clients: string[]
     last_checked: string
+    created_at?: string
+    it_item_type?: string
+    is_rented?: boolean
+    rent_start_date?: string
+    rent_end_date?: string
 }
 
 interface SystemLog {
@@ -51,39 +68,229 @@ interface SystemLog {
 
 // --- Sub-Components ---
 
-const NeumorphicCard = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
-    <div className={`bg-[#e0e5ec] shadow-[9px_9px_16px_rgb(163,177,198,0.6),-9px_-9px_16px_rgba(255,255,255,0.5)] rounded-3xl border border-white/20 ${className}`}>
-        {children}
-    </div>
-)
-
-const NeumorphicInset = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
-    <div className={`bg-[#e0e5ec] shadow-[inset_6px_6px_10px_0_rgba(163,177,198,0.7),inset_-6px_-6px_10px_0_rgba(255,255,255,0.8)] rounded-2xl border-none ${className}`}>
-        {children}
-    </div>
-)
-
-const SystemIcon = ({ type }: { type: string }) => {
+const SystemIcon = ({ type, itemType }: { type: string, itemType?: string }) => {
+    if (type === 'peripheral') {
+        switch (itemType?.toLowerCase()) {
+            case 'printer': return <Printer className="text-black" size={24} />
+            case 'webcam': return <Monitor className="text-black" size={24} />
+            case 'headphones': return <Headphones className="text-black" size={24} />
+            case 'e sign pad': return <Keyboard className="text-black" size={24} />
+            default: return <Package className="text-black" size={24} />
+        }
+    }
+    if (type === 'rented') return <Clock className="text-[#61C0BF]" size={24} />
     switch (type) {
-        case 'server': return <Server className="text-purple-500" />
-        case 'admin': return <Shield className="text-blue-500" />
-        default: return <Monitor className="text-indigo-500" />
+        case 'server': return <Server className="text-[#61C0BF]" size={24} strokeWidth={2.5} />
+        case 'admin': return <Shield className="text-[#FFB6B9]" size={24} strokeWidth={2.5} />
+        default: return <Monitor className="text-[#61C0BF]" size={24} strokeWidth={2.5} />
     }
 }
 
 const StatusBadge = ({ status }: { status: string }) => {
     const configs = {
-        operational: { color: 'text-green-500 bg-green-50', icon: CheckCircle2 },
-        maintenance: { color: 'text-amber-500 bg-amber-50', icon: Settings },
-        fault: { color: 'text-red-500 bg-red-50', icon: AlertTriangle }
+        operational: {
+            color: 'text-[#2D5A59] bg-[#BBDED6]/40 border-[#61C0BF]/20',
+            dot: 'bg-[#61C0BF]',
+            icon: CheckCircle2
+        },
+        maintenance: {
+            color: 'text-[#7D5A50] bg-[#FAE3D9] border-[#FFB6B9]/20',
+            dot: 'bg-[#FFB6B9]',
+            icon: Settings
+        },
+        fault: {
+            color: 'text-[#874345] bg-[#FFB6B9]/20 border-[#FFB6B9]/40',
+            dot: 'bg-[#FFB6B9] animate-pulse',
+            icon: AlertTriangle
+        }
     }
     const config = configs[status as keyof typeof configs] || configs.operational
     return (
-        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full ${config.color} border border-white/20 shadow-sm`}>
-            <config.icon size={12} strokeWidth={3} />
-            <span className="text-[10px] font-black uppercase tracking-wider">{status}</span>
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl ${config.color} border backdrop-blur-sm shadow-sm transition-all duration-300`}>
+            <div className={`w-1.5 h-1.5 rounded-full ${config.dot}`} />
+            <span className="text-[10px] font-black uppercase tracking-widest">{status}</span>
         </div>
     )
+}
+
+interface SystemGridCardProps {
+    sys: System;
+    activeBranch: string;
+    expandedCards: Record<string, boolean>;
+    toggleCard: (id: string) => void;
+    copyToClipboard: (text: string) => void;
+    handleEditSystemOpen: (sys: System) => void;
+    setShowManageModal: (sys: System | null) => void;
+    setShowTransferModal: (sys: System | null) => void;
+    setTargetBranch: (branch: string) => void;
+    handleDeleteSystem: (id: string, name: string) => void;
+}
+
+const SystemGridCard = ({
+    sys,
+    activeBranch,
+    expandedCards,
+    toggleCard,
+    copyToClipboard,
+    handleEditSystemOpen,
+    setShowManageModal,
+    setShowTransferModal,
+    setTargetBranch,
+    handleDeleteSystem
+}: SystemGridCardProps) => {
+    const isTransferredOut = sys.branch_location !== activeBranch;
+    const isExpanded = expandedCards[sys.id];
+    const isRental = sys.system_type === 'rented';
+    const isPeripheral = sys.system_type === 'peripheral';
+
+    return (
+        <div key={sys.id} className="relative transition-all h-full">
+            <motion.div
+                whileHover={isTransferredOut ? { scale: 1.02 } : { y: -5, scale: 1.02 }}
+                className={`p-6 rounded-[2rem] border-4 cursor-pointer shadow-xl flex flex-col items-center text-center gap-3 transition-all h-full ${isTransferredOut
+                    ? 'bg-slate-100/40 border-slate-200 grayscale opacity-40 hover:opacity-80'
+                    : isExpanded
+                        ? 'bg-white border-[#61C0BF] ring-8 ring-[#61C0BF]/10'
+                        : (isRental ? 'bg-[#FAE3D9] border-[#FFB6B9]' : (isPeripheral ? 'bg-white border-[#BBDED6]' : 'bg-[#FAE3D9] border-white hover:border-[#61C0BF]'))
+                    }`}
+                onClick={() => toggleCard(sys.id)}
+            >
+                <div className={`w-3.5 h-3.5 rounded-full ${sys.status === 'operational' ? 'bg-[#61C0BF]' : 'bg-[#FFB6B9]'} shadow-lg`} />
+                <div className="flex flex-col overflow-hidden w-full">
+                    <span className="text-xs font-black text-black uppercase tracking-wider truncate px-1">
+                        {isPeripheral ? (sys.it_item_type || sys.name) : sys.name}
+                    </span>
+                    <span className="text-[8px] font-black text-slate-900 uppercase tracking-tighter opacity-60">
+                        {isTransferredOut
+                            ? `AT ${sys.branch_location.toUpperCase()}`
+                            : isPeripheral
+                                ? 'IT EQUIPMENT'
+                                : (sys.ip_address || 'ONLINE')
+                        }
+                    </span>
+                </div>
+                {isTransferredOut && (
+                    <div className="mt-1 px-2 py-0.5 bg-slate-200 rounded-full text-[7px] font-black text-slate-900 uppercase">TRANSFERRED</div>
+                )}
+                {isRental && (
+                    <div className="mt-1 px-2 py-0.5 bg-[#FFB6B9] rounded-full text-[7px] font-black text-black uppercase">RENTAL</div>
+                )}
+            </motion.div>
+
+            <AnimatePresence>
+                {isExpanded && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.9, x: '-50%' }}
+                        animate={{ opacity: 1, y: 20, scale: 1, x: '-50%' }}
+                        exit={{ opacity: 0, y: 10, scale: 0.9, x: '-50%' }}
+                        className="absolute top-full left-1/2 z-[50] w-[340px] bg-white rounded-[2.5rem] p-8 shadow-[0_30px_60px_-15px_rgba(45,88,86,0.25)] border-2 border-[#61C0BF]/20 backdrop-blur-xl"
+                    >
+                        <div className="flex flex-col gap-6">
+                            <div className="flex justify-between items-center pb-5 border-b-2 border-[#FAE3D9]">
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-black text-black uppercase tracking-widest leading-tight">
+                                        {isTransferredOut
+                                            ? `LOCATED AT ${sys.branch_location.toUpperCase()}`
+                                            : (isPeripheral ? (sys.it_item_type || 'IT ITEM') : sys.ip_address || 'OPERATIONAL SYSTEM')
+                                        }
+                                    </span>
+                                    <span className="text-[8px] font-bold text-slate-900 uppercase mt-0.5">
+                                        {isTransferredOut ? 'REMOTE LINK ACTIVE' : `Sync: ${format(new Date(sys.last_checked || Date.now()), 'HH:mm | dd MMM')}`}
+                                    </span>
+                                </div>
+                                <StatusBadge status={sys.status} />
+                            </div>
+
+                            {isRental && (
+                                <div className="flex items-center gap-3 p-4 bg-[#FFB6B9]/10 border-2 border-[#FFB6B9]/20 rounded-2xl">
+                                    <CalendarRange size={20} className="text-[#FFB6B9]" />
+                                    <div className="flex flex-col">
+                                        <span className="text-[8px] font-black text-black uppercase">Active Rental Period</span>
+                                        <span className="text-[10px] font-bold text-black">
+                                            {sys.rent_start_date ? format(new Date(sys.rent_start_date), 'dd MMM yy') : 'Start'} - {sys.rent_end_date ? format(new Date(sys.rent_end_date), 'dd MMM yy') : 'End'}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {isPeripheral ? (
+                                <div className="p-4 bg-white rounded-3xl border-2 border-[#BBDED6] shadow-md flex justify-between items-center">
+                                    <div className="flex flex-col">
+                                        <span className="block text-[8px] font-black text-black uppercase mb-1">Equipment Category</span>
+                                        <span className="text-[10px] font-bold text-black uppercase">{sys.it_item_type || 'IT ITEM'}</span>
+                                    </div>
+                                    <div className="p-2 bg-[#BBDED6]/20 rounded-xl">
+                                        <SystemIcon type="peripheral" itemType={sys.it_item_type} />
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="p-3 bg-[#FAE3D9]/40 rounded-2xl border border-white">
+                                        <span className="block text-[8px] font-black text-black uppercase mb-1">Processor</span>
+                                        <span className="text-[10px] font-bold text-black truncate block">{sys.specs.cpu || 'N/A'}</span>
+                                    </div>
+                                    <div className="p-3 bg-[#FAE3D9]/40 rounded-2xl border border-white">
+                                        <span className="block text-[8px] font-black text-black uppercase mb-1">Memory</span>
+                                        <span className="text-[10px] font-bold text-black">{sys.specs.ram || 'N/A'}</span>
+                                    </div>
+                                    <div className="p-3 bg-[#FAE3D9]/40 rounded-2xl border border-white">
+                                        <span className="block text-[8px] font-black text-black uppercase mb-1">OS Environment</span>
+                                        <span className="text-[10px] font-bold text-black truncate block">{sys.specs.os || 'Windows 11'}</span>
+                                    </div>
+                                    <div className="p-3 bg-[#FAE3D9]/40 rounded-2xl border border-white">
+                                        <span className="block text-[8px] font-black text-black uppercase mb-1">Last Update</span>
+                                        <span className="text-[10px] font-bold text-black">{sys.last_os_update ? format(new Date(sys.last_os_update), 'dd MMM yy') : 'STABLE'}</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="p-3 bg-[#FAE3D9]/40 rounded-2xl border border-white">
+                                <span className="block text-[8px] font-black text-black uppercase mb-1">System Serial</span>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] font-mono text-black font-bold tracking-wider">{sys.specs.serial_number || 'NO_SERIAL_LOGGED'}</span>
+                                    <button onClick={(e) => { e.stopPropagation(); copyToClipboard(sys.specs.serial_number) }} className="text-[#61C0BF] hover:scale-125 transition-transform"><List size={12} /></button>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-[#61C0BF]" />
+                                    <span className="text-[9px] font-black text-black uppercase tracking-widest">Support Links</span>
+                                </div>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {(sys.supported_clients || []).length > 0 ? (
+                                        sys.supported_clients.map((c: string) => (
+                                            <span key={c} className="px-2 py-1 bg-[#BBDED6]/20 border border-[#BBDED6] rounded-lg text-[8px] font-black text-black uppercase tracking-tighter">{c}</span>
+                                        ))
+                                    ) : (
+                                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">No Clients Connected</span>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-[#FAE3D9]">
+                                <button onClick={(e) => { e.stopPropagation(); handleEditSystemOpen(sys); }} className="p-3 bg-[#FAE3D9] text-black rounded-xl hover:bg-[#61C0BF] hover:text-white transition-all flex items-center justify-center gap-2 group/btn border border-white/50 shadow-sm">
+                                    <Edit2 size={14} strokeWidth={3} className="group-hover/btn:rotate-12 transition-transform" />
+                                    <span className="text-[9px] font-black uppercase">Edit</span>
+                                </button>
+                                <button onClick={(e) => { e.stopPropagation(); setShowManageModal(sys); }} className="p-3 bg-[#FAE3D9] text-black rounded-xl hover:bg-[#61C0BF] hover:text-white transition-all flex items-center justify-center gap-2 group/btn border border-white/50 shadow-sm">
+                                    <Settings size={14} strokeWidth={3} className="group-hover/btn:rotate-90 transition-transform duration-500" />
+                                    <span className="text-[9px] font-black uppercase">Manage</span>
+                                </button>
+                                <button onClick={(e) => { e.stopPropagation(); setShowTransferModal(sys); setTargetBranch(sys.branch_location); }} className="p-3 bg-[#BBDED6] text-black rounded-xl hover:bg-[#61C0BF] hover:text-white transition-all flex items-center justify-center gap-2 col-span-2 shadow-sm border border-white/50">
+                                    <ArrowRightLeft size={14} strokeWidth={3} />
+                                    <span className="text-[9px] font-black uppercase">Transfer Branch</span>
+                                </button>
+                            </div>
+                            <button onClick={() => handleDeleteSystem(sys.id, sys.name)} className="w-full py-2 hover:bg-[#FFB6B9]/10 text-red-600 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all">
+                                Delete System From Registry
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
 }
 
 // --- Main Page Component ---
@@ -97,24 +304,60 @@ const SystemManager = () => {
     const [searchTerm, setSearchTerm] = useState('')
     const [showAddModal, setShowAddModal] = useState(false)
     const [showManageModal, setShowManageModal] = useState<System | null>(null)
+    const [showTransferModal, setShowTransferModal] = useState<System | null>(null)
+    const [targetBranch, setTargetBranch] = useState<string>('')
     const [filterType, setFilterType] = useState('all')
 
     // System States
     const [newSystem, setNewSystem] = useState({
+        id: undefined,
         name: '',
-        type: 'workstation',
+        type: 'workstation' as 'workstation' | 'server' | 'admin' | 'peripheral' | 'rented',
         ip: '',
-        specs: { cpu: '', ram: '', os: 'Windows 11' },
+        specs: { cpu: '', ram: '', os: 'Windows 11', serial_number: '' },
+        last_os_update: null as string | null,
         installed_software: [] as Software[],
-        supported_clients: [] as string[]
+        supported_clients: [] as string[],
+        it_item_type: '',
+        rent_start_date: '',
+        rent_end_date: ''
     })
 
+    const [selectedClientForSW, setSelectedClientForSW] = useState<string>('')
     const [softEntry, setSoftEntry] = useState<Software>({ name: '', install_date: '', client: '' })
     const [incidentDescription, setIncidentDescription] = useState('')
     const [systemLogs, setSystemLogs] = useState<SystemLog[]>([])
-    const [activeManageTab, setActiveManageTab] = useState<'inventory' | 'network' | 'history'>('inventory')
+    const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({})
 
     const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin'
+    const branches = ['calicut', 'cochin', 'kannur'];
+
+    const getBranchPrefix = (branch: string) => {
+        switch (branch.toLowerCase()) {
+            case 'cochin': return 'FCN-WS-';
+            case 'calicut': return 'FCL-WS-';
+            case 'kannur': return 'FKN-WS-';
+            default: return 'SYS-WS-';
+        }
+    }
+
+    const getTypePrefix = (branch: string, type: string) => {
+        const base = getBranchBasePrefix(branch);
+        switch (type) {
+            case 'server': return `${base}SRV-`;
+            case 'admin': return `${base}ADM-`;
+            default: return `${base}WS-`;
+        }
+    }
+
+    const getBranchBasePrefix = (branch: string) => {
+        switch (branch.toLowerCase()) {
+            case 'cochin': return 'FCN-';
+            case 'calicut': return 'FCL-';
+            case 'kannur': return 'FKN-';
+            default: return 'SYS-';
+        }
+    }
 
     useEffect(() => {
         fetchSystems()
@@ -124,7 +367,6 @@ const SystemManager = () => {
     useEffect(() => {
         if (showManageModal) {
             fetchSystemLogs(showManageModal.id)
-            setActiveManageTab('inventory')
         }
     }, [showManageModal])
 
@@ -133,11 +375,10 @@ const SystemManager = () => {
         const { data, error } = await supabase
             .from('systems')
             .select('*')
-            .eq('branch_location', activeBranch)
             .order('name', { ascending: true })
 
         if (error) {
-            toast.error('Failed to load infrastructure data')
+            toast.error('Failed to load system data')
         } else {
             setSystems(data || [])
         }
@@ -154,7 +395,7 @@ const SystemManager = () => {
     }
 
     const fetchClients = async () => {
-        const { data } = await supabase.from('clients').select('name').order('name')
+        const { data } = await supabase.from('clients').select('id, name, softwares').order('name')
         if (data) setClients(data)
     }
 
@@ -169,37 +410,74 @@ const SystemManager = () => {
 
     const handleCreateSystem = async (e: React.FormEvent) => {
         e.preventDefault()
+
+        // Duplicate Check
+        const isDuplicate = systems.some(s =>
+            s.name.toLowerCase() === newSystem.name.toLowerCase() &&
+            s.id !== (newSystem as any).id
+        );
+
+        if (isDuplicate) {
+            toast.error(`System ${newSystem.name} already exists in the records.`);
+            return;
+        }
+
         setLoading(true)
-        const { data, error } = await supabase.from('systems').insert([{
+
+        const payload = {
             branch_location: activeBranch,
             system_type: newSystem.type,
             name: newSystem.name,
             ip_address: newSystem.ip,
             specs: newSystem.specs,
+            last_os_update: newSystem.last_os_update || null,
             installed_software: newSystem.installed_software,
             supported_clients: newSystem.supported_clients,
-            status: 'operational'
-        }]).select()
+            status: 'operational',
+            it_item_type: newSystem.it_item_type || null,
+            rent_start_date: newSystem.rent_start_date || null,
+            rent_end_date: newSystem.rent_end_date || null,
+            is_rented: newSystem.type === 'rented'
+        }
+
+        let error;
+        if ((newSystem as any).id) {
+            const { error: updateErr } = await supabase
+                .from('systems')
+                .update(payload)
+                .eq('id', (newSystem as any).id)
+            error = updateErr
+        } else {
+            const { error: insertErr, data } = await supabase
+                .from('systems')
+                .insert([payload])
+                .select()
+            error = insertErr
+            if (!error && data?.[0]) {
+                await logSystemAction(data[0].id, 'creation', `System registered at ${activeBranch}`)
+            }
+        }
 
         if (error) {
             toast.error(error.message)
         } else {
-            toast.success('System Registered')
-            if (data?.[0]) {
-                await logSystemAction(data[0].id, 'creation', `System registered at ${activeBranch}`)
-            }
+            toast.success((newSystem as any).id ? 'System Updated' : 'System Registered')
             setShowAddModal(false)
             setNewSystem({
+                id: undefined,
                 name: '',
-                type: 'workstation',
+                type: 'workstation' as any,
                 ip: '',
-                specs: { cpu: '', ram: '', os: 'Windows 11' },
+                specs: { cpu: '', ram: '', os: 'Windows 11', serial_number: '' },
+                last_os_update: null,
                 installed_software: [],
-                supported_clients: []
+                supported_clients: [],
+                it_item_type: '',
+                rent_start_date: '',
+                rent_end_date: ''
             })
             fetchSystems()
         }
-        setLoading(true) // Actually setLoading(false) but wait, I should fetch first.
         setLoading(false)
     }
 
@@ -239,21 +517,62 @@ const SystemManager = () => {
         }
     }
 
-    const handleMoveSystem = async (systemId: string, newBranch: string) => {
-        if (newBranch === activeBranch) return
+    const handleDeleteSystem = async (systemId: string, name: string) => {
+        if (!window.confirm(`Are you sure you want to permanently delete system ${name}?`)) return
 
+        setLoading(true)
         const { error } = await supabase
             .from('systems')
-            .update({ branch_location: newBranch })
+            .delete()
             .eq('id', systemId)
 
         if (error) {
-            toast.error('Movement failed')
+            toast.error(`Delete failed: ${error.message}`)
         } else {
-            await logSystemAction(systemId, 'movement', `System moved from ${activeBranch} to ${newBranch}`)
-            toast.success(`Re-assigned to ${newBranch}`)
-            setShowManageModal(null)
+            toast.success(`System ${name} removed from registry`)
             fetchSystems()
+        }
+        setLoading(false)
+    }
+
+    const handleEditSystemOpen = (sys: System) => {
+        setNewSystem({
+            id: sys.id as any,
+            name: sys.name,
+            type: sys.system_type,
+            ip: sys.ip_address,
+            specs: (sys.specs as any) || { cpu: '', ram: '', os: 'Windows 11', serial_number: '' },
+            last_os_update: sys.last_os_update || null,
+            installed_software: sys.installed_software || [],
+            supported_clients: sys.supported_clients || [],
+            it_item_type: sys.it_item_type || '',
+            rent_start_date: sys.rent_start_date || '',
+            rent_end_date: sys.rent_end_date || ''
+        })
+        setShowAddModal(true)
+    }
+
+    const executeTransfer = async () => {
+        if (!showTransferModal || !targetBranch) return;
+
+        if (!window.confirm(`Are you absolutely sure you want to transfer ${showTransferModal.name} to ${targetBranch.toUpperCase()}?`)) return;
+
+        try {
+            setLoading(true)
+            const { error } = await supabase
+                .from('systems')
+                .update({ branch_location: targetBranch })
+                .eq('id', showTransferModal.id)
+
+            if (error) throw error
+            toast.success(`System transferred to ${targetBranch.toUpperCase()}`)
+            await logSystemAction(showTransferModal.id, 'location_transfer', `Transferred from ${showTransferModal.branch_location} to ${targetBranch}`)
+            setShowTransferModal(null)
+            fetchSystems()
+        } catch (error) {
+            toast.error('Transfer failed')
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -287,29 +606,18 @@ const SystemManager = () => {
         }
     }
 
-    const filteredSystems = systems.filter(sys =>
-        (filterType === 'all' || sys.system_type === filterType) &&
-        (sys.name.toLowerCase().includes(searchTerm.toLowerCase()) || sys.ip_address?.includes(searchTerm))
-    )
+    const generateSerial = () => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let result = 'FETS-';
+        for (let i = 0; i < 4; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+        result += '-';
+        for (let i = 0; i < 4; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+        setNewSystem(prev => ({ ...prev, specs: { ...prev.specs, serial_number: result } }))
+    }
 
-    const addSoftwareToDraft = (isNew: boolean, system?: System) => {
-        if (!softEntry.name || !softEntry.client) return toast.error('Name and Client required')
-
-        if (isNew) {
-            setNewSystem({
-                ...newSystem,
-                installed_software: [...newSystem.installed_software, softEntry]
-            })
-        } else if (system) {
-            const updated = {
-                ...system,
-                installed_software: [...system.installed_software, softEntry]
-            }
-            setShowManageModal(updated)
-            handleUpdateSystem(updated)
-            logSystemAction(system.id, 'software_add', `Added protocol: ${softEntry.name}`)
-        }
-        setSoftEntry({ name: '', install_date: '', client: '' })
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text);
+        toast.success('Copied to clipboard');
     }
 
     const toggleClientSupport = (clientName: string, isNew: boolean, system?: System) => {
@@ -334,692 +642,868 @@ const SystemManager = () => {
         }
     }
 
+    const addSoftwareToDraft = (isNew: boolean, system?: System) => {
+        if (!softEntry.name || !softEntry.client) return toast.error('Name and Client required')
+
+        if (isNew) {
+            setNewSystem({
+                ...newSystem,
+                installed_software: [...newSystem.installed_software, softEntry]
+            })
+        } else if (system) {
+            const updated = {
+                ...system,
+                installed_software: [...system.installed_software, softEntry]
+            }
+            setShowManageModal(updated)
+            handleUpdateSystem(updated)
+            logSystemAction(system.id, 'software_add', `Added protocol: ${softEntry.name}`)
+        }
+        setSoftEntry({ name: '', install_date: '', client: '' })
+    }
+
+    const filteredSystems = systems
+        .filter(sys => {
+            const matchesSearch = sys.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                sys.ip_address?.includes(searchTerm);
+
+            if (filterType === 'all') return matchesSearch;
+            return sys.branch_location === activeBranch && sys.system_type === filterType && matchesSearch;
+        })
+        .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }))
+
+    const toggleCard = (id: string) => {
+        setExpandedCards(prev => {
+            const newState = { ...prev };
+            newState[id] = !prev[id];
+            return newState;
+        })
+    }
+
     return (
-        <div className="min-h-screen p-8 text-gray-700">
-
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
-                <div>
-                    <h1 className="text-5xl font-black tracking-tighter uppercase mb-2">
-                        System <span className="text-blue-600">Infrastructure</span>
-                    </h1>
-                    <div className="flex items-center gap-3">
-                        <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Branch Grid Control Center</p>
-                        <div className="h-1 w-1 rounded-full bg-gray-300" />
-                        <span className="text-blue-500 font-black uppercase text-xs tracking-widest">{activeBranch} Region</span>
-                    </div>
-                </div>
-
-                <div className="flex gap-4">
-                    <NeumorphicCard className="flex items-center px-6 py-3 gap-3">
-                        <Activity size={18} className="text-green-500 animate-pulse" />
-                        <div className="flex flex-col">
-                            <span className="text-[10px] font-black text-gray-400 uppercase leading-none mb-1">Grid Connectivity</span>
-                            <span className="text-sm font-black text-emerald-600 tracking-tight uppercase">Optimal Range</span>
+        <div className="min-h-screen bg-gradient-to-br from-[#FAE3D9] via-[#FAE3D9] to-[#BBDED6]/30 text-[#2D3748] p-4 md:p-8 pt-6 font-['Plus_Jakarta_Sans',sans-serif]">
+            {/* Header Controls */}
+            <div className="max-w-[1600px] mx-auto">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
+                    <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                    >
+                        <h2 className="text-4xl md:text-5xl font-black tracking-tighter text-black mb-3 leading-tight">
+                            System <span className="text-[#61C0BF] block md:inline">Management</span>
+                        </h2>
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 px-4 py-2 bg-white/60 backdrop-blur-md border border-[#61C0BF]/20 rounded-2xl shadow-sm">
+                                <div className="relative">
+                                    <div className="h-2.5 w-2.5 rounded-full bg-[#61C0BF]" />
+                                    <div className="absolute inset-0 h-2.5 w-2.5 rounded-full bg-[#61C0BF] animate-ping opacity-40" />
+                                </div>
+                                <span className="text-xs font-black text-black uppercase tracking-[0.2em]">{activeBranch} Branch</span>
+                            </div>
+                            <div className="h-1 w-1 rounded-full bg-[#BBDED6]" />
+                            <span className="text-[10px] font-bold text-slate-800 uppercase tracking-[0.2em] opacity-60">System Registry List</span>
                         </div>
-                    </NeumorphicCard>
-                    {isAdmin && (
-                        <button
-                            onClick={() => setShowAddModal(true)}
-                            className="px-6 py-3 bg-blue-600 text-white rounded-2xl font-black uppercase text-sm tracking-widest shadow-lg hover:shadow-blue-500/20 hover:scale-105 transition-all flex items-center gap-2"
+                    </motion.div>
+
+                    <div className="flex flex-wrap items-center gap-4">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="flex items-center gap-4 px-6 py-4 bg-white/40 backdrop-blur-md rounded-2xl border border-[#BBDED6] shadow-sm group hover:bg-white/60 transition-all duration-300"
                         >
-                            <Plus size={18} /> Add System
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            {/* Controls */}
-            <div className="flex flex-wrap items-center justify-between gap-6 mb-12">
-                <div className="flex gap-2">
-                    {['all', 'admin', 'server', 'workstation'].map(type => (
-                        <button
-                            key={type}
-                            onClick={() => setFilterType(type)}
-                            className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${filterType === type
-                                ? 'bg-[#e0e5ec] shadow-[inset_4px_4px_8px_rgba(163,177,198,0.6),inset_-4px_-4px_8px_rgba(255,255,255,0.5)] text-blue-600'
-                                : 'bg-[#e0e5ec] shadow-[5px_5px_10px_rgba(163,177,198,0.5),-5px_-5px_10px_rgba(255,255,255,0.8)] text-gray-500 hover:text-gray-700'
-                                }`}
-                        >
-                            {type}
-                        </button>
-                    ))}
-                </div>
-
-                <NeumorphicInset className="flex-1 max-w-md flex items-center px-4">
-                    <Search size={18} className="text-gray-400 mr-3" />
-                    <input
-                        type="text"
-                        placeholder="Search Hostname or IP..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-transparent py-4 text-sm font-bold outline-none text-gray-700"
-                    />
-                </NeumorphicInset>
-            </div>
-
-            {/* System Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                {loading && systems.length === 0 ? (
-                    <div className="col-span-full py-20 text-center opacity-30">
-                        <RefreshCw size={48} className="mx-auto mb-4 animate-spin" />
-                        <p className="font-black uppercase tracking-widest">Scanning Grid...</p>
+                            <div className="p-2.5 rounded-xl bg-[#61C0BF]/10 text-[#61C0BF] group-hover:scale-110 transition-transform">
+                                <Activity size={20} strokeWidth={2.5} />
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-black uppercase tracking-widest leading-none mb-1">Current Status</span>
+                                <span className="text-sm font-black text-black uppercase tracking-tight">Systems Online</span>
+                            </div>
+                        </motion.div>
+                        {isAdmin && (
+                            <div className="flex flex-wrap gap-4">
+                                <button
+                                    onClick={() => {
+                                        setNewSystem({
+                                            id: undefined,
+                                            name: '',
+                                            type: 'workstation' as any,
+                                            ip: '',
+                                            specs: { cpu: '', ram: '', os: 'Windows 11', serial_number: '' },
+                                            last_os_update: null,
+                                            installed_software: [],
+                                            supported_clients: [],
+                                            it_item_type: '',
+                                            rent_start_date: '',
+                                            rent_end_date: ''
+                                        });
+                                        setShowAddModal(true);
+                                    }}
+                                    className="flex items-center gap-3 px-6 py-4 bg-[#61C0BF] text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:brightness-105 shadow-[0_10px_25px_-5px_rgba(97,192,191,0.4)] transition-all active:scale-95 border-b-4 border-[#4A9695]"
+                                >
+                                    <Plus size={18} strokeWidth={3} />
+                                    Add System
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setNewSystem({
+                                            id: undefined,
+                                            name: '',
+                                            type: 'peripheral' as any,
+                                            ip: '',
+                                            specs: { cpu: 'N/A', ram: 'N/A', os: 'N/A', serial_number: '' },
+                                            last_os_update: null,
+                                            installed_software: [],
+                                            supported_clients: [],
+                                            it_item_type: 'Printer',
+                                            rent_start_date: '',
+                                            rent_end_date: ''
+                                        });
+                                        setShowAddModal(true);
+                                    }}
+                                    className="flex items-center gap-3 px-6 py-4 bg-white text-black border-2 border-[#BBDED6] rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-[#BBDED6]/10 transition-all active:scale-95 shadow-sm"
+                                >
+                                    <Printer size={18} strokeWidth={2.5} />
+                                    Add IT Item
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setNewSystem({
+                                            id: undefined,
+                                            name: '',
+                                            type: 'rented' as any,
+                                            ip: '',
+                                            specs: { cpu: '', ram: '', os: 'Windows', serial_number: '' },
+                                            last_os_update: null,
+                                            installed_software: [],
+                                            supported_clients: [],
+                                            it_item_type: '',
+                                            rent_start_date: format(new Date(), 'yyyy-MM-dd'),
+                                            rent_end_date: format(new Date(), 'yyyy-MM-dd')
+                                        });
+                                        setShowAddModal(true);
+                                    }}
+                                    className="flex items-center gap-3 px-6 py-4 bg-[#FAE3D9] text-black rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-[#FFB6B9]/40 transition-all active:scale-95 shadow-sm border border-white/50"
+                                >
+                                    <CalendarRange size={18} strokeWidth={2.5} />
+                                    Add Rented System
+                                </button>
+                            </div>
+                        )}
                     </div>
-                ) : filteredSystems.length === 0 ? (
-                    <div className="col-span-full py-20 text-center opacity-30 border-2 border-dashed border-gray-300 rounded-[3rem]">
-                        <Network size={64} className="mx-auto mb-4" />
-                        <p className="font-black uppercase tracking-widest">No Systems Mapped in this Sector</p>
+                </div>
+
+                {/* Controls */}
+                <div className="flex flex-col lg:flex-row items-center gap-4 mb-12">
+                    <div className="flex gap-1 p-1.5 bg-white/40 backdrop-blur-md border border-[#BBDED6] rounded-2xl shadow-sm">
+                        {['all', 'server', 'admin', 'workstation'].map(type => (
+                            <button
+                                key={type}
+                                onClick={() => setFilterType(type)}
+                                className={`px-6 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${filterType === type
+                                    ? 'bg-[#61C0BF] text-white shadow-lg shadow-[#61C0BF]/20'
+                                    : 'text-slate-600 hover:bg-[#BBDED6]/30 hover:text-black'
+                                    }`}
+                            >
+                                {type}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="flex-1 w-full relative group">
+                        <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-[#61C0BF] group-focus-within:scale-110 transition-transform" size={20} />
+                        <input
+                            type="text"
+                            placeholder="Search System by Name or IP..."
+                            className="w-full bg-white/40 backdrop-blur-md border border-[#BBDED6] rounded-2xl py-4 pl-14 pr-6 text-sm font-bold text-black focus:outline-none focus:ring-4 focus:ring-[#61C0BF]/10 focus:border-[#61C0BF]/40 focus:bg-white/80 transition-all shadow-sm placeholder:text-slate-400"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+
+                    <button
+                        onClick={fetchSystems}
+                        className="p-4 bg-white/40 backdrop-blur-md border border-[#BBDED6] text-[#61C0BF] rounded-2xl hover:bg-white/80 transition-all shadow-sm active:rotate-180 duration-700 hover:shadow-md"
+                    >
+                        <RefreshCw size={22} strokeWidth={2.5} />
+                    </button>
+                </div>
+
+                {/* Content Rendering Zone */}
+                {filterType === 'all' ? (
+                    <div className="space-y-24 py-10">
+                        {['server', 'admin', 'workstation'].map((type) => {
+                            const basePrefix = getBranchBasePrefix(activeBranch);
+                            const typePrefix = getTypePrefix(activeBranch, type);
+                            const rosterSize = type === 'server' ? 2 : type === 'admin' ? 4 : 30;
+
+                            let roster = Array.from({ length: rosterSize }, (_, i) => {
+                                const name = `${typePrefix}${(i + 1).toString().padStart(type === 'workstation' ? 3 : 2, '0')}`;
+                                const system = systems.find(s => s.name === name);
+                                return { name, system, isPlaceholder: !system };
+                            });
+
+                            // Only one placeholder for Server and Admin
+                            if (type === 'server' || type === 'admin') {
+                                const filledSlots = roster.filter(slot => !slot.isPlaceholder);
+                                const firstEmpty = roster.find(slot => slot.isPlaceholder);
+                                if (filledSlots.length < rosterSize && firstEmpty) {
+                                    roster = [...filledSlots, firstEmpty];
+                                } else {
+                                    roster = filledSlots;
+                                }
+                            }
+
+                            return (
+                                <div key={type} className="relative">
+                                    <div className="flex flex-col items-center">
+                                        <div className="mb-12 px-8 py-3 bg-white/40 backdrop-blur-md border-2 border-[#BBDED6] rounded-full text-[11px] font-black uppercase tracking-[0.5em] text-black text-center shadow-lg">
+                                            {type} List <span className="opacity-40 mx-2">|</span> 01 - {rosterSize.toString().padStart(2, '0')}
+                                        </div>
+
+                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-6 w-full max-w-[1400px] mx-auto px-4">
+                                            {roster.map(slot => {
+                                                if (slot.isPlaceholder) {
+                                                    return (
+                                                        <motion.div
+                                                            key={slot.name}
+                                                            whileHover={{ scale: 1.02, y: -2 }}
+                                                            className="group p-6 bg-white/20 border-2 border-dashed border-[#BBDED6]/40 rounded-[2rem] flex flex-col items-center justify-center gap-3 cursor-pointer opacity-50 hover:opacity-100 hover:border-[#61C0BF] hover:bg-white/40 transition-all min-h-[140px]"
+                                                            onClick={() => {
+                                                                setNewSystem({
+                                                                    id: undefined,
+                                                                    name: slot.name,
+                                                                    type: type as any,
+                                                                    ip: '',
+                                                                    specs: { cpu: '', ram: '', os: type === 'workstation' ? 'Windows 11' : (type === 'server' ? 'Windows Server' : 'Windows 11'), serial_number: '' },
+                                                                    last_os_update: null,
+                                                                    installed_software: [],
+                                                                    supported_clients: [],
+                                                                    it_item_type: '',
+                                                                    rent_start_date: '',
+                                                                    rent_end_date: ''
+                                                                });
+                                                                setShowAddModal(true);
+                                                            }}
+                                                        >
+                                                            <div className="p-3 rounded-2xl bg-[#FAE3D9]/50 text-[#BBDED6] group-hover:text-[#61C0BF] transition-colors">
+                                                                <Plus size={24} strokeWidth={3} />
+                                                            </div>
+                                                            <span className="text-[10px] font-black text-black uppercase tracking-widest">{slot.name}</span>
+                                                            <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">Set Up System</span>
+                                                        </motion.div>
+                                                    )
+                                                }
+
+                                                return (
+                                                    <SystemGridCard
+                                                        key={slot.system!.id}
+                                                        sys={slot.system!}
+                                                        activeBranch={activeBranch}
+                                                        expandedCards={expandedCards}
+                                                        toggleCard={toggleCard}
+                                                        copyToClipboard={copyToClipboard}
+                                                        handleEditSystemOpen={handleEditSystemOpen}
+                                                        setShowManageModal={setShowManageModal}
+                                                        setShowTransferModal={setShowTransferModal}
+                                                        setTargetBranch={setTargetBranch}
+                                                        handleDeleteSystem={handleDeleteSystem}
+                                                    />
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                    {type !== 'workstation' && (
+                                        <div className="h-20 w-px bg-gradient-to-b from-[#BBDED6] to-transparent mx-auto mt-16" />
+                                    )}
+                                </div>
+                            );
+                        })}
+
+                        {/* Other IT Items Section */}
+                        {systems.filter(s => s.system_type === 'peripheral').length > 0 && (
+                            <div className="relative">
+                                <div className="h-20 w-px bg-gradient-to-b from-[#BBDED6] to-transparent mx-auto mt-16" />
+                                <div className="flex flex-col items-center">
+                                    <div className="mb-12 px-8 py-3 bg-white/40 backdrop-blur-md border-2 border-[#BBDED6] rounded-full text-[11px] font-black uppercase tracking-[0.5em] text-black text-center shadow-lg">
+                                        IT Peripherals <span className="opacity-40 mx-2">|</span> EQUIPMENT LIST
+                                    </div>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-6 w-full max-w-[1400px] mx-auto px-4">
+                                        {systems.filter(s => s.system_type === 'peripheral').map(sys => (
+                                            <SystemGridCard
+                                                key={sys.id}
+                                                sys={sys}
+                                                activeBranch={activeBranch}
+                                                expandedCards={expandedCards}
+                                                toggleCard={toggleCard}
+                                                copyToClipboard={copyToClipboard}
+                                                handleEditSystemOpen={handleEditSystemOpen}
+                                                setShowManageModal={setShowManageModal}
+                                                setShowTransferModal={setShowTransferModal}
+                                                setTargetBranch={setTargetBranch}
+                                                handleDeleteSystem={handleDeleteSystem}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Rented Systems Section */}
+                        {systems.filter(s => {
+                            const today = new Date().toISOString().split('T')[0];
+                            return s.system_type === 'rented' &&
+                                (!s.rent_start_date || s.rent_start_date <= today) &&
+                                (!s.rent_end_date || s.rent_end_date >= today);
+                        }).length > 0 && (
+                                <div className="relative">
+                                    <div className="h-20 w-px bg-gradient-to-b from-[#FFB6B9] to-transparent mx-auto mt-16" />
+                                    <div className="flex flex-col items-center">
+                                        <div className="mb-12 px-8 py-3 bg-white/40 backdrop-blur-md border-2 border-[#FFB6B9] rounded-full text-[11px] font-black uppercase tracking-[0.5em] text-black text-center shadow-lg">
+                                            Active Rentals <span className="opacity-40 mx-2">|</span> TEMPORARY EVENT SYSTEMS
+                                        </div>
+                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-6 w-full max-w-[1400px] mx-auto px-4">
+                                            {systems.filter(s => {
+                                                const today = new Date().toISOString().split('T')[0];
+                                                return s.system_type === 'rented' &&
+                                                    (!s.rent_start_date || s.rent_start_date <= today) &&
+                                                    (!s.rent_end_date || s.rent_end_date >= today);
+                                            }).map(sys => (
+                                                <SystemGridCard
+                                                    key={sys.id}
+                                                    sys={sys}
+                                                    activeBranch={activeBranch}
+                                                    expandedCards={expandedCards}
+                                                    toggleCard={toggleCard}
+                                                    copyToClipboard={copyToClipboard}
+                                                    handleEditSystemOpen={handleEditSystemOpen}
+                                                    setShowManageModal={setShowManageModal}
+                                                    setShowTransferModal={setShowTransferModal}
+                                                    setTargetBranch={setTargetBranch}
+                                                    handleDeleteSystem={handleDeleteSystem}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                     </div>
                 ) : (
-                    filteredSystems.map(sys => (
-                        <motion.div
-                            layout
-                            key={sys.id}
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                        >
-                            <NeumorphicCard className="p-8 group hover:shadow-[12px_12px_24px_rgba(163,177,198,0.7),-12px_-12px_24px_rgba(255,255,255,0.9)] transition-all flex flex-col h-full">
-                                <div className="flex justify-between items-start mb-6">
-                                    <div className="p-4 rounded-2xl bg-[#e0e5ec] shadow-[inset_4px_4px_8px_rgba(163,177,198,0.4),inset_-4px_-4px_8px_rgba(255,255,255,0.8)]">
-                                        <SystemIcon type={sys.system_type} />
-                                    </div>
-                                    <StatusBadge status={sys.status} />
-                                </div>
-
-                                <div className="mb-6">
-                                    <h3 className="text-2xl font-black text-gray-800 tracking-tight uppercase mb-1">{sys.name}</h3>
-                                    <p className="text-xs font-bold text-blue-500/70 uppercase tracking-widest font-mono">{sys.ip_address || 'Unassigned IP'}</p>
-                                </div>
-
-                                <div className="space-y-4 mb-6 flex-1">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <NeumorphicInset className="p-3">
-                                            <span className="block text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">CPU</span>
-                                            <span className="text-xs font-bold text-gray-700 truncate block">{sys.specs?.cpu || 'N/A'}</span>
-                                        </NeumorphicInset>
-                                        <NeumorphicInset className="p-3">
-                                            <span className="block text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">RAM</span>
-                                            <span className="text-xs font-bold text-gray-700 truncate block">{sys.specs?.ram || 'N/A'}</span>
-                                        </NeumorphicInset>
-                                    </div>
-
-                                    {/* Software List Preview */}
-                                    <div className="space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Protocols</span>
-                                            <span className="text-[10px] font-black text-blue-500 uppercase">{sys.installed_software?.length || 0}</span>
-                                        </div>
-                                        <div className="flex flex-wrap gap-2">
-                                            {sys.installed_software?.slice(0, 3).map((s, i) => (
-                                                <div key={i} className="px-2 py-1 bg-white/50 rounded-lg text-[10px] font-bold text-slate-500 border border-white/20">
-                                                    {s.name}
-                                                </div>
-                                            ))}
-                                            {(sys.installed_software?.length || 0) > 3 && (
-                                                <div className="px-2 py-1 bg-blue-50 rounded-lg text-[10px] font-bold text-blue-500">
-                                                    +{(sys.installed_software?.length || 0) - 3}
-                                                </div>
-                                            )}
-                                            {(!sys.installed_software || sys.installed_software.length === 0) && (
-                                                <span className="text-[10px] italic text-gray-400 ml-1">No software mapped</span>
-                                            )}
-                                        </div>
-
-                                        <div className="pt-2 flex flex-wrap gap-1 border-t border-white/20 mt-2">
-                                            {sys.supported_clients?.map((client, i) => (
-                                                <span key={i} className="px-1.5 py-0.5 bg-indigo-50 text-indigo-400 rounded text-[8px] font-black uppercase">
-                                                    {client}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center justify-between pt-6 border-t border-white/40 mt-auto">
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] font-black text-gray-400 uppercase leading-none mb-1">Last Sync</span>
-                                        <span className="text-xs font-bold text-gray-600">{sys.last_checked ? format(new Date(sys.last_checked), 'MMM dd | HH:mm') : 'Never'}</span>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => setShowManageModal(sys)}
-                                            className="p-2.5 bg-[#e0e5ec] shadow-[4px_4px_8px_rgba(163,177,198,0.5),-4px_-4px_8px_rgba(255,255,255,0.8)] rounded-xl text-blue-600 hover:shadow-inner transition-all"
-                                        >
-                                            <Settings size={18} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </NeumorphicCard>
-                        </motion.div>
-                    ))
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {loading && systems.length === 0 ? (
+                            <div className="col-span-full py-40 text-center">
+                                <RefreshCw size={48} className="mx-auto mb-6 animate-spin text-[#61C0BF]" strokeWidth={3} />
+                                <p className="font-black text-black uppercase tracking-[0.3em] text-sm animate-pulse">Syncing Systems...</p>
+                            </div>
+                        ) : filteredSystems.length === 0 ? (
+                            <div className="col-span-full py-40 text-center border-4 border-dashed border-[#BBDED6] rounded-[3rem] bg-white/20">
+                                <Network size={64} className="mx-auto mb-6 text-[#BBDED6]" strokeWidth={1.5} />
+                                <p className="font-black text-black uppercase tracking-[0.25em] text-lg">System Registry Empty</p>
+                                <p className="text-xs font-bold text-black uppercase tracking-widest mt-2 opacity-50">Add a system to begin monitoring</p>
+                            </div>
+                        ) : (
+                            filteredSystems.map(sys => (
+                                <SystemGridCard
+                                    key={sys.id}
+                                    sys={sys}
+                                    activeBranch={activeBranch}
+                                    expandedCards={expandedCards}
+                                    toggleCard={toggleCard}
+                                    copyToClipboard={copyToClipboard}
+                                    handleEditSystemOpen={handleEditSystemOpen}
+                                    setShowManageModal={setShowManageModal}
+                                    setShowTransferModal={setShowTransferModal}
+                                    setTargetBranch={setTargetBranch}
+                                    handleDeleteSystem={handleDeleteSystem}
+                                />
+                            ))
+                        )}
+                    </div>
                 )}
             </div>
+
+
+            {/* TRANSFER MODAL */}
+            <AnimatePresence>
+                {showTransferModal && (
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 30 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 30 }}
+                            className="w-full max-w-md bg-[#FAE3D9] rounded-[3rem] shadow-[0_30px_100px_-20px_rgba(0,0,0,0.3)] overflow-hidden border-4 border-white"
+                        >
+                            <div className="flex justify-between items-center p-8 border-b border-[#BBDED6]/40 bg-white/40">
+                                <div>
+                                    <h2 className="text-2xl font-black text-black uppercase tracking-tighter">Transfer Branch</h2>
+                                    <p className="text-[10px] font-black text-black uppercase tracking-[0.3em] mt-1">Move system to new location</p>
+                                </div>
+                                <button onClick={() => setShowTransferModal(null)} className="p-3 text-black hover:text-[#2D3748] hover:bg-[#BBDED6]/30 rounded-2xl transition-all">
+                                    <X size={24} strokeWidth={3} />
+                                </button>
+                            </div>
+
+                            <div className="p-10 space-y-8">
+                                <div className="text-center relative">
+                                    <div className="absolute inset-0 bg-gradient-to-b from-[#61C0BF]/10 to-transparent rounded-full blur-2xl" />
+                                    <div className="relative mx-auto w-20 h-20 bg-[#FAE3D9] rounded-3xl flex items-center justify-center text-[#61C0BF] mb-6 shadow-xl border border-white">
+                                        <ArrowRightLeft size={36} strokeWidth={2.5} />
+                                    </div>
+                                    <div className="inline-block px-5 py-2 bg-[#61C0BF] text-white rounded-2xl text-sm font-black uppercase tracking-widest mb-4 shadow-lg shadow-[#61C0BF]/20">
+                                        {showTransferModal.name}
+                                    </div>
+                                    <p className="text-xs text-black font-bold leading-relaxed opacity-80 uppercase tracking-wider">
+                                        You are moving this system to a different physical branch.
+                                    </p>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-black uppercase tracking-[0.2em] block ml-1">Target Location</label>
+                                    <div className="relative">
+                                        <select
+                                            value={targetBranch}
+                                            onChange={(e) => setTargetBranch(e.target.value)}
+                                            className="w-full p-5 bg-[#FAE3D9]/50 border-2 border-[#BBDED6] rounded-[1.5rem] text-sm font-black text-black outline-none focus:border-[#61C0BF] focus:bg-white transition-all appearance-none cursor-pointer shadow-sm pr-12 group"
+                                        >
+                                            <option value="" disabled>SELECT BRANCH...</option>
+                                            {branches.map(b => (
+                                                <option key={b} value={b} className="font-black uppercase py-4">
+                                                    {b.toUpperCase()} BRANCH
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-[#61C0BF] pointer-events-none" size={18} strokeWidth={3} />
+                                    </div>
+                                </div>
+
+                                <div className="pt-4 flex flex-col gap-3">
+                                    <button
+                                        onClick={executeTransfer}
+                                        disabled={!targetBranch || loading || targetBranch === showTransferModal.branch_location}
+                                        className="w-full py-5 bg-[#61C0BF] text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs shadow-[0_15px_30px_-5px_rgba(97,192,191,0.5)] hover:brightness-105 active:scale-95 disabled:opacity-30 transition-all border-b-4 border-[#4A9695]"
+                                    >
+                                        {loading ? 'PROCESSING...' : 'CONFIRM TRANSFER'}
+                                    </button>
+                                    <button
+                                        onClick={() => setShowTransferModal(null)}
+                                        className="w-full py-4 text-[#7D5A50] font-black uppercase tracking-widest text-xs hover:bg-[#FFB6B9]/20 rounded-[1.5rem] transition-all"
+                                    >
+                                        ABORT
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* REGISTER MODAL */}
             <AnimatePresence>
                 {showAddModal && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            className="w-full max-w-4xl"
+                            initial={{ opacity: 0, scale: 0.95, y: 30 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 30 }}
+                            className="w-full max-w-5xl bg-[#FAE3D9] rounded-[3rem] shadow-[0_30px_100px_-20px_rgba(0,0,0,0.3)] overflow-hidden border-4 border-white flex flex-col max-h-[90vh]"
                         >
-                            <NeumorphicCard className="p-10 max-h-[90vh] overflow-y-auto custom-scrollbar">
-                                <div className="flex justify-between items-center mb-10">
-                                    <h2 className="text-3xl font-black text-gray-800 uppercase tracking-tighter">Register New Hardware</h2>
-                                    <button onClick={() => setShowAddModal(false)} className="p-2 text-gray-400 hover:text-gray-600 transition-all">
-                                        <X size={28} />
-                                    </button>
+                            <div className="flex justify-between items-center p-8 border-b border-[#BBDED6]/40 bg-white/40">
+                                <div>
+                                    <h2 className="text-3xl font-black text-black uppercase tracking-tighter">
+                                        {(newSystem as any).id ? 'Edit' : 'Create'} <span className="text-[#61C0BF]">System</span>
+                                    </h2>
+                                    <p className="text-xs font-black text-black uppercase tracking-[0.3em] mt-1">System Setup & Deployment</p>
+                                </div>
+                                <button onClick={() => setShowAddModal(false)} className="p-3 text-black hover:text-[#2D3748] hover:bg-[#BBDED6]/30 rounded-2xl transition-all">
+                                    <X size={28} strokeWidth={3} />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleCreateSystem} className="p-10 overflow-y-auto custom-scrollbar flex-1 bg-gradient-to-b from-white/40 to-transparent">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-8">
+                                    <div className="space-y-8">
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-black uppercase tracking-[0.2em] ml-2">System Name</label>
+                                            <input
+                                                type="text"
+                                                placeholder="SYSTEM DESIGNATION"
+                                                value={newSystem.name}
+                                                onChange={e => setNewSystem({ ...newSystem, name: e.target.value })}
+                                                className="w-full px-6 py-4 bg-[#FAE3D9]/50 border-2 border-[#BBDED6] rounded-2xl outline-none focus:border-[#61C0BF] focus:bg-white text-black transition-all font-black uppercase tracking-wide placeholder:text-slate-400 shadow-sm"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-black uppercase tracking-[0.2em] ml-2">IP Address</label>
+                                            <input
+                                                type="text"
+                                                placeholder="0.0.0.0"
+                                                value={newSystem.ip}
+                                                onChange={e => setNewSystem({ ...newSystem, ip: e.target.value })}
+                                                className="w-full px-6 py-4 bg-white border-2 border-[#BBDED6] rounded-2xl outline-none focus:border-[#61C0BF] text-black transition-all font-black font-mono placeholder:text-slate-400 shadow-sm"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-black uppercase tracking-[0.2em] ml-2">System Type</label>
+                                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                                {['workstation', 'server', 'admin', 'peripheral', 'rented'].map(type => (
+                                                    <button
+                                                        key={type}
+                                                        type="button"
+                                                        onClick={() => setNewSystem({ ...newSystem, type: type as any })}
+                                                        className={`p-4 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all duration-300 ${newSystem.type === type
+                                                            ? 'bg-[#61C0BF] border-[#4A9695] text-white shadow-xl shadow-[#61C0BF]/30 scale-[1.05]'
+                                                            : 'bg-white border-[#BBDED6] text-black hover:border-[#61C0BF]/50'
+                                                            }`}
+                                                    >
+                                                        <div className={`${newSystem.type === type ? 'text-white' : 'text-black'}`}>
+                                                            <SystemIcon type={type} itemType={type === 'peripheral' ? (newSystem.it_item_type || 'Package') : undefined} />
+                                                        </div>
+                                                        <span className="text-[8px] font-black uppercase tracking-widest">{type}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {newSystem.type === 'peripheral' && (
+                                            <div className="space-y-3 p-6 bg-white border-2 border-[#BBDED6] rounded-[2rem] shadow-sm">
+                                                <label className="text-[10px] font-black text-black uppercase tracking-[0.2em] ml-2">Hardware Category</label>
+                                                <select
+                                                    value={newSystem.it_item_type}
+                                                    onChange={e => setNewSystem({ ...newSystem, it_item_type: e.target.value })}
+                                                    className="w-full p-4 bg-[#FAE3D9]/30 border-2 border-[#BBDED6] rounded-xl text-sm font-black text-black outline-none appearance-none cursor-pointer"
+                                                >
+                                                    {['Printer', 'Webcam', 'Headphones', 'E Sign pad', 'Other'].map(opt => (
+                                                        <option key={opt} value={opt}>{opt}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
+
+                                        {newSystem.type === 'rented' && (
+                                            <div className="grid grid-cols-2 gap-4 p-6 bg-[#FAE3D9]/20 border-2 border-[#BBDED6] rounded-[2rem] shadow-sm">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-black uppercase tracking-[0.2em] ml-2">Rent Start Date</label>
+                                                    <input
+                                                        type="date"
+                                                        value={newSystem.rent_start_date}
+                                                        onChange={e => setNewSystem({ ...newSystem, rent_start_date: e.target.value })}
+                                                        className="w-full p-4 bg-white border-2 border-[#BBDED6] rounded-xl text-sm font-black text-black"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-black uppercase tracking-[0.2em] ml-2">Return Date</label>
+                                                    <input
+                                                        type="date"
+                                                        value={newSystem.rent_end_date}
+                                                        onChange={e => setNewSystem({ ...newSystem, rent_end_date: e.target.value })}
+                                                        className="w-full p-4 bg-white border-2 border-[#BBDED6] rounded-xl text-sm font-black text-black"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-4 pt-8 border-t border-[#BBDED6]/40">
+                                            <label className="text-[10px] font-black text-black uppercase tracking-[0.2em] ml-2 block">Support Access</label>
+                                            <div className="flex flex-wrap gap-2.5">
+                                                {clients.map(c => (
+                                                    <button
+                                                        key={c.name}
+                                                        type="button"
+                                                        onClick={() => toggleClientSupport(c.name, true)}
+                                                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${newSystem.supported_clients.includes(c.name)
+                                                            ? 'bg-[#61C0BF] border-[#4A9695] text-white shadow-md'
+                                                            : 'bg-white border-[#BBDED6] text-black hover:border-[#61C0BF]/40'
+                                                            }`}
+                                                    >
+                                                        {c.name}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-8">
+                                        <div className="grid grid-cols-2 gap-5">
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black text-black uppercase tracking-[0.2em] ml-2">Processor</label>
+                                                <input
+                                                    placeholder="CHIPSET"
+                                                    value={newSystem.specs.cpu}
+                                                    onChange={e => setNewSystem({ ...newSystem, specs: { ...newSystem.specs, cpu: e.target.value } })}
+                                                    className="w-full px-5 py-4 bg-[#FAE3D9]/50 border-2 border-[#BBDED6] rounded-2xl outline-none focus:border-[#61C0BF] focus:bg-white text-sm font-black text-black placeholder:text-slate-400 shadow-sm"
+                                                />
+                                            </div>
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black text-black uppercase tracking-[0.2em] ml-2">Memory</label>
+                                                <input
+                                                    placeholder="CAPACITY"
+                                                    value={newSystem.specs.ram}
+                                                    onChange={e => setNewSystem({ ...newSystem, specs: { ...newSystem.specs, ram: e.target.value } })}
+                                                    className="w-full px-5 py-4 bg-[#FAE3D9]/50 border-2 border-[#BBDED6] rounded-2xl outline-none focus:border-[#61C0BF] focus:bg-white text-sm font-black text-black placeholder:text-slate-400 shadow-sm"
+                                                />
+                                            </div>
+                                            <div className="col-span-2 space-y-3">
+                                                <label className="text-[10px] font-black text-black uppercase tracking-[0.2em] ml-2">System Serial Number</label>
+                                                <div className="flex gap-3">
+                                                    <input
+                                                        placeholder="GENERATE SERIAL"
+                                                        value={newSystem.specs.serial_number}
+                                                        readOnly
+                                                        className="flex-1 px-6 py-4 bg-[#FAE3D9]/60 border-2 border-[#BBDED6] rounded-2xl outline-none text-sm font-black text-black font-mono tracking-[0.1em] cursor-default shadow-inner"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={generateSerial}
+                                                        className="px-6 py-4 bg-[#61C0BF] text-white rounded-2xl font-black text-xs uppercase hover:brightness-105 active:scale-95 transition-all shadow-lg shadow-[#61C0BF]/20 border-b-4 border-[#4A9695]"
+                                                    >
+                                                        GENERATE
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="col-span-2 space-y-3">
+                                                <label className="text-[10px] font-black text-black uppercase tracking-[0.2em] ml-2">Last System Update</label>
+                                                <input
+                                                    type="date"
+                                                    value={newSystem.last_os_update || ''}
+                                                    onChange={e => setNewSystem({ ...newSystem, last_os_update: e.target.value })}
+                                                    className="w-full px-6 py-4 bg-[#FAE3D9]/50 border-2 border-[#BBDED6] rounded-2xl outline-none focus:border-[#61C0BF] focus:bg-white text-sm font-black text-black shadow-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <form onSubmit={handleCreateSystem} className="space-y-8">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <div className="space-y-6">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2">Hardware Hostname</label>
-                                                <NeumorphicInset className="p-4">
-                                                    <input
-                                                        type="text"
-                                                        placeholder="e.g. FETS-SRV-01"
-                                                        value={newSystem.name}
-                                                        onChange={e => setNewSystem({ ...newSystem, name: e.target.value })}
-                                                        className="w-full bg-transparent outline-none text-gray-700 font-bold"
-                                                        required
-                                                    />
-                                                </NeumorphicInset>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2">Static IP Address</label>
-                                                <NeumorphicInset className="p-4">
-                                                    <input
-                                                        type="text"
-                                                        placeholder="192.168.1.XX"
-                                                        value={newSystem.ip}
-                                                        onChange={e => setNewSystem({ ...newSystem, ip: e.target.value })}
-                                                        className="w-full bg-transparent outline-none text-gray-700 font-bold font-mono"
-                                                    />
-                                                </NeumorphicInset>
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2">Classification</label>
-                                                <div className="grid grid-cols-3 gap-4">
-                                                    {['workstation', 'server', 'admin'].map(type => (
-                                                        <button
-                                                            key={type}
-                                                            type="button"
-                                                            onClick={() => setNewSystem({ ...newSystem, type: type as any })}
-                                                            className={`p-4 rounded-2xl flex flex-col items-center gap-2 border-2 transition-all ${newSystem.type === type
-                                                                ? 'bg-blue-600 border-blue-700 text-white shadow-lg'
-                                                                : 'bg-transparent border-transparent text-gray-400 hover:bg-white/40'
-                                                                }`}
-                                                        >
-                                                            <SystemIcon type={type} />
-                                                            <span className="text-[10px] font-black uppercase tracking-widest">{type}</span>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-6">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2">CPU</label>
-                                                    <NeumorphicInset className="p-3">
-                                                        <input
-                                                            placeholder="i7-12700"
-                                                            value={newSystem.specs.cpu}
-                                                            onChange={e => setNewSystem({ ...newSystem, specs: { ...newSystem.specs, cpu: e.target.value } })}
-                                                            className="w-full bg-transparent outline-none text-xs font-bold text-gray-700"
-                                                        />
-                                                    </NeumorphicInset>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2">RAM</label>
-                                                    <NeumorphicInset className="p-3">
-                                                        <input
-                                                            placeholder="16GB"
-                                                            value={newSystem.specs.ram}
-                                                            onChange={e => setNewSystem({ ...newSystem, specs: { ...newSystem.specs, ram: e.target.value } })}
-                                                            className="w-full bg-transparent outline-none text-xs font-bold text-gray-700"
-                                                        />
-                                                    </NeumorphicInset>
-                                                </div>
-                                            </div>
-
-                                            {/* Software and Client Management in New System */}
-                                            <div className="space-y-6">
-                                                <div className="space-y-4">
-                                                    <div className="flex items-center justify-between">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Software Inventory</label>
-                                                        <span className="text-[10px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md">Draft: {newSystem.installed_software?.length || 0}</span>
-                                                    </div>
-
-                                                    <NeumorphicInset className="p-4 grid grid-cols-2 gap-4">
-                                                        <input
-                                                            placeholder="Protocol Name"
-                                                            value={softEntry.name}
-                                                            onChange={e => setSoftEntry({ ...softEntry, name: e.target.value })}
-                                                            className="bg-transparent text-sm font-bold outline-none col-span-2"
-                                                        />
-                                                        <select
-                                                            value={softEntry.client}
-                                                            onChange={e => setSoftEntry({ ...softEntry, client: e.target.value })}
-                                                            className="bg-transparent text-xs font-black uppercase outline-none"
-                                                        >
-                                                            <option value="">Select Client</option>
-                                                            {clients.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
-                                                        </select>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => addSoftwareToDraft(true)}
-                                                            className="bg-blue-600 text-white rounded-xl font-black text-[10px] tracking-widest py-2"
-                                                        >
-                                                            ADD PROTOCOL
-                                                        </button>
-                                                    </NeumorphicInset>
-
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {newSystem.installed_software?.map((s, i) => (
-                                                            <div key={i} className="flex items-center gap-2 p-2 bg-white/60 rounded-xl border border-white/40">
-                                                                <Terminal size={12} className="text-blue-500" />
-                                                                <span className="text-[10px] font-black text-gray-600 uppercase tracking-tight">{s.name}</span>
-                                                                <X size={10} className="text-red-400 cursor-pointer" onClick={() => {
-                                                                    setNewSystem({
-                                                                        ...newSystem,
-                                                                        installed_software: newSystem.installed_software.filter((_, idx) => idx !== i)
-                                                                    })
-                                                                }} />
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-4">
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 block">Supported Clients</label>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {clients.map(c => (
-                                                            <button
-                                                                key={c.name}
-                                                                type="button"
-                                                                onClick={() => toggleClientSupport(c.name, true)}
-                                                                className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${newSystem.supported_clients.includes(c.name)
-                                                                    ? 'bg-emerald-500 text-white shadow-lg'
-                                                                    : 'bg-[#e0e5ec] text-slate-400 shadow-sm'
-                                                                    }`}
-                                                            >
-                                                                {c.name}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex gap-4 pt-6">
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowAddModal(false)}
-                                            className="flex-1 py-4 rounded-2xl bg-[#e0e5ec] shadow-[5px_5px_10px_rgba(163,177,198,0.5),-5px_-5px_10px_rgba(255,255,255,0.8)] text-gray-500 font-bold uppercase tracking-widest text-xs"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            disabled={loading}
-                                            className="flex-[2] py-4 rounded-2xl bg-blue-600 shadow-lg text-white font-black uppercase tracking-widest text-xs hover:bg-blue-700 transition-all font-rajdhani"
-                                        >
-                                            {loading ? 'Registering...' : 'Initiate System Mapping'}
-                                        </button>
-                                    </div>
-                                </form>
-                            </NeumorphicCard>
+                                <div className="flex gap-4 pt-10 mt-6 border-t border-[#BBDED6]/40">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAddModal(false)}
+                                        className="px-8 py-5 rounded-2xl bg-[#FFB6B9]/10 text-[#874345] font-black uppercase tracking-widest text-xs hover:bg-[#FFB6B9]/20 transition-all border-2 border-transparent"
+                                    >
+                                        ABORT
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="flex-1 py-5 rounded-[1.5rem] bg-[#61C0BF] shadow-[0_20px_40px_-5px_rgba(97,192,191,0.4)] text-white font-black uppercase tracking-[0.2em] text-xs hover:brightness-105 transition-all active:scale-[0.98] border-b-4 border-[#4A9695]"
+                                    >
+                                        {loading ? 'SAVING...' : (newSystem as any).id ? 'UPDATE SYSTEM' : 'CREATE SYSTEM'}
+                                    </button>
+                                </div>
+                            </form>
                         </motion.div>
                     </div>
                 )}
-            </AnimatePresence>
+            </AnimatePresence >
 
             {/* MANAGE MODAL */}
             <AnimatePresence>
                 {showManageModal && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xl">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
                         <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 20 }}
-                            className="w-full max-w-5xl"
+                            initial={{ opacity: 0, scale: 0.95, y: 30 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 30 }}
+                            className="w-full max-w-5xl bg-[#FAE3D9] rounded-[3.5rem] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.4)] overflow-hidden flex flex-col max-h-[90vh] border-4 border-white"
                         >
-                            <NeumorphicCard className="p-10 max-h-[90vh] overflow-y-auto custom-scrollbar">
-                                <div className="flex justify-between items-center mb-10">
-                                    <div className="flex items-center gap-8">
-                                        <div className="flex items-center gap-4">
-                                            <div className="p-4 bg-blue-600 rounded-[2rem] text-white shadow-xl">
-                                                <SystemIcon type={showManageModal.system_type} />
-                                            </div>
-                                            <div>
-                                                <h2 className="text-4xl font-black text-slate-800 uppercase tracking-tighter">{showManageModal.name}</h2>
-                                                <div className="flex items-center gap-3 mt-1">
-                                                    <span className="text-xs font-black text-blue-500 uppercase tracking-widest font-mono">{showManageModal.ip_address}</span>
-                                                    <div className="w-1 h-1 rounded-full bg-slate-300" />
-                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{showManageModal.branch_location} Sector</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                            <div className="flex justify-between items-center p-10 border-b border-[#BBDED6]/40 bg-white/40">
+                                <div className="flex items-center gap-6">
+                                    <div className="p-5 bg-white rounded-[2rem] border-2 border-[#BBDED6] shadow-xl group hover:rotate-[360deg] transition-transform duration-700">
+                                        <SystemIcon type={showManageModal.system_type} />
                                     </div>
-
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex bg-[#e0e5ec] p-2 rounded-2xl shadow-[inset_4px_4px_8px_rgba(163,177,198,0.5),inset_-4px_-4px_8px_rgba(255,255,255,0.8)]">
-                                            {[
-                                                { id: 'inventory', icon: Layers, label: 'Inventory' },
-                                                { id: 'network', icon: Network, label: 'Network' },
-                                                { id: 'history', icon: Calendar, label: 'Logs' }
-                                            ].map(tab => (
-                                                <button
-                                                    key={tab.id}
-                                                    onClick={() => setActiveManageTab(tab.id as any)}
-                                                    className={`px-6 py-2.5 rounded-xl flex items-center gap-3 transition-all ${activeManageTab === tab.id
-                                                        ? 'bg-white shadow-[2px_2px_4px_rgba(163,177,198,0.4)] text-blue-600'
-                                                        : 'text-slate-400 hover:text-slate-600'
-                                                        }`}
-                                                >
-                                                    <tab.icon size={16} />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest">{tab.label}</span>
-                                                </button>
-                                            ))}
+                                    <div>
+                                        <h2 className="text-3xl font-black text-black uppercase tracking-tighter">
+                                            {showManageModal.name}
+                                        </h2>
+                                        <div className="flex items-center gap-3 mt-2">
+                                            <div className="px-3 py-1 bg-[#FAE3D9] border border-[#BBDED6] rounded-lg text-[10px] font-black text-black font-mono tracking-widest shadow-inner">
+                                                {showManageModal.id.slice(0, 8)}
+                                            </div>
+                                            <StatusBadge status={showManageModal.status} />
                                         </div>
-                                        <button onClick={() => setShowManageModal(null)} className="p-4 bg-[#e0e5ec] shadow-[4px_4px_10px_rgba(163,177,198,0.4),-4px_-4px_10px_rgba(255,255,255,0.8)] rounded-2xl text-slate-400 hover:text-red-500 transition-all active:scale-95">
-                                            <X size={24} />
-                                        </button>
                                     </div>
                                 </div>
+                                <button onClick={() => setShowManageModal(null)} className="p-4 text-black hover:text-[#2D3748] hover:bg-[#BBDED6]/20 rounded-3xl transition-all">
+                                    <X size={32} strokeWidth={3} />
+                                </button>
+                            </div>
 
-                                <div className="space-y-10">
-                                    {activeManageTab === 'inventory' && (
-                                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                                            {/* Software Management */}
-                                            <div className="space-y-6">
-                                                <div className="flex items-center justify-between px-2">
-                                                    <h3 className="text-lg font-black text-slate-700 uppercase tracking-tight flex items-center gap-3">
-                                                        <Terminal size={20} className="text-blue-500" />
-                                                        Software Assets
-                                                    </h3>
-                                                    <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{showManageModal.installed_software?.length || 0} Total</span>
-                                                </div>
-
-                                                <NeumorphicInset className="p-8">
-                                                    <div className="grid grid-cols-2 gap-4 mb-8">
-                                                        <div className="col-span-2">
-                                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 px-1">Protocol / Tool Name</label>
-                                                            <input
-                                                                className="w-full bg-[#e0e5ec] shadow-inner p-4 rounded-2xl text-sm font-bold outline-none"
-                                                                placeholder="e.g. FETS VUE Mainframe"
-                                                                value={softEntry.name}
-                                                                onChange={e => setSoftEntry({ ...softEntry, name: e.target.value })}
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 px-1">Client Authority</label>
-                                                            <select
-                                                                className="w-full bg-[#e0e5ec] shadow-inner p-4 rounded-2xl text-xs font-black uppercase outline-none"
-                                                                value={softEntry.client}
-                                                                onChange={e => setSoftEntry({ ...softEntry, client: e.target.value })}
-                                                            >
-                                                                <option value="">Select Client</option>
-                                                                {clients.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
-                                                            </select>
-                                                        </div>
-                                                        <div className="flex items-end">
-                                                            <button
-                                                                onClick={() => addSoftwareToDraft(false, showManageModal)}
-                                                                className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-[10px] tracking-widest shadow-lg shadow-blue-100 uppercase"
-                                                            >
-                                                                Register Asset
-                                                            </button>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                                                        {showManageModal.installed_software?.map((s, idx) => (
-                                                            <div key={idx} className="flex items-center justify-between p-4 bg-white/50 rounded-2xl border border-white/60">
-                                                                <div className="flex items-center gap-4">
-                                                                    <div className="p-2.5 bg-indigo-50 text-indigo-500 rounded-xl">
-                                                                        <Terminal size={14} />
-                                                                    </div>
-                                                                    <div>
-                                                                        <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight">{s.name}</h4>
-                                                                        <span className="text-[8px] font-black text-blue-500 uppercase tracking-wider flex items-center gap-1 mt-1">
-                                                                            <Building2 size={8} /> {s.client}
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                                <button
-                                                                    onClick={() => {
-                                                                        const updated = {
-                                                                            ...showManageModal,
-                                                                            installed_software: showManageModal.installed_software.filter((_, i) => i !== idx)
-                                                                        }
-                                                                        setShowManageModal(updated)
-                                                                        handleUpdateSystem(updated)
-                                                                        logSystemAction(showManageModal.id, 'software_remove', `Removed protocol: ${s.name}`)
-                                                                    }}
-                                                                    className="p-2 text-red-300 hover:text-red-500 transition-colors"
-                                                                >
-                                                                    <X size={14} />
-                                                                </button>
-                                                            </div>
-                                                        ))}
-                                                        {(!showManageModal.installed_software || showManageModal.installed_software.length === 0) && (
-                                                            <div className="text-center py-12 opacity-20">
-                                                                <Layers size={48} className="mx-auto mb-4" />
-                                                                <p className="text-xs font-black uppercase tracking-widest">No Registered Software</p>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </NeumorphicInset>
-                                            </div>
-
-                                            {/* Right: Client Controls & Hardware Specs */}
-                                            <div className="space-y-8">
-                                                <div className="space-y-4">
-                                                    <h3 className="text-lg font-black text-slate-700 uppercase tracking-tight flex items-center gap-3 px-2">
-                                                        <Building2 size={20} className="text-emerald-500" />
-                                                        Client Authorization
-                                                    </h3>
-                                                    <NeumorphicInset className="p-6">
-                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-loose mb-6 px-1">
-                                                            Hardware mapped to specific client exam protocols.
-                                                        </p>
-                                                        <div className="flex flex-wrap gap-2">
-                                                            {clients.map(c => (
-                                                                <button
-                                                                    key={c.name}
-                                                                    onClick={() => toggleClientSupport(c.name, false, showManageModal)}
-                                                                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${showManageModal.supported_clients?.includes(c.name)
-                                                                        ? 'bg-emerald-500 text-white shadow-lg'
-                                                                        : 'bg-[#e0e5ec] text-slate-400 shadow-sm'
-                                                                        }`}
-                                                                >
-                                                                    {c.name}
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                    </NeumorphicInset>
-                                                </div>
-
-                                                <div className="space-y-4">
-                                                    <h3 className="text-lg font-black text-slate-700 uppercase tracking-tight flex items-center gap-3 px-2">
-                                                        <Cpu size={20} className="text-indigo-500" />
-                                                        Specifications
-                                                    </h3>
-                                                    <NeumorphicInset className="p-6 grid grid-cols-2 gap-4">
-                                                        {[
-                                                            { label: 'CPU', val: showManageModal.specs?.cpu, key: 'cpu' },
-                                                            { label: 'RAM', val: showManageModal.specs?.ram, key: 'ram' },
-                                                            { label: 'OS', val: showManageModal.specs?.os, key: 'os' }
-                                                        ].map(spec => (
-                                                            <div key={spec.key} className="p-4 bg-white/40 rounded-2xl border border-white/60">
-                                                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">{spec.label}</span>
-                                                                <span className="text-xs font-black text-slate-800 uppercase truncate block">{spec.val || 'Unmapped'}</span>
-                                                            </div>
-                                                        ))}
-                                                    </NeumorphicInset>
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    )}
-
-                                    {activeManageTab === 'network' && (
-                                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                                            {/* Deployment Control */}
-                                            <div className="space-y-6">
-                                                <h3 className="text-lg font-black text-slate-700 uppercase tracking-tight flex items-center gap-3 px-2">
-                                                    <Network size={20} className="text-blue-500" />
-                                                    Strategic Deployment
-                                                </h3>
-                                                <NeumorphicInset className="p-8 space-y-8">
-                                                    <div className="space-y-4">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block px-1">Re-assign Regional Sector (Move Hardware)</label>
-                                                        <div className="grid grid-cols-2 gap-4">
-                                                            {['kannur', 'kochi', 'dubai'].map(branch => (
-                                                                <button
-                                                                    key={branch}
-                                                                    onClick={() => handleMoveSystem(showManageModal.id, branch)}
-                                                                    className={`py-4 rounded-[2rem] text-xs font-black uppercase tracking-widest border-2 transition-all ${showManageModal.branch_location === branch
-                                                                        ? 'bg-blue-600 border-blue-700 text-white shadow-xl'
-                                                                        : 'bg-[#e0e5ec] border-transparent text-slate-400 shadow-md hover:bg-white'
-                                                                        }`}
-                                                                >
-                                                                    {branch}
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="pt-8 border-t border-white/40 space-y-4">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block px-1">Operational State Command</label>
-                                                        <div className="grid grid-cols-1 gap-4">
-                                                            <button
-                                                                onClick={() => updateStatus(showManageModal.id, 'operational')}
-                                                                className={`p-6 rounded-[2.5rem] flex items-center justify-between transition-all ${showManageModal.status === 'operational'
-                                                                    ? 'bg-emerald-500 text-white shadow-xl translate-y-[-2px]'
-                                                                    : 'bg-[#e0e5ec] text-slate-500 shadow-md hover:bg-white'
-                                                                    }`}
-                                                            >
-                                                                <div className="flex items-center gap-4">
-                                                                    <CheckCircle2 size={24} />
-                                                                    <div className="text-left">
-                                                                        <span className="text-xs font-black uppercase block">Operational</span>
-                                                                        <span className="text-[8px] font-bold opacity-70 uppercase tracking-widest">System fully functional</span>
-                                                                    </div>
-                                                                </div>
-                                                                {showManageModal.status === 'operational' && <Sparkles size={16} />}
-                                                            </button>
-
-                                                            <button
-                                                                onClick={() => updateStatus(showManageModal.id, 'maintenance')}
-                                                                className={`p-6 rounded-[2.5rem] flex items-center justify-between transition-all ${showManageModal.status === 'maintenance'
-                                                                    ? 'bg-amber-500 text-white shadow-xl translate-y-[-2px]'
-                                                                    : 'bg-[#e0e5ec] text-slate-500 shadow-md hover:bg-white'
-                                                                    }`}
-                                                            >
-                                                                <div className="flex items-center gap-4">
-                                                                    <Settings size={24} />
-                                                                    <div className="text-left">
-                                                                        <span className="text-xs font-black uppercase block">Maintenance</span>
-                                                                        <span className="text-[8px] font-bold opacity-70 uppercase tracking-widest">Restricted Access</span>
-                                                                    </div>
-                                                                </div>
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </NeumorphicInset>
-                                            </div>
-
-                                            {/* Fault Reporting */}
-                                            <div className="space-y-6">
-                                                <h3 className="text-lg font-black text-rose-600 uppercase tracking-tight flex items-center gap-3 px-2">
-                                                    <AlertTriangle size={20} />
-                                                    Fault Transmission
-                                                </h3>
-                                                <NeumorphicInset className="p-8 space-y-6">
-                                                    <div>
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4 px-1">Operational Issue Details</label>
-                                                        <textarea
-                                                            placeholder="State the nature of hardware or software failure for immediate broadcasting..."
-                                                            value={incidentDescription}
-                                                            onChange={e => setIncidentDescription(e.target.value)}
-                                                            className="w-full bg-[#E0E5EC] shadow-inner p-8 rounded-[2.5rem] text-sm font-bold text-slate-700 outline-none focus:ring-4 focus:ring-rose-200/20 min-h-[160px] placeholder:text-slate-300"
-                                                        />
-                                                    </div>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-10 bg-gradient-to-b from-white/20 to-transparent">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                                    {/* Control Matrix */}
+                                    <div className="space-y-8">
+                                        <div className="p-8 rounded-[2.5rem] bg-white/60 border-2 border-[#BBDED6] shadow-xl">
+                                            <h4 className="text-[10px] font-black text-black uppercase tracking-[0.25em] mb-6 flex items-center gap-2">
+                                                <div className="h-1.5 w-1.5 rounded-full bg-[#61C0BF]" />
+                                                System Status
+                                            </h4>
+                                            <div className="space-y-3">
+                                                {['operational', 'maintenance', 'fault'].map(status => (
                                                     <button
-                                                        onClick={() => handleAutoIncident(showManageModal)}
-                                                        className="w-full py-6 bg-gradient-to-br from-rose-500 to-red-600 text-white rounded-[2.5rem] font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-rose-200 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-4 group"
+                                                        key={status}
+                                                        onClick={() => updateStatus(showManageModal.id, status, `Manual Toggle: ${status.toUpperCase()}`)}
+                                                        className={`w-full p-4 rounded-2xl border-2 text-[10px] font-black uppercase tracking-widest flex items-center justify-between transition-all duration-300 ${showManageModal.status === status
+                                                            ? (status === 'operational' ? 'bg-[#61C0BF] border-[#4A9695] text-white shadow-lg' :
+                                                                status === 'maintenance' ? 'bg-[#FFB6B9] border-[#D98B8E] text-white shadow-lg' :
+                                                                    'bg-[#874345] border-[#5E2F31] text-white shadow-lg')
+                                                            : 'bg-white border-[#BBDED6]/40 text-black hover:border-[#61C0BF] hover:bg-[#BBDED6]/10'
+                                                            }`}
                                                     >
-                                                        <Zap size={20} className="group-hover:animate-pulse" /> BROADCAST CRITICAL FAULT
+                                                        <span>{status}</span>
+                                                        {showManageModal.status === status ? <Check size={16} strokeWidth={4} /> : (
+                                                            status === 'maintenance' ? <Settings size={16} /> :
+                                                                status === 'fault' ? <AlertTriangle size={16} /> : <CheckCircle2 size={16} />
+                                                        )}
                                                     </button>
-                                                </NeumorphicInset>
+                                                ))}
                                             </div>
-                                        </motion.div>
-                                    )}
+                                        </div>
 
-                                    {activeManageTab === 'history' && (
-                                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                                            <h3 className="text-lg font-black text-slate-700 uppercase tracking-tight flex items-center gap-3 px-2">
-                                                <Activity size={20} className="text-indigo-500" />
-                                                Operational Logs & Nexus Activity
-                                            </h3>
-                                            <NeumorphicInset className="p-8 max-h-[500px] overflow-y-auto custom-scrollbar">
-                                                <div className="space-y-6 relative">
-                                                    {systemLogs.length === 0 ? (
-                                                        <div className="text-center py-20 opacity-20">
-                                                            <Terminal size={64} className="mx-auto mb-4" />
-                                                            <p className="font-black uppercase tracking-widest">No Activity Records Detected</p>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="absolute left-4 top-4 bottom-4 w-0.5 bg-slate-200/50" />
-                                                    )}
-                                                    {systemLogs.map((log) => (
-                                                        <div key={log.id} className="relative pl-12">
-                                                            <div className={`absolute left-0 top-1 w-8 h-8 rounded-full shadow-md flex items-center justify-center border-4 border-[#e0e5ec] ${log.log_type === 'status_change' ? 'bg-amber-400 text-white' :
-                                                                log.log_type === 'movement' ? 'bg-blue-400 text-white' :
-                                                                    log.log_type === 'creation' ? 'bg-emerald-400 text-white' : 'bg-slate-400 text-white'
-                                                                }`}>
-                                                                {log.log_type === 'status_change' ? <Settings size={12} /> :
-                                                                    log.log_type === 'movement' ? <Network size={12} /> :
-                                                                        log.log_type === 'creation' ? <Zap size={12} /> : <Terminal size={12} />}
-                                                            </div>
-                                                            <div className="p-5 bg-white/40 rounded-2xl border border-white/60 shadow-sm">
-                                                                <div className="flex items-center justify-between mb-2">
-                                                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                                                        {format(new Date(log.created_at), 'MMMM dd, yyyy | HH:mm:ss')}
-                                                                    </span>
-                                                                    <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${log.log_type === 'status_change' ? 'bg-amber-50 text-amber-600' :
-                                                                        log.log_type === 'movement' ? 'bg-blue-50 text-blue-600' :
-                                                                            'bg-slate-50 text-slate-500'
-                                                                        }`}>
-                                                                        {log.log_type.replace('_', ' ')}
-                                                                    </span>
-                                                                </div>
-                                                                <p className="text-xs font-bold text-slate-700 leading-relaxed uppercase tracking-tight">
-                                                                    {log.description}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    ))}
+                                        <div className="p-8 rounded-[2.5rem] bg-[#FFB6B9]/10 border-2 border-[#FFB6B9]/20 shadow-xl overflow-hidden relative group">
+                                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                                                <AlertTriangle size={80} />
+                                            </div>
+                                            <h4 className="text-[10px] font-black text-[#874345] uppercase tracking-[0.25em] mb-6 flex items-center gap-2 relative z-10">
+                                                <div className="h-1.5 w-1.5 rounded-full bg-[#FFB6B9]" />
+                                                Report System Issue
+                                            </h4>
+                                            <textarea
+                                                className="w-full p-5 bg-[#FAE3D9]/50 border-2 border-[#FFB6B9]/20 rounded-2xl text-xs font-bold text-black placeholder:text-[#FFB6B9]/50 outline-none focus:border-[#FFB6B9] focus:bg-white shadow-inner relative z-10"
+                                                rows={4}
+                                                placeholder="Provide incident details..."
+                                                value={incidentDescription}
+                                                onChange={(e) => setIncidentDescription(e.target.value)}
+                                            />
+                                            <button
+                                                onClick={() => handleAutoIncident(showManageModal)}
+                                                disabled={!incidentDescription}
+                                                className="w-full mt-4 py-4 bg-[#FFB6B9] text-[#874345] rounded-2xl font-black uppercase tracking-[0.15em] text-[10px] shadow-lg shadow-[#FFB6B9]/20 hover:brightness-105 active:scale-[0.98] disabled:opacity-30 transition-all border-b-4 border-[#D98B8E] relative z-10"
+                                            >
+                                                SUBMIT REPORT
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Activity & Protocol Matrix */}
+                                    <div className="lg:col-span-2 space-y-10">
+                                        <div className="p-8 rounded-[2.5rem] bg-white/60 border-2 border-[#BBDED6] shadow-xl">
+                                            <div className="flex items-center justify-between mb-8">
+                                                <h4 className="text-[10px] font-black text-black uppercase tracking-[0.25em] flex items-center gap-2">
+                                                    <div className="h-1.5 w-1.5 rounded-full bg-[#61C0BF]" />
+                                                    Software List
+                                                </h4>
+                                                <div className="flex gap-2">
+                                                    <select
+                                                        value={selectedClientForSW}
+                                                        onChange={(e) => setSelectedClientForSW(e.target.value)}
+                                                        className="px-4 py-2.5 bg-[#FAE3D9] border-2 border-[#BBDED6] rounded-xl text-[10px] font-black uppercase text-black outline-none focus:border-[#61C0BF] shadow-sm appearance-none pr-8 relative"
+                                                    >
+                                                        <option value="">CLIENT...</option>
+                                                        {clients.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                                                    </select>
+                                                    <select
+                                                        value={softEntry.name}
+                                                        onChange={(e) => setSoftEntry({ ...softEntry, client: selectedClientForSW, name: e.target.value, install_date: new Date().toISOString() })}
+                                                        disabled={!selectedClientForSW}
+                                                        className="px-4 py-2.5 bg-[#FAE3D9] border-2 border-[#BBDED6] rounded-xl text-[10px] font-black uppercase text-black outline-none min-w-[120px] focus:border-[#61C0BF] shadow-sm disabled:opacity-30"
+                                                    >
+                                                        <option value="">SOFTWARE...</option>
+                                                        {clients.find(c => c.name === selectedClientForSW)?.softwares?.map((sw: string) => (
+                                                            <option key={sw} value={sw}>{sw}</option>
+                                                        ))}
+                                                    </select>
+                                                    <button
+                                                        onClick={() => addSoftwareToDraft(false, showManageModal)}
+                                                        disabled={!softEntry.name}
+                                                        className="p-3 bg-[#61C0BF] text-white rounded-xl shadow-lg hover:rotate-90 transition-all active:scale-90 disabled:opacity-30"
+                                                    >
+                                                        <Plus size={18} strokeWidth={4} />
+                                                    </button>
                                                 </div>
-                                            </NeumorphicInset>
-                                        </motion.div>
-                                    )}
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[250px] overflow-y-auto pr-3 custom-scrollbar">
+                                                {(showManageModal.installed_software || []).map((sw, idx) => (
+                                                    <motion.div
+                                                        key={idx}
+                                                        initial={{ opacity: 0, x: -10 }}
+                                                        animate={{ opacity: 1, x: 0 }}
+                                                        className="flex items-center justify-between p-4 bg-[#FAE3D9]/30 border-2 border-[#BBDED6]/30 rounded-2xl shadow-sm group hover:border-[#61C0BF] hover:shadow-md hover:bg-white transition-all duration-300"
+                                                    >
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-10 h-10 rounded-xl bg-[#61C0BF]/10 flex items-center justify-center text-[#61C0BF] group-hover:bg-[#61C0BF] group-hover:text-white transition-colors duration-500">
+                                                                <Terminal size={18} strokeWidth={2.5} />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-xs font-black text-black uppercase tracking-tight">{sw.name}</p>
+                                                                <p className="text-[9px] font-black text-black uppercase tracking-[0.2em]">{sw.client}</p>
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            className="text-[#FFB6B9] p-2 hover:bg-[#FFB6B9]/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                                                            onClick={() => {
+                                                                const updated = {
+                                                                    ...showManageModal,
+                                                                    installed_software: showManageModal.installed_software.filter((_, i) => i !== idx)
+                                                                }
+                                                                setShowManageModal(updated)
+                                                                handleUpdateSystem(updated)
+                                                            }}
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </motion.div>
+                                                ))}
+                                                {(showManageModal.installed_software || []).length === 0 && (
+                                                    <div className="col-span-full py-12 text-center border-4 border-dashed border-[#BBDED6]/20 rounded-3xl bg-[#BBDED6]/5">
+                                                        <Network size={40} className="mx-auto mb-3 text-[#BBDED6]/40" />
+                                                        <p className="text-[10px] font-black text-black uppercase tracking-[0.25em]">No Software Installed</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="p-8 rounded-[2.5rem] bg-[#2D3748] border-2 border-[#61C0BF]/20 shadow-2xl relative overflow-hidden">
+                                            <div className="absolute inset-0 bg-gradient-to-br from-[#61C0BF]/5 to-transparent pointer-events-none" />
+                                            <h4 className="text-[10px] font-black text-[#61C0BF] uppercase tracking-[0.25em] mb-6 flex items-center gap-2">
+                                                <div className="h-1.5 w-1.5 rounded-full bg-[#61C0BF] animate-pulse" />
+                                                Activity History
+                                            </h4>
+                                            <div className="space-y-3 h-[250px] overflow-y-auto pr-4 custom-scrollbar relative z-10">
+                                                {systemLogs.map(log => (
+                                                    <div key={log.id} className="flex gap-4 p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-white/10 transition-colors group">
+                                                        <div className="text-[#61C0BF] font-black text-[9px] uppercase tracking-tighter bg-[#61C0BF]/10 px-2 py-1 rounded-md self-start">
+                                                            {format(new Date(log.created_at), 'HH:mm:ss')}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${log.log_type === 'fault' ? 'bg-[#FFB6B9]/20 text-[#FFB6B9]' :
+                                                                    log.log_type === 'status_change' ? 'bg-[#61C0BF]/20 text-[#61C0BF]' :
+                                                                        'bg-[#BBDED6]/20 text-[#BBDED6]'
+                                                                    }`}>
+                                                                    {log.log_type}
+                                                                </span>
+                                                                <div className="h-px flex-1 bg-white/5" />
+                                                            </div>
+                                                            <p className="text-white/80 text-[11px] font-bold leading-relaxed">{log.description}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                {systemLogs.length === 0 && (
+                                                    <div className="h-full flex flex-col items-center justify-center opacity-20">
+                                                        <Terminal size={48} className="text-[#61C0BF] mb-4" />
+                                                        <p className="text-[10px] uppercase font-black tracking-[0.4em] text-[#61C0BF]">Signal Void</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </NeumorphicCard>
+                            </div>
                         </motion.div>
                     </div>
                 )}
             </AnimatePresence>
-
         </div>
     )
 }

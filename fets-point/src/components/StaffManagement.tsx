@@ -552,15 +552,13 @@ export function StaffManagement() {
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-2 uppercase text-gold-gradient">Staff Directory</h1>
           <p className="text-gray-600 mt-1">Manage staff assignments and base centre allocations</p>
         </div>
-        {userAccessLevel === 'super_admin' && (
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="inline-flex items-center space-x-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-sm"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Staff</span>
-          </button>
-        )}
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="inline-flex items-center space-x-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-sm"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Add Staff</span>
+        </button>
       </div>
 
       {/* Stats Cards */}
@@ -685,10 +683,8 @@ export function StaffManagement() {
                     <BaseCentreBadge centre={staffMember.branch_assigned} />
                   </td>
                   <td className="px-6 py-4">
-                    {userAccessLevel === 'super_admin' || (
-                      userAccessLevel === 'admin' &&
-                      (staffMember.branch_assigned === activeBranch || activeBranch === 'global')
-                    ) ? (
+                    {/* All staff now have access to features same like super admin/admin within their branch */}
+                    {staffMember.branch_assigned === activeBranch || activeBranch === 'global' || userAccessLevel === 'super_admin' ? (
                       <button
                         onClick={() => handleEditStaff(staffMember)}
                         className="inline-flex items-center space-x-2 px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"

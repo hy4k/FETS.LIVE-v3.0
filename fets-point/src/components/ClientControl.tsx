@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
     Building2, Plus, Trash2, Edit3,
     MapPin, GraduationCap, Save, X,
-    Search, ChevronRight, Hash
+    Search, ChevronRight, Hash, Terminal
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { toast } from 'react-hot-toast'
@@ -12,6 +12,8 @@ interface Client {
     id: string
     name: string
     color: string
+    softwares?: string[]
+    logo_url?: string
 }
 
 interface Exam {
@@ -35,6 +37,9 @@ export function ClientControl() {
     const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
     const [showAddExam, setShowAddExam] = useState(false)
     const [newExam, setNewExam] = useState({ name: '', locations: [] as string[] })
+
+    const [newSoftware, setNewSoftware] = useState('')
+    const [isSavingSoftware, setIsSavingSoftware] = useState(false)
 
     useEffect(() => {
         fetchData()
@@ -116,6 +121,50 @@ export function ClientControl() {
         }
     }
 
+    const handleAddSoftware = async () => {
+        if (!selectedClientId || !newSoftware.trim()) return
+        setIsSavingSoftware(true)
+        try {
+            const client = clients.find(c => c.id === selectedClientId)
+            if (!client) return
+
+            const updatedSoftwares = [...(client.softwares || []), newSoftware.trim()]
+            const { error } = await supabase
+                .from('clients')
+                .update({ softwares: updatedSoftwares })
+                .eq('id', selectedClientId)
+
+            if (error) throw error
+            toast.success('Software registered')
+            setNewSoftware('')
+            fetchData()
+        } catch (error) {
+            toast.error('Failed to add software')
+        } finally {
+            setIsSavingSoftware(false)
+        }
+    }
+
+    const handleDeleteSoftware = async (swName: string) => {
+        if (!selectedClientId) return
+        try {
+            const client = clients.find(c => c.id === selectedClientId)
+            if (!client) return
+
+            const updatedSoftwares = (client.softwares || []).filter(s => s !== swName)
+            const { error } = await supabase
+                .from('clients')
+                .update({ softwares: updatedSoftwares })
+                .eq('id', selectedClientId)
+
+            if (error) throw error
+            toast.success('Software removed')
+            fetchData()
+        } catch (error) {
+            toast.error('Failed to remove software')
+        }
+    }
+
     const toggleLocation = (loc: string) => {
         setNewExam(prev => ({
             ...prev,
@@ -173,8 +222,8 @@ export function ClientControl() {
                                 key={client.id}
                                 onClick={() => setSelectedClientId(client.id)}
                                 className={`group flex items-center justify-between p-4 rounded-2xl transition-all ${selectedClientId === client.id
-                                        ? 'bg-white shadow-md border-indigo-500 text-indigo-600'
-                                        : 'hover:bg-white/50 text-slate-600 border-transparent'
+                                    ? 'bg-white shadow-md border-indigo-500 text-indigo-600'
+                                    : 'hover:bg-white/50 text-slate-600 border-transparent'
                                     } border-2`}
                             >
                                 <div className="flex items-center gap-3">
@@ -220,32 +269,82 @@ export function ClientControl() {
                                 </button>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-8 grid grid-cols-1 md:grid-cols-2 gap-6 items-start content-start custom-scrollbar">
-                                {activeClientExams.length > 0 ? (
-                                    activeClientExams.map(exam => (
-                                        <div key={exam.id} className="p-6 rounded-[2rem] border-2 border-slate-100 hover:border-indigo-100 bg-slate-50/30 transition-all group">
-                                            <div className="flex items-start justify-between mb-4">
-                                                <h4 className="font-bold text-slate-700">{exam.name}</h4>
-                                                <button className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
-                                                    <Trash2 size={16} />
-                                                </button>
+                            <div className="flex-1 overflow-y-auto p-8 grid grid-cols-1 lg:grid-cols-2 gap-8 items-start content-start custom-scrollbar">
+                                {/* Exams Section */}
+                                <div className="space-y-6">
+                                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest px-2">Exam Protocols</h4>
+                                    {activeClientExams.length > 0 ? (
+                                        activeClientExams.map(exam => (
+                                            <div key={exam.id} className="p-6 rounded-[2rem] border-2 border-slate-100 hover:border-indigo-100 bg-slate-50/30 transition-all group">
+                                                <div className="flex items-start justify-between mb-4">
+                                                    <h4 className="font-bold text-slate-700">{exam.name}</h4>
+                                                    <button className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {exam.locations.map(loc => (
+                                                        <span key={loc} className="px-3 py-1 rounded-lg bg-white border border-slate-200 text-[10px] font-black uppercase text-slate-400 flex items-center gap-1.5 shadow-sm">
+                                                            <MapPin size={10} className="text-indigo-500" />
+                                                            {loc}
+                                                        </span>
+                                                    ))}
+                                                </div>
                                             </div>
-                                            <div className="flex flex-wrap gap-2">
-                                                {exam.locations.map(loc => (
-                                                    <span key={loc} className="px-3 py-1 rounded-lg bg-white border border-slate-200 text-[10px] font-black uppercase text-slate-400 flex items-center gap-1.5 shadow-sm">
-                                                        <MapPin size={10} className="text-indigo-500" />
-                                                        {loc}
-                                                    </span>
-                                                ))}
-                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="py-20 flex flex-col items-center justify-center text-slate-300 border-2 border-dashed border-slate-100 rounded-[2rem]">
+                                            <GraduationCap size={48} className="mb-4 opacity-10" />
+                                            <p className="font-bold text-xs uppercase tracking-widest">No protocols defined</p>
                                         </div>
-                                    ))
-                                ) : (
-                                    <div className="col-span-2 py-20 flex flex-col items-center justify-center text-slate-300">
-                                        <GraduationCap size={64} className="mb-4 opacity-20" />
-                                        <p className="font-bold">No exam protocols defined for this client</p>
+                                    )}
+                                </div>
+
+                                {/* Software Section */}
+                                <div className="space-y-6">
+                                    <div className="flex items-center justify-between px-2">
+                                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Client Software</h4>
+                                        <span className="text-[10px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-lg">
+                                            {clients.find(c => c.id === selectedClientId)?.softwares?.length || 0} Assets
+                                        </span>
                                     </div>
-                                )}
+
+                                    <div className="p-6 rounded-[2rem] bg-slate-50 border-2 border-slate-100 space-y-4">
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                placeholder="Add software title..."
+                                                value={newSoftware}
+                                                onChange={(e) => setNewSoftware(e.target.value)}
+                                                className="flex-1 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none"
+                                            />
+                                            <button
+                                                onClick={handleAddSoftware}
+                                                disabled={isSavingSoftware || !newSoftware.trim()}
+                                                className="p-2 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-100 hover:bg-indigo-700 disabled:opacity-50"
+                                            >
+                                                <Plus size={18} />
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            {clients.find(c => c.id === selectedClientId)?.softwares?.map((sw, idx) => (
+                                                <div key={idx} className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 group">
+                                                    <div className="flex items-center gap-3">
+                                                        <Terminal size={14} className="text-indigo-400" />
+                                                        <span className="text-xs font-bold text-slate-600 uppercase">{sw}</span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleDeleteSoftware(sw)}
+                                                        className="p-1 hover:bg-red-50 text-red-300 hover:text-red-500 rounded transition-all"
+                                                    >
+                                                        <X size={14} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </>
                     ) : (
@@ -328,8 +427,8 @@ export function ClientControl() {
                                                 type="button"
                                                 onClick={() => toggleLocation(branch)}
                                                 className={`p-4 rounded-2xl border-2 font-bold text-sm transition-all flex items-center gap-3 ${newExam.locations.includes(branch)
-                                                        ? 'bg-indigo-50 border-indigo-600 text-indigo-700 shadow-inner'
-                                                        : 'bg-white border-slate-100 text-slate-400 hover:border-slate-300'
+                                                    ? 'bg-indigo-50 border-indigo-600 text-indigo-700 shadow-inner'
+                                                    : 'bg-white border-slate-100 text-slate-400 hover:border-slate-300'
                                                     }`}
                                             >
                                                 <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${newExam.locations.includes(branch) ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'

@@ -7,19 +7,17 @@ import { supabase } from './supabase';
  * Automatically cycles through available models to bypass 404/Quota issues.
  */
 
-const apiKey = import.meta.env.VITE_AI_API_KEY;
-
-// Secure Audit Log
-if (apiKey) {
-    console.log("DEBUG: AI Engine Initializing with Key [Len:" + apiKey.length + ", Prefix:" + apiKey.substring(0, 4) + "]");
-}
-
-if (!apiKey || apiKey === 'undefined' || apiKey.length < 10) {
-    console.error("Gemini API Key Check Failed. Value:", apiKey);
-    throw new Error("AI API Key is missing or invalid in environment variables.");
-}
+const getApiKey = () => import.meta.env.VITE_AI_API_KEY;
 
 export async function askGemini(userPrompt: string) {
+    const apiKey = getApiKey();
+
+    if (!apiKey || apiKey === 'undefined' || apiKey.length < 10) {
+        console.error("Gemini API Key Check Failed. Value:", apiKey);
+        throw new Error("AI API Key is missing or invalid. Please configure VITE_AI_API_KEY in your environment.");
+    }
+
+    console.log("DEBUG: AI Engine Initializing with Key Length:", apiKey.length);
     console.log("DEBUG: Gathering context from Supabase...");
 
     // We fetch a comprehensive summary of the platform state to make the AI "Omniscient"

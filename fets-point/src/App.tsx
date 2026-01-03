@@ -120,20 +120,31 @@ function AppContent() {
 
   useEffect(() => {
     // Role-based access control check
-    if (activeTab === 'news-manager' && profile?.role !== 'super_admin') {
-      console.warn(`Access denied for tab: ${activeTab}. User role: ${profile?.role}`);
-      setActiveTab('command-center'); // Redirect to a safe default page
+
+    // FETS Roster Page Restriction
+    if (activeTab === 'fets-roster') {
+      const hasRosterPermission = profile?.role === 'super_admin' ||
+        (typeof profile?.permissions === 'object' && profile?.permissions?.roster_edit);
+
+      if (!hasRosterPermission) {
+        console.warn(`Access denied for tab: ${activeTab}. Requires roster_edit permission.`);
+        setActiveTab('command-center');
+      }
     }
 
-    if (activeTab === 'staff-management' && profile?.role !== 'super_admin' && profile?.role !== 'admin') {
-      console.warn(`Access denied for tab: ${activeTab}. User role: ${profile?.role}`);
-      setActiveTab('command-center'); // Redirect to a safe default page
+    // User Management Page Restriction
+    if (activeTab === 'user-management') {
+      const isMithun = profile?.email === 'mithun@fets.in';
+      const isSuperAdmin = profile?.role === 'super_admin';
+      const hasUserMgmtPermission = typeof profile?.permissions === 'object' && profile?.permissions?.user_management_edit;
+
+      if (!isMithun && !isSuperAdmin && !hasUserMgmtPermission) {
+        console.warn(`Access denied for tab: ${activeTab}. Restricted access.`);
+        setActiveTab('command-center');
+      }
     }
 
-    if (activeTab === 'user-management' && profile?.email !== 'mithun@fets.in') {
-      console.warn(`Access denied for tab: ${activeTab}. Resticted to specific admin email.`);
-      setActiveTab('command-center');
-    }
+    // All other pages (news-manager, staff-management, etc.) are now open to all users
   }, [activeTab, profile]);
 
   if (loading) {

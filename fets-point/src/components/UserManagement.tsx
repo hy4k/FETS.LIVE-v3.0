@@ -15,19 +15,11 @@ import { getAvailableBranches, formatBranchName } from '../utils/authUtils'
 
 const PERMISSION_KEYS = [
     { key: 'roster_edit', label: 'Roster Management', icon: Users, description: 'Create and edit staff rosters' },
-    { key: 'calendar_edit', label: 'Calendar Control', icon: Calendar, description: 'Manage events and calendar entries' },
-    { key: 'checklist_edit', label: 'Checklist Authority', icon: ClipboardList, description: 'Create and edit checklist templates' },
-    { key: 'news_edit', label: 'Newsroom Access', icon: Newspaper, description: 'Post and manage news ticker updates' },
-    { key: 'incident_edit', label: 'Incident Reporting', icon: ShieldAlert, description: 'Manage and close incident reports' },
-    { key: 'event_edit', label: 'Event Management', icon: AlertTriangle, description: 'Create and manage operational events' },
-    { key: 'staff_edit', label: 'Staff Administration', icon: ShieldCheck, description: 'Add or modify staff profiles' },
-    { key: 'notice_edit', label: 'Notice Board', icon: Megaphone, description: 'Post official notices' },
-    { key: 'sop_edit', label: 'SOP Management', icon: Lock, description: 'Upload and edit SOP documents' },
-    { key: 'chat_admin', label: 'Chat Administration', icon: MessageSquare, description: 'Manage group chats and broadcasts' },
+    { key: 'user_management_edit', label: 'User Management Authority', icon: Shield, description: 'Manage user profiles, roles and critical permissions' },
 ]
 
 export function UserManagement() {
-    const { profile: currentUser } = useAuth()
+    const { profile: currentUser, hasPermission } = useAuth()
     const { data: staff = [], isLoading } = useStaff()
     const { updateStaff, deleteStaff, addStaff } = useStaffMutations()
 
@@ -109,7 +101,9 @@ export function UserManagement() {
         setFormData({ ...formData, [field]: newArray })
     }
 
-    if (currentUser?.email !== 'mithun@fets.in' && currentUser?.role !== 'super_admin') {
+    const isSystemAdmin = currentUser?.email === 'mithun@fets.in' || currentUser?.role === 'super_admin' || hasPermission('user_management_edit');
+
+    if (!isSystemAdmin) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center bg-[#e0e5ec]">
                 <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-6 shadow-[inset_4px_4px_8px_#d1d9e6,inset_-4px_-4px_8px_#ffffff]">
@@ -117,7 +111,7 @@ export function UserManagement() {
                 </div>
                 <h2 className="text-3xl font-black text-gray-800 mb-4 tracking-tight">ACCESS DENIED</h2>
                 <p className="text-gray-500 max-w-md font-medium">
-                    This secure management console is restricted to Super Administrators only.
+                    This secure management console is restricted to Personnel Administrators only.
                 </p>
             </div>
         )
